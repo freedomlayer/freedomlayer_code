@@ -14,8 +14,8 @@ def draw_random_graph(i):
     Draw a random graph with 2**i nodes,
     and p=i/(2**i)
     """
-    g_random = nx.gnp_random_graph(2**i,i/(2**i))
-    nx.draw_spring(g_random,node_size=20)
+    g_random = nx.gnp_random_graph(2**i,2*i/(2**i))
+    nx.draw(g_random,node_size=20)
     plt.savefig("./random_graph.svg")
     plt.close()
     # plt.show()
@@ -29,7 +29,7 @@ def draw_grid_graph(m,n):
     # plt.show()
 
 def go():
-    draw_random_graph(8)
+    draw_random_graph(6)
     draw_grid_graph(20,20)
 
 

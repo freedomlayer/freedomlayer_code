@@ -1,3 +1,11 @@
+# By real
+# freedomlayer.org
+
+# Some code two create two illustrations.
+# One is of an erdos renyi random graph (Should be fast mixing), and the other
+# one is of a 2 dimensional grid. It's an example for a graph that is not fast
+# mixing.
+
 import networkx as nx
 import matplotlib.pyplot as plt
 

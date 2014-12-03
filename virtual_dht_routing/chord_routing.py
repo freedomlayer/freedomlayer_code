@@ -72,6 +72,9 @@ class Node():
         Add a set of known nodes to self.known .
         Take the change of path_len into acount.
         """
+        # We check if any change happened due to adding known nodes:
+        changed = False
+
         # Update the path lengths:
         updated_knodes = [kn._replace(path_len=kn.path_len+source_path_len)\
                 for kn in knodes]
@@ -82,15 +85,17 @@ class Node():
         pool.sort(key=lambda kn:\
                 (dist_ident(self.ident,kn.ident),kn.path_len))
 
-        # We check if any change happened due to adding known nodes:
-        changed = False
-
-        # Set best successors and best predecessors found:
+        # Set best successors found:
         changed = changed or (set(self.best_succ) != set(pool[:self.k]))
-        self.best_succ = pool[:self.k]  # First self.k
+        self.best_succ = pool[:self.k]
 
+
+        pool.sort(key=lambda kn:\
+                (dist_ident(kn.ident,self.ident),kn.path_len))
+
+        # Set best predecessors found:
         changed = changed or (set(self.best_pred) != set(pool[-self.k:]))
-        self.best_pred = pool[-self.k:] # Last self.k
+        self.best_pred = pool[:self.k]
 
         return changed
 
@@ -167,7 +172,8 @@ class VirtualDHT():
         """
         changed = False
         nd = self.nodes[i]
-        for kn in nd.get_known():
+        # for kn in nd.get_known():
+        for kn in nd.neighbours:
             kn_node = self.nodes[kn.lindex]
             res = nd.add_known_nodes(kn.path_len,kn_node.get_known())
             changed = changed or res
@@ -213,8 +219,8 @@ class VirtualDHT():
 
 
 def go():
-    i = 8
-    k = i
+    i = 15
+    k = 4
     n = 2**i
     vd = VirtualDHT(n,k)
     vd.converge()

@@ -414,23 +414,22 @@ class VirtualDHT():
             sum_succ_path += sn.get_best_succ().path_len
             sum_pred_path += sn.get_best_pred().path_len
             for f in range(IDENT_BITS):
-                sum_finger_path += sn.get_best_succ_finger().path_len
-                sum_finger_path += sn.get_best_pred_finger().path_len
+                sum_finger_path += sn.get_best_succ_finger(f).path_len
+                sum_finger_path += sn.get_best_pred_finger(f).path_len
 
         return sum_succ_path/num_samp,sum_pred_path/num_samp,\
                 sum_finger_path/(num_samp * IDENT_BITS * 2)
 
 def go():
-    i = 10
-    nei = i # amount of neighbours
-    k = i   # Amount of known to keep.
-    fk = 3
-    n = 2**i
-    print("i = ",i)
-    vd = VirtualDHT(n,k=k,fk=fk,nei=nei)
-    vd.converge(max_iters=8)
-    print(vd.sample_path_len())
-    print(vd.verify_succ_pred())
+    for i in range(7,15):
+        print("i =",i)
+        nei = i # amount of neighbours
+        k = i   # Amount of known to keep.
+        fk = 3
+        n = 2**i
+        vd = VirtualDHT(n,k=k,fk=fk,nei=nei)
+        vd.converge(max_iters=0x20)
+        print(vd.sample_path_len())
     
 
 if __name__ == "__main__":

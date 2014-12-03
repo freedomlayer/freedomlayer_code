@@ -295,7 +295,7 @@ class VirtualDHT():
 
 
 def go():
-    i = 11
+    i = 14
     nei = i # amount of neighbours
     k = i   # Amount of known to keep.
     n = 2**i

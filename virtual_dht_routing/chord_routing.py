@@ -9,7 +9,7 @@ import random
 from collections import namedtuple
 
 # Number of bits in ident number:
-IDENT_BITS = 48
+IDENT_BITS = 40
 
 # Maximum possible identity value.
 # Note that this value isn't really the maximum. It is maximum + 1.
@@ -32,6 +32,27 @@ def dist_ident(x,y):
     Distance between two nodes (According to ident):
     """
     return (y - x) % MAX_IDENT
+
+def remove_knodes_duplicates(knodes):
+    """
+    Go over a list of knodes, and remove knodes that show up more than once.
+    In case of node ident showing more than once, we pick the shorter path.
+    """
+    if len(knodes) == 0:
+        return knodes
+
+    knodes.sort(key=lambda kn:(kn.ident,kn.path_len))
+
+    # Resulting array
+    cur_ident = knodes[0].ident
+    res = [knodes[0]]
+    for kn in knodes[1:]:
+        if kn.ident != cur_ident:
+            cur_ident = kn.ident
+            res.append(kn)
+
+    return res
+
 
 
 # A node:
@@ -57,7 +78,7 @@ class Node():
 
     def set_neighbours(self,knodes):
         """
-        knodes to be the neighbours of this Node.
+        set knodes to be the neighbours of this Node.
         """
         self.neighbours = []
         for kn in knodes:
@@ -77,36 +98,30 @@ class Node():
         Add a set of known nodes to self.known .
         Take the change of path_len into acount.
         """
-        # We check if any change happened due to adding known nodes:
-        changed = False
-
         # Update the path lengths:
         updated_knodes = [kn._replace(path_len=kn.path_len+source_path_len)\
                 for kn in knodes]
 
+        # Make sure the node self.ident is not inside:
+        updated_knodes = list(filter(lambda kn:kn.ident != self.ident,\
+                updated_knodes))
+
         # Sort all notable known nodes lexicographically by virtual distance
         # from self.ident, and path length:
-        pool = self.best_succ + self.best_pred + updated_knodes
-        
-        # Make sure the node self.ident is not in the pool:
-        pool = list(filter(lambda kn:kn.ident != self.ident,pool))
-
+        pool = remove_knodes_duplicates(self.best_succ + updated_knodes)
         pool.sort(key=lambda kn:\
                 (dist_ident(self.ident,kn.ident),kn.path_len))
 
         # Set best successors found:
-        changed = changed or (set(self.best_succ) != set(pool[:self.k]))
         self.best_succ = pool[:self.k]
 
 
+        pool = remove_knodes_duplicates(self.best_pred + updated_knodes)
         pool.sort(key=lambda kn:\
                 (dist_ident(kn.ident,self.ident),kn.path_len))
 
         # Set best predecessors found:
-        changed = changed or (set(self.best_pred) != set(pool[-self.k:]))
         self.best_pred = pool[:self.k]
-
-        return changed
 
     def get_known(self):
         """
@@ -118,6 +133,17 @@ class Node():
         pool.update(self.best_succ)
         pool.update(self.best_pred)
         return list(pool)
+
+    def get_close(self):
+        """
+        Return a list of the closest known nodes.
+        Close in the virtual sense, to self.ident
+        """
+        pool = set()
+        pool.update(self.best_succ)
+        pool.update(self.best_pred)
+        return list(pool)
+
 
     def get_best_succ(self):
         """
@@ -137,9 +163,14 @@ class Node():
 
 # Simulation for a mesh network with Virtual DHT abilities:
 class VirtualDHT():
-    def __init__(self,n,k):
-        self.k = k
+    def __init__(self,n,k,nei):
+
+        # Amount of nodes:
         self.num_nodes = n
+        # Half amount of neighbours per node:
+        self.nei = nei
+        # Known nodes parameter:
+        self.k = k
 
         # Generate nodes and neighbours links:
         self.gen_nodes()
@@ -167,51 +198,62 @@ class VirtualDHT():
         """
         Randomize immediate neighbours links between the nodes.
         """
-        for nd in self.nodes:
+        # Initialize neighbours sets as empty sets:
+        nodes_nei = [set() for _ in range(self.num_nodes)]
+
+        for i,nd in enumerate(self.nodes):
             # Sample a set of indices (Which represent a set of nodes).
             # Those nodes will be nd's neighbours:
-            nindices = random.sample(range(self.num_nodes),self.k)
+            nodes_nei[i].update(\
+                    random.sample(range(self.num_nodes),self.nei))
+
+            # Remove myself:
+            nodes_nei[i].discard(i)
+
+            # To make the graph undirected, we add i to be neighbour of all
+            # i's neighbours:
+            for j in nodes_nei[i]:
+                nodes_nei[j].add(i)
+
+        for i,nd in enumerate(self.nodes):
             # Initialize a list of neighbours:
-            nd.set_neighbours(map(self.make_knode,nindices))
+            nd.set_neighbours(map(self.make_knode,list(nodes_nei[i])))
 
     def iter_node(self,i):
         """
         Ask all known nodes for better known nodes.
         i is the index of the node in self.nodes.
         """
-        changed = False
         nd = self.nodes[i]
+        for kn in nd.get_close():
         # for kn in nd.get_known():
-        for kn in nd.neighbours:
+        # for kn in nd.neighbours:
             kn_node = self.nodes[kn.lindex]
-            res = nd.add_known_nodes(kn.path_len,kn_node.get_known())
-            changed = changed or res
-        return changed
+            nd.add_known_nodes(kn.path_len,kn_node.get_known())
 
     def iter_all(self):
         """
         Perform a full iteration, where all nodes ask other nodes for better
         nodes.
         """
-        changed = False
         for i in range(self.num_nodes):
-            res = self.iter_node(i)
-            changed = changed or res
-
-        return changed
+            self.iter_node(i)
 
     def converge(self,max_iters=0x10):
         """
         "converge" the DHT by iterating until nothing changes.
         """
         for i in range(max_iters):
-            has_changed = self.iter_all()
-            print(".")
-            if not has_changed:
-                break
+            self.iter_all()
+            print(".",end="",flush=True)
+            if self.verify_succ_pred():
+                print("\nReached correct succ and pred.")
+                return
+
+        print("\nmax_iters acheived.")
 
 
-    def sample_path_len(self,num_samp=0x100):
+    def sample_path_len(self,num_samp=0x200):
         """
         Find an approximated average to the path_len to successor and
         predecessor.
@@ -226,14 +268,42 @@ class VirtualDHT():
 
         return sum_succ_path/num_samp,sum_pred_path/num_samp
 
+    def verify_succ_pred(self):
+        """
+        Verify the best successor and predecessor found for all nodes.
+        """
+        # Get all nodes (as Knodes), and sort them according to ident:
+        lnodes = list(map(self.make_knode,range(self.num_nodes)))
+        lnodes.sort(key=lambda ln:ln.ident)
+
+        # Iterate all nodes, and make sure that the best succ and best pred
+        # match the sorted array lnodes. Note that in lnodes, the best
+        # successor of lnodes[i] is lnodes[i+1]. The best predecessor is
+        # lnodes[i-1].
+        for i,ln in enumerate(lnodes):
+            nd = self.nodes[ln.lindex]
+            succ_ident = lnodes[(i+1) % self.num_nodes].ident
+            pred_ident = lnodes[(i-1) % self.num_nodes].ident
+
+            if nd.get_best_succ().ident != succ_ident:
+                return False
+
+            if nd.get_best_pred().ident != pred_ident:
+                return False
+
+        return True
+
 
 def go():
-    i = 12
-    k = 4
+    i = 11
+    nei = i # amount of neighbours
+    k = i   # Amount of known to keep.
     n = 2**i
-    vd = VirtualDHT(n,k)
-    vd.converge()
+    print("i = ",i)
+    vd = VirtualDHT(n,k=k,nei=nei)
+    vd.converge(max_iters=8)
     print(vd.sample_path_len())
+    print(vd.verify_succ_pred())
     
 
 if __name__ == "__main__":

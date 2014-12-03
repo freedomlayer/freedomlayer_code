@@ -325,7 +325,7 @@ class VirtualDHT():
             self.iter_all()
             print(".",end="",flush=True)
             if self.verify():
-                print("\nReached correct succ and pred.")
+                print("\nReached correct succ and pred + fingers.")
                 return
 
         print("\nmax_iters acheived.")
@@ -404,6 +404,7 @@ class VirtualDHT():
         """
         sum_succ_path = 0.0
         sum_pred_path = 0.0
+        sum_finger_path = 0.0
 
         # We don't want to sample more than the total amount of nodes:
         num_samp = min([num_samp,self.num_nodes])
@@ -412,11 +413,15 @@ class VirtualDHT():
         for sn in snodes:
             sum_succ_path += sn.get_best_succ().path_len
             sum_pred_path += sn.get_best_pred().path_len
+            for f in range(IDENT_BITS):
+                sum_finger_path += sn.get_best_succ_finger().path_len
+                sum_finger_path += sn.get_best_pred_finger().path_len
 
-        return sum_succ_path/num_samp,sum_pred_path/num_samp
+        return sum_succ_path/num_samp,sum_pred_path/num_samp,\
+                sum_finger_path/(num_samp * IDENT_BITS * 2)
 
 def go():
-    i = 7
+    i = 10
     nei = i # amount of neighbours
     k = i   # Amount of known to keep.
     fk = 3

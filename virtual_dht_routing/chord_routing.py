@@ -61,8 +61,13 @@ class Node():
         """
         self.neighbours = []
         for kn in knodes:
+            # Make sure we don't have ourselves as a neighbour:
+            if kn.ident == self.ident:
+                continue
+            # A neighbour has a path length 1:
             self.neighbours.append(\
                     kn._replace(path_len=1))
+
 
         # Update known nodes:
         self.add_known_nodes(0,self.neighbours)
@@ -82,6 +87,10 @@ class Node():
         # Sort all notable known nodes lexicographically by virtual distance
         # from self.ident, and path length:
         pool = self.best_succ + self.best_pred + updated_knodes
+        
+        # Make sure the node self.ident is not in the pool:
+        pool = list(filter(lambda kn:kn.ident != self.ident,pool))
+
         pool.sort(key=lambda kn:\
                 (dist_ident(self.ident,kn.ident),kn.path_len))
 
@@ -219,7 +228,7 @@ class VirtualDHT():
 
 
 def go():
-    i = 15
+    i = 12
     k = 4
     n = 2**i
     vd = VirtualDHT(n,k)

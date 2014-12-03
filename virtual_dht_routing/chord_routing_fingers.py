@@ -142,7 +142,7 @@ class Node():
         successor finger, we replace.
         """
         pool = remove_knodes_duplicates(self.best_finger_pred[f] + knodes)
-        self.best_finger_succ[f] = [max(pool,key=lambda kn:\
+        self.best_finger_succ[f] = [min(pool,key=lambda kn:\
                 (dist_ident(self.get_finger_succ_loc(f),kn.ident),kn.path_len))]
 
     def add_known_best_finger_pred(self,f,knodes):
@@ -151,7 +151,7 @@ class Node():
         predecessor finger, we replace.
         """
         pool = remove_knodes_duplicates(self.best_finger_pred[f] + knodes)
-        self.best_finger_pred[f] = [max(pool,key=lambda kn:\
+        self.best_finger_pred[f] = [min(pool,key=lambda kn:\
                 (dist_ident(kn.ident,self.get_finger_pred_loc(f)),kn.path_len))]
 
     def add_known_nodes(self,source_path_len,knodes):

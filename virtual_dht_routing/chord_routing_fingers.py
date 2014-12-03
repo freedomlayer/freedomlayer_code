@@ -11,7 +11,7 @@ import bisect
 from collections import namedtuple
 
 # Number of bits in ident number:
-IDENT_BITS = 32
+IDENT_BITS = 20
 
 # Maximum possible identity value.
 # Note that this value isn't really the maximum. It is maximum + 1.
@@ -59,7 +59,7 @@ def remove_knodes_duplicates(knodes):
 
 # A node:
 class Node():
-    def __init__(self,k,ident=None):
+    def __init__(self,k,fk,ident=None):
         """
         Initialize a node.
         """
@@ -71,6 +71,10 @@ class Node():
 
         # Argument related to the maximum size of the num_known set:
         self.k = k
+
+        # Argument related to amount of known best finger candidates.
+        self.fk = fk
+
         # Initialize list of known nodes:
         # self.known = []
 
@@ -122,7 +126,6 @@ class Node():
                 (dist_ident(self.ident,kn.ident),kn.path_len))
 
 
-
     def add_known_best_pred(self,knodes):
         """
         Add a new list of knodes to self.best_pred
@@ -133,17 +136,14 @@ class Node():
         self.best_pred = heapq.nsmallest(self.k,pool,key=lambda kn:\
                 (dist_ident(kn.ident,self.ident),kn.path_len))
 
-
-
-
     def add_known_best_finger_succ(self,f,knodes):
         """
         If any of the nodes in knodes is a better candidate for the f's
         successor finger, we replace.
         """
-        pool = remove_knodes_duplicates(self.best_finger_pred[f] + knodes)
-        self.best_finger_succ[f] = [min(pool,key=lambda kn:\
-                (dist_ident(self.get_finger_succ_loc(f),kn.ident),kn.path_len))]
+        pool = remove_knodes_duplicates(self.best_finger_succ[f] + knodes)
+        self.best_finger_succ[f] = heapq.nsmallest(self.fk,pool,key=lambda kn:\
+                (dist_ident(self.get_finger_succ_loc(f),kn.ident),kn.path_len))
 
     def add_known_best_finger_pred(self,f,knodes):
         """
@@ -151,8 +151,8 @@ class Node():
         predecessor finger, we replace.
         """
         pool = remove_knodes_duplicates(self.best_finger_pred[f] + knodes)
-        self.best_finger_pred[f] = [min(pool,key=lambda kn:\
-                (dist_ident(kn.ident,self.get_finger_pred_loc(f)),kn.path_len))]
+        self.best_finger_pred[f] = heapq.nsmallest(self.fk,pool,key=lambda kn:\
+                (dist_ident(kn.ident,self.get_finger_pred_loc(f)),kn.path_len))
 
     def add_known_nodes(self,source_path_len,knodes):
         """
@@ -207,14 +207,12 @@ class Node():
 
         return list(pool)
 
-
     def get_best_succ(self):
         """
         Get the best successor.
         """
         return min(self.best_succ,\
                 key=lambda kn:dist_ident(self.ident,kn.ident))
-
 
     def get_best_pred(self):
         """
@@ -223,10 +221,25 @@ class Node():
         return min(self.best_pred,\
                 key=lambda kn:dist_ident(kn.ident,self.ident))
 
+    def get_best_succ_finger(self,f):
+        """
+        Get the best successor for finger f.
+        """
+        return min(self.best_finger_succ[f],\
+                key=lambda kn:dist_ident(self.get_finger_succ_loc(f),kn.ident))
+
+
+    def get_best_pred_finger(self,f):
+        """
+        Get the best predecessor for finger f.
+        """
+        return min(self.best_finger_pred[f],\
+                key=lambda kn:dist_ident(kn.ident,self.get_finger_pred_loc(f)))
+
 
 # Simulation for a mesh network with Virtual DHT abilities:
 class VirtualDHT():
-    def __init__(self,n,k,nei):
+    def __init__(self,n,k,fk,nei):
 
         # Amount of nodes:
         self.num_nodes = n
@@ -234,6 +247,8 @@ class VirtualDHT():
         self.nei = nei
         # Known nodes parameter:
         self.k = k
+        # Known finger nodes parameter:
+        self.fk = fk
 
         # Generate nodes and neighbours links:
         self.gen_nodes()
@@ -246,7 +261,7 @@ class VirtualDHT():
         """
         self.nodes = []
         for i in range(self.num_nodes):
-            self.nodes.append(Node(self.k))
+            self.nodes.append(Node(self.k,self.fk))
 
     def make_knode(self,i,path_len=0):
         """
@@ -292,7 +307,7 @@ class VirtualDHT():
         # for kn in nd.get_known():
         # for kn in nd.neighbours:
             kn_node = self.nodes[kn.lindex]
-            nd.add_known_nodes(kn.path_len,kn_node.get_known())
+            nd.add_known_nodes(kn.path_len,kn_node.get_close())
 
     def iter_all(self):
         """
@@ -355,20 +370,16 @@ class VirtualDHT():
             for f in range(IDENT_BITS):
                 ind = bisect.bisect_left(\
                         idents,nd.get_finger_succ_loc(f))
-                f_succ_ident = lnodes[(ind) % self.num_nodes]
+                f_succ = lnodes[(ind) % self.num_nodes]
 
-                if nd.best_finger_succ[f][0].ident != f_succ_ident:
-                    print("----------------------")
-                    print(nd.get_finger_succ_loc(f))
-                    print(nd.best_finger_succ[f][0].ident)
-                    print(f_succ_ident)
+                if nd.get_best_succ_finger(f).ident != f_succ.ident:
                     return False
 
                 ind = bisect.bisect_right(\
                         idents,nd.get_finger_pred_loc(f))
-                f_pred_ident = lnodes[(ind-1) % self.num_nodes]
+                f_pred = lnodes[(ind-1) % self.num_nodes]
 
-                if nd.best_finger_pred[f][0].ident != f_pred_ident:
+                if nd.get_best_pred_finger(f).ident != f_pred.ident:
                     return False
 
 
@@ -386,9 +397,6 @@ class VirtualDHT():
 
         return True
 
-
-
-
     def sample_path_len(self,num_samp=0x200):
         """
         Find an approximated average to the path_len to successor and
@@ -398,7 +406,7 @@ class VirtualDHT():
         sum_pred_path = 0.0
 
         # We don't want to sample more than the total amount of nodes:
-        num_samp = min([num_samp,len(snodes)])
+        num_samp = min([num_samp,self.num_nodes])
 
         snodes = random.sample(self.nodes,num_samp)
         for sn in snodes:
@@ -408,12 +416,13 @@ class VirtualDHT():
         return sum_succ_path/num_samp,sum_pred_path/num_samp
 
 def go():
-    i = 8
+    i = 7
     nei = i # amount of neighbours
     k = i   # Amount of known to keep.
+    fk = 3
     n = 2**i
     print("i = ",i)
-    vd = VirtualDHT(n,k=k,nei=nei)
+    vd = VirtualDHT(n,k=k,fk=fk,nei=nei)
     vd.converge(max_iters=8)
     print(vd.sample_path_len())
     print(vd.verify_succ_pred())

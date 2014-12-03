@@ -11,7 +11,7 @@ import bisect
 from collections import namedtuple
 
 # Number of bits in ident number:
-IDENT_BITS = 20
+IDENT_BITS = 40
 
 # Maximum possible identity value.
 # Note that this value isn't really the maximum. It is maximum + 1.
@@ -421,11 +421,11 @@ class VirtualDHT():
                 sum_finger_path/(num_samp * IDENT_BITS * 2)
 
 def go():
-    for i in range(7,15):
+    for i in range(7,16):
         print("i =",i)
         nei = i # amount of neighbours
         k = i   # Amount of known to keep.
-        fk = 3
+        fk = i//2
         n = 2**i
         vd = VirtualDHT(n,k=k,fk=fk,nei=nei)
         vd.converge(max_iters=0x20)

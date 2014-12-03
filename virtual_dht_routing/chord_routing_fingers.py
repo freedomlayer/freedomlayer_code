@@ -184,6 +184,10 @@ class Node():
         pool.update(self.neighbours)
         pool.update(self.best_succ)
         pool.update(self.best_pred)
+
+        for f in range(IDENT_BITS):
+            pool.update(self.best_finger_succ[f])
+            pool.update(self.best_finger_pred[f])
         return list(pool)
 
     def get_close(self):

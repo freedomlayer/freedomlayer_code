@@ -353,6 +353,7 @@ def go():
     for i in range(7,16):
         print("i =",i)
         nei = i # amount of neighbours
+        # fk = i//2
         fk = i
         n = 2**i
         vd = VirtualDHT(n,fk=fk,nei=nei)

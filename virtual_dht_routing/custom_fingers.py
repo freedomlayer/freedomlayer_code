@@ -157,8 +157,11 @@ class Node():
         Items in the list are unique.
         """
         pool = set()
+
+        # Add neighbours:
         pool.update(self.neighbours)
 
+        # Add fingers:
         for f in SUCC_FINGERS:
             pool.update(self.best_finger_succ[f])
         for f in PRED_FINGERS:
@@ -353,11 +356,12 @@ def go():
     for i in range(7,16):
         print("i =",i)
         nei = i # amount of neighbours
-        # fk = i//2
-        fk = i
+        fk = i//2
+        # fk = i
+        # fk = 1
         n = 2**i
         vd = VirtualDHT(n,fk=fk,nei=nei)
-        vd.converge(max_iters=0x20)
+        vd.converge(max_iters=0x80)
         print(vd.sample_path_len())
     
 

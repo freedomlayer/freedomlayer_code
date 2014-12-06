@@ -21,8 +21,8 @@ MAX_IDENT = 2**IDENT_BITS
 SUCC_FINGERS = [0]
 PRED_FINGERS = [0]
 
-SUCC_FINGNERS = list(range(IDENT_BITS))
-PRED_FINGERS = list(range(IDENT_BITS))
+# SUCC_FINGNERS = list(range(IDENT_BITS))
+# PRED_FINGERS = list(range(IDENT_BITS))
 
 # A named tuple for Known node:
 # path_len is the path length source node,
@@ -348,10 +348,12 @@ class VirtualDHT():
         return sum_finger_path/(num_samp * num_fingers)
 
 def go():
+    print("SUCC_FINGERS: ",SUCC_FINGERS)
+    print("PRED_FINGERS: ",PRED_FINGERS)
     for i in range(7,16):
         print("i =",i)
         nei = i # amount of neighbours
-        fk = i//2
+        fk = i
         n = 2**i
         vd = VirtualDHT(n,fk=fk,nei=nei)
         vd.converge(max_iters=0x20)

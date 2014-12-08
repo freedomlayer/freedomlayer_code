@@ -475,7 +475,7 @@ class VirtualDHT():
 def go():
     print("SUCC_FINGERS: ",SUCC_FINGERS)
     print("PRED_FINGERS: ",PRED_FINGERS)
-    for i in range(9,10):
+    for i in range(10,11):
         print("i =",i)
         # nei = i # amount of neighbours
         nei = i//2

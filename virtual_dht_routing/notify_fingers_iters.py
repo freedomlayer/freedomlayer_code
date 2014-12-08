@@ -418,9 +418,11 @@ class VirtualDHT():
         for i in range(max_iters):
             self.iter_all()
             print(".",end="",flush=True)
-            if self.verify():
-                print("\nReached correct succ and pred + fingers.")
-                return
+            print("Verified: ",self.verify())
+            print("avg path len:",self.sample_path_len())
+            # if self.verify():
+            #     print("\nReached correct succ and pred + fingers.")
+            #     return
 
         print("\nmax_iters acheived.")
 

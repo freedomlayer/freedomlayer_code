@@ -203,8 +203,13 @@ class Node():
                 # print("improve ",self.ind)
                 # print(kn.ident)
 
-                queue.append((kn.lindex,kn.path_len,[myself] + \
-                    self.get_known()))
+                self.notify_all(queue)
+                # queue.append((kn.lindex,kn.path_len,[myself] + \
+                #     self.get_known()))
+
+                # for nkn in new_known:
+                #     queue.append((nkn.lindex,nkn.path_len,[kn]))
+
 
                 continue
 
@@ -233,6 +238,17 @@ class Node():
                 #   print(best_succ_to_kn.lindex,best_pred_to_kn.lindex)
                 continue
 
+    def notify_all(self,queue):
+        """
+        Notify all known nodes about my known nodes:
+        """
+
+        my_known = self.get_known()
+        # Knode tuple of myself:
+        myself = Knode(path_len=0,ident=self.ident,lindex=self.ind)
+
+        for kn in my_known:
+            queue.append((kn.lindex,kn.path_len,my_known + [myself]))
 
     def get_known(self):
         """
@@ -475,7 +491,7 @@ class VirtualDHT():
 def go():
     print("SUCC_FINGERS: ",SUCC_FINGERS)
     print("PRED_FINGERS: ",PRED_FINGERS)
-    for i in range(10,11):
+    for i in range(7,8):
         print("i =",i)
         # nei = i # amount of neighbours
         nei = i//2

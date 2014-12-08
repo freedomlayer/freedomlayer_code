@@ -175,18 +175,15 @@ class Node():
         for kn in set(updated_knodes).union(old_known):
             assert kn.ident != myself.ident
 
-            new_known_without = list(filter(lambda nkn:nkn.ident != kn.ident,\
-                    new_known))
-
-            best_succ_to_kn = min(new_known_without,key=lambda nkn:
+            best_succ_to_kn = min(new_known,key=lambda nkn:
                    (dist_ident(kn.ident,nkn.ident),nkn.path_len))
-            best_pred_to_kn = min(new_known_without,key=lambda nkn:
+            best_pred_to_kn = min(new_known,key=lambda nkn:
                    (dist_ident(nkn.ident,kn.ident),nkn.path_len))
 
             def d(x,y):
                 return min([dist_ident(x,y),dist_ident(y,x)])
 
-            closest_to_kn = min(new_known_without,key=lambda nkn:
+            closest_to_kn = min(new_known,key=lambda nkn:
                     (d(nkn.ident,kn.ident),nkn.path_len))
 
             # kn was just added: (It was not there before):
@@ -202,9 +199,14 @@ class Node():
                 #        [myself] + self.get_known())
 
                 # (destination_index,path_len,list_of_nodes)
-                print("improve ",self.ind)
+                # print("=============================")
+                # print("improve ",self.ind)
+                # print(kn.ident)
+
                 queue.append((kn.lindex,kn.path_len,[myself] + \
                     self.get_known()))
+
+                continue
 
             # kn was not included (We got better nodes), or removed:
             if ((kn in updated_knodes) and (kn not in new_close)) or\
@@ -213,20 +215,23 @@ class Node():
                 # self.nodes[kn.lindex].add_known_nodes(kn.path_len,[closest_to_kn])
                 # self.nodes[kn.lindex].add_known_nodes(kn.path_len,[best_succ_to_kn,best_pred_to_kn])
                 # (destination_index,path_len,list_of_nodes)
-                assert myself.lindex not in \
-                    [best_succ_to_kn.lindex,best_pred_to_kn.lindex]
-                assert kn.lindex not in \
-                        [best_succ_to_kn.lindex,best_pred_to_kn.lindex]
+                # assert myself.lindex not in \
+                #     [best_succ_to_kn.lindex,best_pred_to_kn.lindex]
+                # assert kn.lindex not in \
+                #         [best_succ_to_kn.lindex,best_pred_to_kn.lindex]
 
                 # queue.append((kn.lindex,kn.path_len,[best_succ_to_kn,best_pred_to_kn]))
                 queue.append((kn.lindex,kn.path_len,[closest_to_kn]))
                 # print("other ",self.ident,"-->",kn.ident,":",best_succ_to_kn.ident,best_pred_to_kn.ident)
-                print("other ",self.ident,"-->",kn.ident,":",closest_to_kn.ident,\
-                            "(",d(self.ident,kn.ident))
+
+                # print("other ",self.ident,"-->",kn.ident,":",closest_to_kn.ident,\
+                #              "(",d(self.ident,kn.ident))
+
                 #   print("------")
                 #   print("other ",self.ind)
                 #   print(kn.lindex)
                 #   print(best_succ_to_kn.lindex,best_pred_to_kn.lindex)
+                continue
 
 
     def get_known(self):
@@ -388,7 +393,8 @@ class VirtualDHT():
 
         while len(queue) > 0:
             # print(len(queue))
-            destination_index,path_len,list_of_nodes = queue.pop()
+            destination_index,path_len,list_of_nodes = queue.pop(0) # dfs
+            # queue.pop(0) for bfs
             nd = self.nodes[destination_index]
             nd.add_known_nodes(path_len,list_of_nodes,queue)
 
@@ -469,7 +475,7 @@ class VirtualDHT():
 def go():
     print("SUCC_FINGERS: ",SUCC_FINGERS)
     print("PRED_FINGERS: ",PRED_FINGERS)
-    for i in range(8,9):
+    for i in range(9,10):
         print("i =",i)
         # nei = i # amount of neighbours
         nei = i//2

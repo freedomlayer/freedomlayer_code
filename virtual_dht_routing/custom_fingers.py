@@ -356,7 +356,7 @@ def go():
     for i in range(7,16):
         print("i =",i)
         nei = i # amount of neighbours
-        fk = i//2
+        fk = i
         # fk = i
         # fk = 1
         n = 2**i

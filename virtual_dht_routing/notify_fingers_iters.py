@@ -10,6 +10,8 @@ import heapq
 import bisect
 from collections import namedtuple
 
+import networkx as nx
+
 # Number of bits in ident number:
 IDENT_BITS = 40
 
@@ -303,7 +305,7 @@ class VirtualDHT():
         self.gen_nodes()
         self.rand_neighbours()
         # Assert that the graph is connected:
-        assert self.is_connected()
+        assert nx.is_connected(self.graph)
 
 
     def gen_nodes(self):
@@ -330,50 +332,20 @@ class VirtualDHT():
         # Initialize neighbours sets as empty sets:
         nodes_nei = [set() for _ in range(self.num_nodes)]
 
+        p = self.nei / self.num_nodes
+        self.graph = nx.fast_gnp_random_graph(self.num_nodes,p)
+
         for i,nd in enumerate(self.nodes):
             # Sample a set of indices (Which represent a set of nodes).
             # Those nodes will be nd's neighbours:
-            nodes_nei[i].update(\
-                    random.sample(range(self.num_nodes),self.nei))
+            nodes_nei[i].update(nx.neighbors(self.graph,i))
 
-            # Remove myself:
-            nodes_nei[i].discard(i)
-
-            # To make the graph undirected, we add i to be neighbour of all
-            # i's neighbours:
-            for j in nodes_nei[i]:
-                nodes_nei[j].add(i)
+            # Make sure that i is not his own neighbour:
+            assert i not in nodes_nei[i]
 
         for i,nd in enumerate(self.nodes):
             # Initialize a list of neighbours:
             nd.set_neighbours(map(self.make_knode,list(nodes_nei[i])))
-
-
-    def is_connected(self):
-        """
-        Check if the generated nodes graph (Edges are between neighbours)
-        is connected.
-        """
-        visited = [False] * self.num_nodes
-
-        def traverse(ind):
-            if visited[ind]:
-                return
-            visited[ind] = True
-
-            nd = self.nodes[ind]
-            for nei in nd.neighbours:
-                traverse(nei.lindex)
-
-        # We assume that there is at least one node in the graph:
-        assert self.num_nodes > 0
-
-        # Traverse from node nubmer 0:
-        traverse(0)
-
-        if visited.count(False) > 0:
-            return False
-        return True
 
 
     def iter_node(self,i):
@@ -492,7 +464,7 @@ def go():
     for i in range(6,9):
         print("i =",i)
         # nei = i # amount of neighbours
-        nei = i//2
+        nei = i
         fk = 1
         n = 2**i
         vd = VirtualDHT(n,fk=fk,nei=nei)

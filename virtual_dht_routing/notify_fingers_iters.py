@@ -380,7 +380,7 @@ class VirtualDHT():
             nd = self.nodes[destination_index]
             nd.add_known_nodes(path_len,list_of_nodes,queue)
 
-        print("Total queue count: ",count)
+        # print("Total queue count: ",count)
 
     def converge(self,max_iters=0x10):
         """
@@ -389,14 +389,17 @@ class VirtualDHT():
         """
         for i in range(max_iters):
             self.iter_all()
-            print(".",end="",flush=True)
+            # print(".",end="",flush=True)
+            print("@@")
             print("Verified: ",self.verify())
+            print("verify path_len:",self.verify_path_len())
             print("avg path len:",self.sample_path_len())
             # if self.verify():
             #     print("\nReached correct succ and pred + fingers.")
             #     return
 
         print("\nmax_iters acheived.")
+
 
     def verify_succ_pred_fingers(self):
         """
@@ -426,8 +429,38 @@ class VirtualDHT():
                 if nd.get_best_pred_finger(f).ident != f_pred.ident:
                     return False
 
+    def verify_path_len(self):
+        """
+        Make sure that the finger links are optimal in length.
+        (That they are the shortest paths possible)
+        """
+
+        # Iterate over all nodes:
+        for nd in self.nodes:
+            for f in SUCC_FINGERS:
+                best_succ_f = nd.get_best_succ_finger(f)
+                # Calculate shortest path on graph:
+                spath_len = nx.shortest_path_length(self.graph,\
+                        nd.ind,best_succ_f.lindex)
+
+                # Check if the path we have to best_succ_f equals exactly
+                # spath_len:
+                if best_succ_f.path_len != spath_len:
+                    return False
+
+            for f in PRED_FINGERS:
+                best_pred_f = nd.get_best_pred_finger(f)
+                # Calculate shortest path on graph:
+                spath_len = nx.shortest_path_length(self.graph,\
+                        nd.ind,best_pred_f.lindex)
+
+                # Check if the path we have to best_pred_f equals exactly
+                # spath_len:
+                if best_pred_f.path_len != spath_len:
+                    return False
 
         return True
+
 
     def verify(self):
         """
@@ -470,6 +503,7 @@ def go():
         vd = VirtualDHT(n,fk=fk,nei=nei)
         vd.converge(max_iters=0x5)
         print("Verify result:",vd.verify())
+        print("verify path_len:",vd.verify_path_len())
         print(vd.sample_path_len())
     
 

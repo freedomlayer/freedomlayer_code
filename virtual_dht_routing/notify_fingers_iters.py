@@ -26,6 +26,9 @@ PRED_FINGERS = [0]
 # SUCC_FINGNERS = list(range(IDENT_BITS))
 # PRED_FINGERS = list(range(IDENT_BITS))
 
+# Should we sent structure connectivity preserving messages?
+CONNECTIVITY_MSG = True
+
 # A named tuple for Known node:
 # path_len is the path length source node,
 # ident is the identity value of the Known node.
@@ -147,9 +150,10 @@ class Node():
         Take the change of path_len into account.
         """
 
-        # Keep old set of close nodes:
-        old_close = set(self.get_close())
-        old_known = set(self.get_known())
+        if CONNECTIVITY_MSG:
+            # Keep old set of close nodes:
+            old_close = set(self.get_close())
+            old_known = set(self.get_known())
 
         # Update the path lengths:
         updated_knodes = [kn._replace(path_len=kn.path_len+source_path_len)\
@@ -168,65 +172,28 @@ class Node():
         for f in PRED_FINGERS:
             self.add_known_best_finger_pred(f,updated_knodes)
 
-        new_close = set(self.get_close())
-        new_known = set(self.get_known())
+        if CONNECTIVITY_MSG:
+            new_close = set(self.get_close())
+            new_known = set(self.get_known())
 
-        # Knode tuple of myself:
-        myself = Knode(path_len=0,ident=self.ident,lindex=self.ind)
+            # Knode tuple of myself:
+            myself = Knode(path_len=0,ident=self.ident,lindex=self.ind)
 
-        for kn in set(updated_knodes).union(old_known):
-            assert kn.ident != myself.ident
+            for kn in set(updated_knodes).union(old_known):
+                assert kn.ident != myself.ident
 
-            best_succ_to_kn = min(new_known,key=lambda nkn:
-                   (dist_ident(kn.ident,nkn.ident),nkn.path_len))
-            best_pred_to_kn = min(new_known,key=lambda nkn:
-                   (dist_ident(nkn.ident,kn.ident),nkn.path_len))
+                def d(x,y):
+                    return min([dist_ident(x,y),dist_ident(y,x)])
 
-            def d(x,y):
-                return min([dist_ident(x,y),dist_ident(y,x)])
+                closest_to_kn = min(new_known,key=lambda nkn:
+                        (d(nkn.ident,kn.ident),nkn.path_len))
 
-            closest_to_kn = min(new_known,key=lambda nkn:
-                    (d(nkn.ident,kn.ident),nkn.path_len))
+                # kn was not included (We got better nodes), or removed:
+                if ((kn in updated_knodes) and (kn not in new_close)) or\
+                        (kn in old_close.difference(new_close)):
 
-            # kn was just added: (It was not there before):
-            if kn in new_close.difference(old_close):
+                    queue.append((kn.lindex,kn.path_len,[closest_to_kn]))
 
-                # (destination_index,path_len,list_of_nodes)
-                # print("=============================")
-                # print("improve ",self.ind)
-                # print(kn.ident)
-
-                # queue.append((kn.lindex,kn.path_len,[myself] + \
-                #     self.get_known()))
-
-                # queue.append((kn.lindex,kn.path_len,[myself]))
-
-                # for nkn in new_known.difference(set([kn])):
-                #     queue.append((nkn.lindex,nkn.path_len,[kn]))
-
-                # queue.append((kn.lindex,kn.path_len,[myself] + \
-                #     self.get_known()))
-
-                # queue.append((kn.lindex,kn.path_len,[closest_to_kn]))
-
-                continue
-
-            # kn was not included (We got better nodes), or removed:
-            if ((kn in updated_knodes) and (kn not in new_close)) or\
-                    (kn in old_close.difference(new_close)):
-
-                # queue.append((kn.lindex,kn.path_len,[best_succ_to_kn,best_pred_to_kn]))
-                queue.append((kn.lindex,kn.path_len,[closest_to_kn]))
-                # print("other ",self.ident,"-->",kn.ident,":",best_succ_to_kn.ident,best_pred_to_kn.ident)
-
-                # print("other ",self.ident,"-->",kn.ident,":",closest_to_kn.ident,\
-                #              "(",d(self.ident,kn.ident))
-
-                #   print("------")
-                #   print("other ",self.ind)
-                #   print(kn.lindex)
-                #   print(best_succ_to_kn.lindex,best_pred_to_kn.lindex)
-                continue
 
     def notify_all(self,queue):
         """
@@ -239,7 +206,6 @@ class Node():
 
         for kn in my_known:
             queue.append((kn.lindex,kn.path_len,my_known + [myself]))
-
 
 
     def get_known(self):
@@ -304,8 +270,6 @@ class VirtualDHT():
         # Generate nodes and neighbours links:
         self.gen_nodes()
         self.rand_neighbours()
-        # Assert that the graph is connected:
-        assert nx.is_connected(self.graph)
 
 
     def gen_nodes(self):
@@ -347,6 +311,8 @@ class VirtualDHT():
             # Initialize a list of neighbours:
             nd.set_neighbours(map(self.make_knode,list(nodes_nei[i])))
 
+        # Assert that the graph is connected:
+        assert nx.is_connected(self.graph)
 
     def iter_node(self,i):
         """
@@ -429,6 +395,8 @@ class VirtualDHT():
                 if nd.get_best_pred_finger(f).ident != f_pred.ident:
                     return False
 
+        return True
+
     def verify_path_len(self):
         """
         Make sure that the finger links are optimal in length.
@@ -494,17 +462,19 @@ class VirtualDHT():
 def go():
     print("SUCC_FINGERS: ",SUCC_FINGERS)
     print("PRED_FINGERS: ",PRED_FINGERS)
-    for i in range(6,9):
+    print("----------------------------")
+
+    for i in range(8,9):
         print("i =",i)
         # nei = i # amount of neighbours
         nei = i
         fk = 1
         n = 2**i
         vd = VirtualDHT(n,fk=fk,nei=nei)
-        vd.converge(max_iters=0x5)
-        print("Verify result:",vd.verify())
-        print("verify path_len:",vd.verify_path_len())
-        print(vd.sample_path_len())
+        vd.converge(max_iters=0x8)
+        # print("Verify result:",vd.verify())
+        # print("verify path_len:",vd.verify_path_len())
+        # print(vd.sample_path_len())
     
 
 if __name__ == "__main__":

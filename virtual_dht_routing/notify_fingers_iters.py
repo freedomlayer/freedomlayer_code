@@ -69,10 +69,9 @@ def remove_knodes_duplicates(knodes):
     return res
 
 
-
 # A node:
 class Node():
-    def __init__(self,nodes,ind,fk,ident=None):
+    def __init__(self,vdht,ind,ident=None):
         """
         Initialize a node.
         """
@@ -82,11 +81,14 @@ class Node():
         else:
             self.ident = ident
 
+        # Pointer to virtual DHT:
+        self.vdht = vdht
+
         # Argument related to amount of known best finger candidates.
-        self.fk = fk
+        self.fk = self.vdht.fk
 
         # The list of all nodes:
-        self.nodes = nodes
+        self.nodes = self.vdht.nodes
 
         # Index inside the list of nodes:
         self.ind = ind
@@ -258,7 +260,7 @@ class Node():
 
 # Simulation for a mesh network with Virtual DHT abilities:
 class VirtualDHT():
-    def __init__(self,n,fk,nei):
+    def __init__(self,n,fk,nei,cmsg):
 
         # Amount of nodes:
         self.num_nodes = n
@@ -278,7 +280,7 @@ class VirtualDHT():
         """
         self.nodes = []
         for i in range(self.num_nodes):
-            self.nodes.append(Node(self.nodes,i,self.fk))
+            self.nodes.append(Node(self,i))
 
     def make_knode(self,i,path_len=0):
         """
@@ -297,12 +299,28 @@ class VirtualDHT():
         nodes_nei = [set() for _ in range(self.num_nodes)]
 
         p = self.nei / self.num_nodes
-        self.graph = nx.fast_gnp_random_graph(self.num_nodes,p)
+        # self.graph = nx.fast_gnp_random_graph(self.num_nodes,p)
+        sn = int(self.num_nodes**(1/2))
+        # Redefine amount of nodes:
+        self.num_nodes = sn * sn
+        self.graph = nx.grid_2d_graph(sn,sn)
+
+        # Build translation tables between graph nodes
+        # and node numbers 1 .. self.num_nodes
+        self.graph_to_vec = {}
+        self.vec_to_graph = []
+        
+        for i,gnd in enumerate(self.graph.nodes_iter()):
+            self.vec_to_graph.append(gnd)
+            self.graph_to_vec[gnd] = i
+
 
         for i,nd in enumerate(self.nodes):
             # Sample a set of indices (Which represent a set of nodes).
             # Those nodes will be nd's neighbours:
-            nodes_nei[i].update(nx.neighbors(self.graph,i))
+            gneighbours = nx.neighbors(self.graph,self.vec_to_graph[i])
+            nodes_nei[i].update(map(lambda gnei:\
+                    self.graph_to_vec[gnei],gneighbours))
 
             # Make sure that i is not his own neighbour:
             assert i not in nodes_nei[i]
@@ -340,7 +358,7 @@ class VirtualDHT():
 
         while len(queue) > 0:
             # print(len(queue))
-            destination_index,path_len,list_of_nodes = queue.pop(0) # dfs
+            destination_index,path_len,list_of_nodes = queue.pop() # bfs
             count += 1
             # queue.pop(0) for bfs
             nd = self.nodes[destination_index]
@@ -409,7 +427,8 @@ class VirtualDHT():
                 best_succ_f = nd.get_best_succ_finger(f)
                 # Calculate shortest path on graph:
                 spath_len = nx.shortest_path_length(self.graph,\
-                        nd.ind,best_succ_f.lindex)
+                        self.vec_to_graph[nd.ind],\
+                        self.vec_to_graph[best_succ_f.lindex])
 
                 # Check if the path we have to best_succ_f equals exactly
                 # spath_len:
@@ -420,7 +439,8 @@ class VirtualDHT():
                 best_pred_f = nd.get_best_pred_finger(f)
                 # Calculate shortest path on graph:
                 spath_len = nx.shortest_path_length(self.graph,\
-                        nd.ind,best_pred_f.lindex)
+                        self.vec_to_graph[nd.ind],\
+                        self.vec_to_graph[best_pred_f.lindex])
 
                 # Check if the path we have to best_pred_f equals exactly
                 # spath_len:
@@ -464,14 +484,16 @@ def go():
     print("PRED_FINGERS: ",PRED_FINGERS)
     print("----------------------------")
 
+    cmsg = True # Connectivity messages.
+
     for i in range(8,9):
         print("i =",i)
         # nei = i # amount of neighbours
         nei = i
         fk = 1
         n = 2**i
-        vd = VirtualDHT(n,fk=fk,nei=nei)
-        vd.converge(max_iters=0x8)
+        vd = VirtualDHT(n,fk=fk,nei=nei,cmsg=cmsg)
+        vd.converge(max_iters=0x80)
         # print("Verify result:",vd.verify())
         # print("verify path_len:",vd.verify_path_len())
         # print(vd.sample_path_len())

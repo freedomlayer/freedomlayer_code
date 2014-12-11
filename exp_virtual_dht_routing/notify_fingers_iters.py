@@ -117,17 +117,11 @@ class Node():
                 (self.vdht.dist_ident(kn.ident,self.get_finger_pred_loc(f)),kn.path_len))
 
 
-    def add_known_nodes(self,source_path_len,knodes,queue):
+    def add_known_nodes(self,source_path_len,knodes):
         """
         Add a set of known nodes to self.known .
         Take the change of path_len into account.
         """
-
-        if self.vdht.cmsg:
-            # Keep old set of close nodes:
-            old_close = set(self.get_close())
-            old_known = set(self.get_known())
-
         # Update the path lengths:
         updated_knodes = [kn._replace(path_len=kn.path_len+source_path_len)\
                 for kn in knodes]
@@ -145,30 +139,8 @@ class Node():
         for f in self.vdht.dht_pred_fingers:
             self.add_known_best_finger_pred(f,updated_knodes)
 
-        if self.vdht.cmsg:
-            new_close = set(self.get_close())
-            new_known = set(self.get_known())
 
-            # Knode tuple of myself:
-            myself = Knode(path_len=0,ident=self.ident,lindex=self.ind)
-
-            for kn in set(updated_knodes).union(old_known):
-                assert kn.ident != myself.ident
-
-                def d(x,y):
-                    return min([self.vdht.dist_ident(x,y),self.vdht.dist_ident(y,x)])
-
-                closest_to_kn = min(new_known,key=lambda nkn:
-                        (d(nkn.ident,kn.ident),nkn.path_len))
-
-                # kn was not included (We got better nodes), or removed:
-                if ((kn in updated_knodes) and (kn not in new_close)) or\
-                        (kn in old_close.difference(new_close)):
-
-                    queue.append((kn.lindex,kn.path_len,[closest_to_kn]))
-
-
-    def notify_all(self,queue):
+    def notify_all(self):
         """
         Notify all known nodes about my known nodes:
         """
@@ -178,7 +150,8 @@ class Node():
         myself = Knode(path_len=0,ident=self.ident,lindex=self.ind)
 
         for kn in my_known:
-            queue.append((kn.lindex,kn.path_len,my_known + [myself]))
+            nd = self.vdht.nodes[kn.lindex]
+            nd.add_known_nodes(kn.path_len,my_known + [myself])
 
 
     def get_known(self):
@@ -231,7 +204,7 @@ class Node():
 
 # Simulation for a mesh network with Virtual DHT abilities:
 class VirtualDHT():
-    def __init__(self,graph,fk,cmsg,dht_fingers,ident_bits):
+    def __init__(self,graph,fk,dht_fingers,ident_bits):
 
         # Known finger nodes parameter:
         self.fk = fk
@@ -253,9 +226,6 @@ class VirtualDHT():
 
         # Evade the birthday paradox:
         assert (self.num_nodes ** 2.5) <= self.max_ident
-
-        # Send connectivity messages?
-        self.cmsg = cmsg
 
         # Load fingers to be used in the Chord DHT:
         self.dht_succ_fingers,self.dht_pred_fingers = dht_fingers
@@ -330,18 +300,10 @@ class VirtualDHT():
         Perform a full iteration, where all nodes ask other nodes for better
         nodes.
         """
-        # (destination_index,path_len,list_of_nodes)
-        queue = []
         # Initialize queue:
         for i in range(self.num_nodes):
             nd = self.nodes[i]
-            nd.notify_all(queue)
-
-        while len(queue) > 0:
-            destination_index,path_len,list_of_nodes = queue.pop() # bfs
-            # queue.pop(0) for bfs
-            nd = self.nodes[destination_index]
-            nd.add_known_nodes(path_len,list_of_nodes,queue)
+            nd.notify_all()
 
     def converge(self,max_iters=0x10):
         """
@@ -491,10 +453,9 @@ def gen_gnp_graph(i):
     return nx.fast_gnp_random_graph(n,p)
 
 def go():
-    cmsg = False # Connectivity messages.
     i = 10      # Parameter for graph generation.
     ident_bits = math.ceil(i*2.6)
-    fk = i//2
+    fk = i
     # Fingers we are interested in:
     # succ_fingers = list(range(ident_bits))
     # pred_fingers = list(range(ident_bits))
@@ -510,7 +471,7 @@ def go():
     # g = gen_grid_graph(i)
     g = gen_gnp_graph(i)
     print("Generating Network...")
-    vd = VirtualDHT(graph=g,fk=fk,cmsg=cmsg,\
+    vd = VirtualDHT(graph=g,fk=fk,\
             dht_fingers=(succ_fingers,pred_fingers),\
             ident_bits=ident_bits)
 

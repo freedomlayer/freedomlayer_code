@@ -502,7 +502,6 @@ def go():
     print("||| succ_fingers = ",succ_fingers)
     print("||| pred_fingers = ",pred_fingers)
 
-    # g = gen_grid_graph(i)
     print("Generating graph...")
     g = gen_grid_graph(i)
     # g = gen_gnp_graph(i)

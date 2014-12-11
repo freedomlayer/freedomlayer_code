@@ -5,6 +5,7 @@ by real
 Testing the idea of routing in a mesh using a Virtual DHT. Inspired by
 "Pushing Chord into the Underlay".
 """
+import math
 import random
 import heapq
 import bisect
@@ -12,31 +13,11 @@ from collections import namedtuple
 
 import networkx as nx
 
-# Number of bits in ident number:
-IDENT_BITS = 40
-
-# Maximum possible identity value.
-# Note that this value isn't really the maximum. It is maximum + 1.
-MAX_IDENT = 2**IDENT_BITS
-
 # A named tuple for Known node:
 # path_len is the path length source node,
 # ident is the identity value of the Known node.
 # lindex is the list index of the Known node.
 Knode = namedtuple('Knode', ['path_len', 'ident','lindex'])
-
-
-def rand_ident():
-    """
-    Generate random identity in the range [0,MAX_IDENT)
-    """
-    return random.randrange(MAX_IDENT)
-
-def dist_ident(x,y):
-    """
-    Distance between two nodes (According to ident):
-    """
-    return (y - x) % MAX_IDENT
 
 def remove_knodes_duplicates(knodes):
     """
@@ -65,14 +46,16 @@ class Node():
         """
         Initialize a node.
         """
-        # If ident value is not specified, we randomize one:
-        if ident is None:
-            self.ident = rand_ident()
-        else:
-            self.ident = ident
 
         # Pointer to virtual DHT:
         self.vdht = vdht
+
+        # If ident value is not specified, we randomize one:
+        if ident is None:
+            self.ident = self.vdht.rand_ident()
+        else:
+            self.ident = ident
+
 
         # Argument related to amount of known best finger candidates.
         self.fk = self.vdht.fk
@@ -85,20 +68,21 @@ class Node():
 
         # Initialize list of known nodes:
         self.neighbours = []
-        self.best_finger_succ = [list() for f in range(IDENT_BITS)]
-        self.best_finger_pred = [list() for f in range(IDENT_BITS)]
+        self.best_finger_succ = [list() for f in range(self.vdht.ident_bits)]
+        self.best_finger_pred = [list() for f in range(self.vdht.ident_bits)]
+
 
     def get_finger_succ_loc(self,f):
         """
         Get the exact location of successor finger f.
         """
-        return (self.ident + 2**f) % MAX_IDENT
+        return (self.ident + 2**f) % self.vdht.max_ident
 
     def get_finger_pred_loc(self,f):
         """
         Get the exact location of predecessor finger f.
         """
-        return (self.ident - 2**f) % MAX_IDENT
+        return (self.ident - 2**f) % self.vdht.max_ident
 
     def set_neighbours(self,knodes):
         """
@@ -121,7 +105,7 @@ class Node():
         """
         pool = remove_knodes_duplicates(self.neighbours + self.best_finger_succ[f] + knodes)
         self.best_finger_succ[f] = heapq.nsmallest(self.fk,pool,key=lambda kn:\
-                (dist_ident(self.get_finger_succ_loc(f),kn.ident),kn.path_len))
+                (self.vdht.dist_ident(self.get_finger_succ_loc(f),kn.ident),kn.path_len))
 
     def add_known_best_finger_pred(self,f,knodes):
         """
@@ -130,7 +114,7 @@ class Node():
         """
         pool = remove_knodes_duplicates(self.neighbours + self.best_finger_pred[f] + knodes)
         self.best_finger_pred[f] = heapq.nsmallest(self.fk,pool,key=lambda kn:\
-                (dist_ident(kn.ident,self.get_finger_pred_loc(f)),kn.path_len))
+                (self.vdht.dist_ident(kn.ident,self.get_finger_pred_loc(f)),kn.path_len))
 
 
     def add_known_nodes(self,source_path_len,knodes,queue):
@@ -172,7 +156,7 @@ class Node():
                 assert kn.ident != myself.ident
 
                 def d(x,y):
-                    return min([dist_ident(x,y),dist_ident(y,x)])
+                    return min([self.vdht.dist_ident(x,y),self.vdht.dist_ident(y,x)])
 
                 closest_to_kn = min(new_known,key=lambda nkn:
                         (d(nkn.ident,kn.ident),nkn.path_len))
@@ -234,7 +218,7 @@ class Node():
         Get the best successor for finger f.
         """
         return min(self.best_finger_succ[f],\
-                key=lambda kn:dist_ident(self.get_finger_succ_loc(f),kn.ident))
+                key=lambda kn:self.vdht.dist_ident(self.get_finger_succ_loc(f),kn.ident))
 
 
     def get_best_pred_finger(self,f):
@@ -242,12 +226,12 @@ class Node():
         Get the best predecessor for finger f.
         """
         return min(self.best_finger_pred[f],\
-                key=lambda kn:dist_ident(kn.ident,self.get_finger_pred_loc(f)))
+                key=lambda kn:self.vdht.dist_ident(kn.ident,self.get_finger_pred_loc(f)))
 
 
 # Simulation for a mesh network with Virtual DHT abilities:
 class VirtualDHT():
-    def __init__(self,graph,fk,cmsg,dht_fingers):
+    def __init__(self,graph,fk,cmsg,dht_fingers,ident_bits):
 
         # Known finger nodes parameter:
         self.fk = fk
@@ -261,6 +245,15 @@ class VirtualDHT():
         # Amount of nodes:
         self.num_nodes = self.graph.number_of_nodes()
 
+        # Amount of bits in identity:
+        self.ident_bits = ident_bits
+
+        # Maximum size of identity:
+        self.max_ident = 2**self.ident_bits
+
+        # Evade the birthday paradox:
+        assert (self.num_nodes ** 2.5) <= self.max_ident
+
         # Send connectivity messages?
         self.cmsg = cmsg
 
@@ -271,6 +264,17 @@ class VirtualDHT():
         self.gen_nodes()
         self.install_neighbours()
 
+    def rand_ident(self):
+        """
+        Generate random identity in the range [0,self.max_ident)
+        """
+        return random.randrange(self.max_ident)
+
+    def dist_ident(self,x,y):
+        """
+        Distance between two nodes (According to ident):
+        """
+        return (y - x) % self.max_ident
 
 
     def gen_nodes(self):
@@ -346,8 +350,8 @@ class VirtualDHT():
         """
 
         # Print a table for real time results:
-        header_f = "{0:12s} | {1:16s} | {2:18s} | {3:16s}"
-        entry_f = "{0:12d} | {1:16s} | {2:18s} | {3:16f}"
+        header_f = "{0:12s} | {1:16s} | {2:18s} | {3:13s}"
+        entry_f = "{0:12d} | {1:16s} | {2:18s} | {3:13f}"
         header = header_f.format("iter number","Fingers verified",\
                 "path_len verified","avg path_len")
         print(header)
@@ -449,7 +453,7 @@ class VirtualDHT():
 
         return True
 
-    def sample_path_len(self,num_samp=0x200):
+    def sample_path_len(self,num_samp=0x400):
         """
         Find an approximated average to the path_len to successor and
         predecessor.
@@ -487,31 +491,31 @@ def gen_gnp_graph(i):
     return nx.fast_gnp_random_graph(n,p)
 
 def go():
-    print("----------------------------")
-
-    # Fingers we are interested in:
-    # succ_fingers = [0]
-    # pred_fingers = [0]
-    succ_fingers = list(range(IDENT_BITS))
-    pred_fingers = list(range(IDENT_BITS))
     cmsg = False # Connectivity messages.
-    i = 7
+    i = 10      # Parameter for graph generation.
+    ident_bits = math.ceil(i*2.6)
     fk = i//2
+    # Fingers we are interested in:
+    # succ_fingers = list(range(ident_bits))
+    # pred_fingers = list(range(ident_bits))
+    succ_fingers = [0]
+    pred_fingers = [0]
     print("||| i =",i)
+    print("||| ident_bits =",ident_bits)
     print("||| fk =",fk)
     print("||| succ_fingers = ",succ_fingers)
     print("||| pred_fingers = ",pred_fingers)
 
     print("Generating graph...")
-    g = gen_grid_graph(i)
-    # g = gen_gnp_graph(i)
+    # g = gen_grid_graph(i)
+    g = gen_gnp_graph(i)
     print("Generating Network...")
     vd = VirtualDHT(graph=g,fk=fk,cmsg=cmsg,\
-            dht_fingers=(succ_fingers,pred_fingers))
+            dht_fingers=(succ_fingers,pred_fingers),\
+            ident_bits=ident_bits)
 
     print("Initiating convergence...\n")
     vd.converge(max_iters=0x80)
-    
 
 if __name__ == "__main__":
     go()

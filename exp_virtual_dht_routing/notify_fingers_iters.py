@@ -457,31 +457,30 @@ def gen_gnp_graph(i):
     return nx.fast_gnp_random_graph(n,p)
 
 def go():
-    for i in range(6,11):
-        # i = 6      # Parameter for graph generation.
-        ident_bits = math.ceil(i*2.6)
-        fk = i
-        # Fingers we are interested in:
-        # succ_fingers = list(range(ident_bits))
-        # pred_fingers = list(range(ident_bits))
-        succ_fingers = [0]
-        pred_fingers = [0]
-        print("||| i =",i)
-        print("||| ident_bits =",ident_bits)
-        print("||| fk =",fk)
-        print("||| succ_fingers = ",succ_fingers)
-        print("||| pred_fingers = ",pred_fingers)
+    i = 11      # Parameter for graph generation.
+    ident_bits = math.ceil(i*2.6)
+    fk = i
+    # Fingers we are interested in:
+    succ_fingers = list(range(ident_bits))
+    pred_fingers = list(range(ident_bits))
+    # succ_fingers = [0]
+    # pred_fingers = [0]
+    print("||| i =",i)
+    print("||| ident_bits =",ident_bits)
+    print("||| fk =",fk)
+    print("||| succ_fingers = ",succ_fingers)
+    print("||| pred_fingers = ",pred_fingers)
 
-        print("Generating graph...")
-        # g = gen_grid_graph(i)
-        g = gen_gnp_graph(i)
-        print("Generating Network...")
-        vd = VirtualDHT(graph=g,fk=fk,\
-                dht_fingers=(succ_fingers,pred_fingers),\
-                ident_bits=ident_bits)
+    print("Generating graph...")
+    # g = gen_grid_graph(i)
+    g = gen_gnp_graph(i)
+    print("Generating Network...")
+    vd = VirtualDHT(graph=g,fk=fk,\
+            dht_fingers=(succ_fingers,pred_fingers),\
+            ident_bits=ident_bits)
 
-        print("Initiating convergence...\n")
-        vd.converge(max_iters=0x80)
+    print("Initiating convergence...\n")
+    vd.converge(max_iters=0x80)
 
 if __name__ == "__main__":
     go()

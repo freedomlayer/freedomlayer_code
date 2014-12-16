@@ -1,244 +1,204 @@
 """
-15.12.2014,
-by real.
+16.12.2014
+by real
 
-Checking some idea regarding relative addresses in a graph.
-The address of every vertex in the graph will have some kind of a relative
-address, which is dependend upon the names of the nodes around the specific
-node.
-
+Checking load in the Distributed Post Office.
 """
 
-import random
 import math
-import hashlib
-import struct
+import random
+import heapq
+import bisect
+from collections import namedtuple
 
+import networkx as nx
 
-IDENT_SIZE = 40
-MAX_IDENT = 2**IDENT_SIZE
-K = 1
+# A named tuple for Known node:
+# path_len is the path length source node,
+# ident is the identity value of the Known node.
+# lindex is the list index of the Known node.
+Knode = namedtuple('Knode', ['path_len', 'ident','lindex'])
 
-def gen_random_ident():
+def hashi(i,x):
     """
-    Generate random identity
+    Hash the value x using hash function number i.
+    This is implemented in an ad-hoc way using the sha256 function.
     """
-    return random.randrange(MAX_IDENT)
+    tmp_str = str(i) + "AA" + str(x) + "BB" + str(i)
+    tmp_bytes = tmp_str.encode('utf-8')
+    sh = hashlib.sha256()
+    sh.update(tmp_bytes)
 
-class Hashes(object):
-    def __init__(self,k):
-        self.k = k  # Number of different hashes.
-        return
+    # Take the first 8 bytes of the result:
+    return struct.unpack("Q",sh.digest()[:8])[0]
 
-    def hashi(self,i,x):
+
+# A node:
+class Node():
+    def __init__(self,dpo,ind,ident=None):
         """
-        Hash the value x using hash function number i.
-        This is implemented in an ad-hoc way using the sha256 function.
+        Initialize a node.
         """
-        tmp_str = str(i) + "AA" + str(x) + "BB" + str(i)
-        tmp_bytes = tmp_str.encode('utf-8')
-        sh = hashlib.sha256()
-        sh.update(tmp_bytes)
-        return struct.unpack("Q",sh.digest()[:8])[0]
+        # Pointer to distributed post office
+        self.dpo = dpo
 
-
-    def hash_set(self,ss):
-        """
-        Turn a set into a list of hashes.
-        """
-        hashes = []
-        for i in range(self.k):
-            hashes.append(min(\
-                    map(lambda x:self.hashi(i,x),ss)))
-        return hashes
-
-    def combine_hashes(self,hashes_list):
-        """
-        Combine a few set hashes into one hash.
-        """
-        t_hashes = zip(*hashes_list)
-        hashes = []
-        for hashes_i in t_hashes:
-            hashes.append(min(hashes_i))
-
-        return hashes
-
-hashes = Hashes(K)
-
-
-class Party(object):
-    def __init__(self,max_layer):
-        self.ident = gen_random_ident()
-
-        self.max_layer = max_layer
-        self.neighbours = set()
-        self.layers = [None for i in range(max_layer)]
-        self.is_advers = False
-
-        return
-
-class ComGraph(object):
-    def __init__(self,num_parties,num_advers,max_layer,degree):
-        self.num_parties = num_parties
-        self.num_advers = num_advers
-        assert self.num_advers == 0 # For this version.
-        assert self.num_parties > self.num_advers
-        self.max_layer = max_layer
-        self.degree = degree
-        self.parties = {}
-
-        self.gen_parties()
-        self.gen_connections()
-        self.init_wave()
-        self.wave_iterations()
-
-    def gen_parties(self):
-        for i in range(self.num_parties):
-            p = Party(self.max_layer)
-            if i < self.num_advers:
-                p.is_advers = True
-            self.parties[p.ident] = p
-
-        self.parties_nums = list(self.parties.keys())
-        return
-
-    def gen_connections(self):
-        # We divide by two because there are incoming and outgoing connections:
-        num_connect = self.degree // 2 
-        for p_num in self.parties:
-            rand_parties = set(random.sample(self.parties_nums,num_connect))
-            rand_parties.discard(p_num)
-            for p_num_to in rand_parties:
-                # Add links in both directions:
-                self.parties[p_num].neighbours.add(p_num_to)
-                self.parties[p_num_to].neighbours.add(p_num)
-
-        return
-
-    def init_wave(self):
-        for p_num in self.parties:
-            p = self.parties[p_num]
-            # Add myself as the first hash in layer 0:
-            p.layers[0] = hashes.hash_set([p.ident])
-            # Add my neighbours as the next hash in layer 1:
-            # p.layers[1] = \
-            #     hashes.hash_set(set(p.neighbours).union(set([p.ident])))
-        return
-
-
-    def combine_generic(self,hash_lists):
-        """
-        Combine all hashes list.
-        If any list is None, do not consider it.
-        If all the lists are None, then return None.
-        """
-        new_hl_list = []
-        for hl in hash_lists:
-            if hl is None:
-                continue
-            new_hl_list.append(hl)
-
-        if len(new_hl_list) > 0:
-            return hashes.combine_hashes(new_hl_list)
+        # If ident value is not specified, we randomize one:
+        if ident is None:
+            self.ident = self.dpo.rand_ident()
         else:
-            return None
+            self.ident = ident
+
+        # Index inside the list of nodes:
+        self.ind = ind
+
+        # Initialize list of known nodes:
+        self.neighbours = []
+
+        # Initialize specials:
+        # ( self.specials[hash_func_index][distance] )
+        for hi in range(self.dpo.num_hashes):
+            self.specials[hi] = [None for j in range(self.dpo.max_distance)]
 
 
-    def wave_iterate(self):
-        for p_num in self.parties:
-            p = self.parties[p_num]
 
-            # Update p's layers:
-            for lay in range(0,self.max_layer-1):
-                layers_list = []
-
-                for ne_num in p.neighbours:
-                    ne = self.parties[ne_num]
-                    layers_list.append(ne.layers[lay])
-
-                # now, Add my own previous layer: (To avoid periodicity
-                # problems)
-                layers_list.append(p.layers[lay])
-
-                # Finally, combine everything:
-                p.layers[lay+1] = self.combine_generic(layers_list)
-
-        return
-
-    def wave_iterations(self):
-        for i in range(self.max_layer+1):
-            self.wave_iterate()
-        return
-
-    def get_landmarks(self,layers):
-        # We mark distances to any landmark we have seen on our way.
-        landmarks = dict()
-        for lay in range(self.max_layer):
-            if layers[lay] is None:
-                break
-
-            for i in range(hashes.k):
-                cur_land = (i,layers[lay][i])
-                if cur_land not in landmarks:
-                    landmarks[cur_land] = lay
-        return landmarks
-
-
-    def random_pair(self):
+    def set_neighbours(self,knodes):
         """
-        Generate a random pair of parties (a,b), that are not equal.
+        
         """
-        return random.sample(self.parties_nums,2)
-
-    def get_mediator(self,a,b):
-        pa = self.parties[a]
-        pb = self.parties[b]
-
-        la = self.get_landmarks(pa.layers)
-        lb = self.get_landmarks(pb.layers)
-
-        # Get the intersection of known mediators:
-        inter = set(la.keys()).intersection(set(lb.keys()))
-
-        assert len(inter) > 0
-
-        def path_dist(med):
-            """
-            Length of path obtained by mediator.
-            """
-            return la[med] + lb[med]
-
-        return min(inter,key=path_dist)
-
-    def measure_highest_load(self,tries):
-        med_found = {}
-        for i in range(tries):
-            a,b = self.random_pair()
-            med = self.get_mediator(a,b)
-            try:
-                med_found[med] += 1
-            except KeyError:
-                med_found[med] = 1
-
-        max_elem = max(med_found.items(),key=lambda x:x[1])
-        return max_elem[1]
+        assert False
 
 
-def test_load():
-    for j in range(7,17):
-        num_parties = 2**j
-        num_advers = 0
-        max_layer = j
-        degree = j
 
-        tries = 10000
+# Simulation for the Distributed Post office
+class DPostOffice():
+    def __init__(self,graph,num_hashes,ident_bits):
 
-        cg = ComGraph(num_parties,num_advers,max_layer,degree)
-        load = cg.measure_highest_load(tries)
-        print("2^" + str(j),"|",load,"/",tries)
 
-    return
+        # The network graph we are going to use:
+        self.graph = graph
 
-if  __name__ == "__main__":
-    test_load()
+        # Assert that the graph is connected:
+        assert nx.is_connected(self.graph)
+
+        # Max layer will be the diameter of the graph:
+        self.max_distance = nx.diameter(self.graph)
+
+        # Amount of nodes:
+        self.num_nodes = self.graph.number_of_nodes()
+
+        # Amount of bits in identity:
+        self.ident_bits = ident_bits
+
+        # Maximum size of identity:
+        self.max_ident = 2**self.ident_bits
+
+        # Evade the birthday paradox:
+        assert (self.num_nodes ** 2.5) <= self.max_ident
+
+        # Amount of cryptographic hash functions to be used:
+        self.num_hashes = num_hashes
+
+        # Generate nodes and neighbours links:
+        self.gen_nodes()
+        self.install_neighbours()
+
+    def rand_ident(self):
+        """
+        Generate random identity in the range [0,self.max_ident)
+        """
+        return random.randrange(self.max_ident)
+
+    def dist_ident(self,x,y):
+        """
+        Distance between two nodes (According to ident):
+        """
+        return (y - x) % self.max_ident
+
+
+    def gen_nodes(self):
+        """
+        Generate n nodes with random identity numbers.
+        """
+        self.nodes = []
+        for i in range(self.num_nodes):
+            self.nodes.append(Node(self,i))
+
+    def make_knode(self,i,path_len=0):
+        """
+        Given an index i of a node in self.nodes,
+        create a Knode tuple. Optionally set path_len.
+        """
+        return Knode(path_len=path_len,\
+                ident=self.nodes[i].ident,\
+                lindex=i)
+
+    def install_neighbours(self):
+        """
+        Install the neighbours information inside the Nodes classes.
+        """
+        # Initialize neighbours sets as empty sets:
+        nodes_nei = [set() for _ in range(self.num_nodes)]
+
+        # Build translation tables between graph nodes
+        # and node numbers 1 .. self.num_nodes
+        self.graph_to_vec = {}
+        self.vec_to_graph = []
+        
+        for i,gnd in enumerate(self.graph.nodes_iter()):
+            self.vec_to_graph.append(gnd)
+            self.graph_to_vec[gnd] = i
+
+        for i,nd in enumerate(self.nodes):
+            # Sample a set of indices (Which represent a set of nodes).
+            # Those nodes will be nd's neighbours:
+            gneighbours = nx.neighbors(self.graph,self.vec_to_graph[i])
+            nodes_nei[i].update(map(lambda gnei:\
+                    self.graph_to_vec[gnei],gneighbours))
+
+            # Make sure that i is not his own neighbour:
+            assert i not in nodes_nei[i]
+
+        for i,nd in enumerate(self.nodes):
+            # Initialize a list of neighbours:
+            nd.set_neighbours(map(self.make_knode,list(nodes_nei[i])))
+
+
+
+def gen_grid_graph(i):
+    """
+    Generate a grid graph with about 2**i nodes.
+    """
+    n = 2**i
+    sn = int(n**(1/2))
+    # Redefine amount of nodes:
+    return nx.grid_2d_graph(sn,sn)
+
+def gen_gnp_graph(i):
+    """
+    Generate a gnp random graph with 2**i nodes.
+    """
+    n = 2**i
+    p = 2*i / (2**i)
+    return nx.fast_gnp_random_graph(n,p)
+
+
+def go():
+    i = 11      # Parameter for graph generation.
+    ident_bits = math.ceil(i*2.6)
+    fk = i
+    print("||| i =",i)
+    print("||| ident_bits =",ident_bits)
+
+    print("Generating graph...")
+    # g = gen_grid_graph(i)
+    g = gen_gnp_graph(i)
+    print("Generating Network...")
+    vd = DPostOffice(graph=g, ident_bits=ident_bits)
+
+    print("Initiating convergence...\n")
+    vd.converge(max_iters=0x80)
+
+if __name__ == "__main__":
+    go()
+
 

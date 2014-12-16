@@ -7,17 +7,11 @@ Checking load in the Distributed Post Office.
 
 import math
 import random
-import heapq
-import bisect
-from collections import namedtuple
+
+import collections
 
 import networkx as nx
 
-# A named tuple for Known node:
-# path_len is the path length source node,
-# ident is the identity value of the Known node.
-# lindex is the list index of the Known node.
-Knode = namedtuple('Knode', ['path_len', 'ident','lindex'])
 
 def hashi(i,x):
     """
@@ -51,8 +45,11 @@ class Node():
         # Index inside the list of nodes:
         self.ind = ind
 
-        # Initialize list of known nodes:
-        self.neighbours = []
+        # Initialize list of neighbours:
+        self.neighbours = None
+
+        # Initialize specials dictionary:
+        self.specials_dc = None
 
         # Initialize specials:
         # ( self.specials[hash_func_index][distance] )
@@ -60,19 +57,66 @@ class Node():
             self.specials[hi] = [None for j in range(self.dpo.max_distance)]
 
 
+        # Set my own index as the best at all hash functions for distance 0,
+        # As I am the only node of distance 0 from myself.
+        for hi in range(self.dpo.num_hashes):
+            self.add_node(self.ind,0,hi)
 
-    def set_neighbours(self,knodes):
-        """
-        
-        """
-        assert False
 
+    def add_node(self,ind,distance,hash_i):
+        """
+        Check if the node with index "ind" and distance "distance" is better
+        than the current node at self.specials[hash_i][distance].
+        """
+
+        ident = self.dpo.nodes[ind].ident
+
+        # If there was not yet a candidate for distance "distance" and hash
+        # index hash_i, we choose this node.
+        if self.specials[hash_i][distance] is None:
+            self.specials[hash_i][distance] = ident
+            return
+
+        # If there is something in self.specials[hash_i][distance], we choose
+        # the "higher" out of the two:
+        cur_ind = self.specials[hash_i][distance]
+        cur_ident = self.nodes[cur_ind].ident
+
+        self.specials[hash_i][distance] = max([cur,ident],key=lambda x:\
+                hashi(hash_i,x))
+
+
+    def set_neighbours(self,nei_nodes):
+        """
+        Initialize set of neighbours for this node.
+        """
+        # Set the neighbours list to be nei_nodes:
+        self.neighbours = list(nei_nodes)
+
+
+    def install_specials_dc(self):
+        """
+        Create a dictionary that maps knowns specials (By list index) to their
+        distance. Save it as self.specials_dc.
+        """
+
+        # We only install this once:
+        assert self.specials_dc is None
+
+        # Initialize specials dictionary:
+        self.specials_dc = {}
+
+        for hi in range(self.dpo.num_hashes):
+            for dist in range(self.dpo.max_distance):
+                ind = self.specials[hi][dist]
+                # All the specials should be filled by nodes from the network
+                assert ind is not None
+                self.specials_dc[ind] = dist
 
 
 # Simulation for the Distributed Post office
 class DPostOffice():
     def __init__(self,graph,num_hashes,ident_bits):
-
 
         # The network graph we are going to use:
         self.graph = graph
@@ -101,6 +145,9 @@ class DPostOffice():
         # Generate nodes and neighbours links:
         self.gen_nodes()
         self.install_neighbours()
+
+        # Calculate specials for every node in the network:
+        self.calc_specials()
 
     def rand_ident(self):
         """
@@ -158,10 +205,90 @@ class DPostOffice():
             # Make sure that i is not his own neighbour:
             assert i not in nodes_nei[i]
 
+
         for i,nd in enumerate(self.nodes):
             # Initialize a list of neighbours:
-            nd.set_neighbours(map(self.make_knode,list(nodes_nei[i])))
+            nd.set_neighbours(nodes_nei[i])
 
+
+    def calc_specials(self):
+        """
+        All nodes iterate together to calculate the special nodes for all the
+        hash functions and all distances until self.max_distance.
+        """
+
+        assert self.max_distance >= 1
+
+        # Iterate over all distances, starting from 0:
+        for dist in range(self.max_distance-1):
+            # Iterate over all nodes:
+            for nd in self.nodes:
+                # Iterate over all hash functions:
+                for hi in range(self.num_hashes):
+                    # Iterate over all nd's neighbours:
+                    for nei_ind in nd.neighbours:
+                        # Update nd's special at a specific distance and hash
+                        # function according to information from it's
+                        # neighbour nei_ind:
+                        nei = self.nodes[nei_ind]
+                        nd.add_node(nei.specials[hash_i][dist],dist+1,hi)
+
+                    # Get special from nd's previous distance:
+                    # We do this because the highest node of distance 5 might
+                    # be also the highest node of distance 6, for example.
+                    nd.add_node(nd.specials[hash_i][dist],dist+1,hi)
+
+
+        # Install the specials_dc dictionary. This structure will be useful for
+        # finding mediators later.
+        for nd in self.nodes:
+            nd.install_specials_dc()
+
+    def get_best_mediator(self,a_ind,b_ind):
+        """
+        Find a best mediator node for the nodes a an b.
+        A best mediator for a and b is a node that is both inside a.specials_dc
+        and b.specials_dc, and it has the lowest sum of distances from a and b.
+        """
+
+        a = self.nodes[a_ind]
+        b = self.nodes[b_ind]
+
+        sa = a.specials_dc
+        sb = b.specials_dc
+
+        # intersection of known specials of a and b.
+        # This gives us all the possible mediators between a and b:
+        mediators = set(sa.keys()).intersection(set(sb.keys()))
+        
+        # The set of mediators is expected to be nonempty, as the "highest" of
+        # every hash function should be both inside sa and sb:
+        assert len(mediators) > 0
+
+        def path_dist(med):
+            """
+            Length of path obtained by mediator.
+            """
+            return sa[med] + sb[med]
+
+        # Return some mediator that gives shortest path:
+        return min(mediators,key=path_dist)
+
+    def measure_load(self,tries):
+        """
+        Try to pass a message through many random pairs of nodes, and count the
+        mediators used to pass those messages. returns cnt_med: A counter of
+        the mediators used.
+        """
+        cnt_med = collections.Counter()
+
+        for i in range(tries):
+            # Get a random pair of nodes:
+            a_ind,b_ind = random.sample(range(self.num_nodes),2)
+            med = self.get_best_mediator(a_ind,b_ind)
+            cnt_med[med] += 1
+
+        return cnt_med
 
 
 def gen_grid_graph(i):
@@ -185,18 +312,27 @@ def gen_gnp_graph(i):
 def go():
     i = 11      # Parameter for graph generation.
     ident_bits = math.ceil(i*2.6)
-    fk = i
+    num_hashes = 5
     print("||| i =",i)
+    print("||| num_hashes =",num_hashes)
     print("||| ident_bits =",ident_bits)
 
     print("Generating graph...")
     # g = gen_grid_graph(i)
     g = gen_gnp_graph(i)
-    print("Generating Network...")
-    vd = DPostOffice(graph=g, ident_bits=ident_bits)
+    print("Generating Network and calculating specials ...")
+    dp = DPostOffice(graph=g,\
+            num_hashes=num_hashes,\
+            ident_bits=ident_bits)
 
-    print("Initiating convergence...\n")
-    vd.converge(max_iters=0x80)
+    print("Simulating messages...")
+    cnt_med = dp.measure_load(0x1000)
+
+    print("most common mediators: ")
+    for cm in cnt_med.most_common(num_hashes * 2):
+        print(cm)
+
+
 
 if __name__ == "__main__":
     go()

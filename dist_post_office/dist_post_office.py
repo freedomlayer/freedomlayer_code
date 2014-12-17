@@ -316,9 +316,12 @@ def gen_gnp_graph(i):
 
 def go():
     ########[Parameters]########################
-    i = 12      # Parameter for graph generation.
+    # Parameter for graph generation (Related to amount of nodes):
+    i = 12      
+    # Number of bits used for representing node identity:
     ident_bits = math.ceil(i*2.6)
-    num_hashes = 1
+    # Amount of hash functions:
+    num_hashes = 4
 
     # Number of most common mediators to show:
     num_most_common = 0x10

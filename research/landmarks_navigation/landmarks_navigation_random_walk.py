@@ -16,9 +16,11 @@ every location in the network.
 
 import math
 import random
-import networkx as nx
+import collections
 
 import numpy as np
+
+import networkx as nx
 
 #############[Array operations]######################
 
@@ -92,6 +94,18 @@ class GraphCoords(object):
         """
         return nx.shortest_path_length(self.graph,n1,n2)
 
+    def get_coord(self,nd):
+        """
+        Get "network coordinate" for a node nd.
+        The networks coordinate is a list of shortest distances to each of the
+        network landmarks.
+        """
+        coord = []
+        for ld in self.landmarks:
+            coord.append(self.dists[(ld,nd)])
+        return tuple(coord)
+
+
     def all_diffs(self,x,y):
         """
         Calculate all diffs of the form |d(a,y) - d(a,x)| where a is a
@@ -114,7 +128,7 @@ class GraphCoords(object):
         return max(self.all_diffs(x,y))
 
 
-    def random_walk(self,src,dst,base=150):
+    def random_walk(self,src,dst,cnt_visited_nodes,base=150):
         """
         Try to travel from src to dst
         The "closest" neighbor to dst has the highest probability.
@@ -135,6 +149,8 @@ class GraphCoords(object):
         num_hops = 0
         # x is the current node in the random walk. We begin from the src node.
         x = src
+        # Add x to visited nodes counter:
+        cnt_visited_nodes[x] += 1
         # Current distance from the destination:
         cur_dist = e(x,dst)
 
@@ -158,9 +174,13 @@ class GraphCoords(object):
 
             num_hops += 1
 
+            # Add x to visited nodes counter:
+            cnt_visited_nodes[x] += 1
+
+
         return num_hops
 
-    def get_avg_num_hops(self,num_messages=0x30):
+    def get_avg_num_hops(self,num_messages=0x30,base=150):
         """
         Get the average amount of hops needed to send a message using the
         random walk method. We approximate this number by sending a few
@@ -171,16 +191,34 @@ class GraphCoords(object):
         # A list to keep the amount of hops used for each message delivery:
         hops_list = []
 
+        # Initialize counter for visited nodes. This should measure the load
+        # on specific nodes in the network.
+        cnt_visited_nodes = collections.Counter()
+
         for i in range(num_messages):
             # Obtain a random pair of nodes: (x,y are different)
             x,y = random.sample(self.graph.nodes(),2)
             # Start a random walk from x, in attempt to find y:
-            num_hops = self.random_walk(x,y)
+            num_hops = self.random_walk(x,y,cnt_visited_nodes,base)
             hops_list.append(num_hops)
 
         # Return the average value for number of hops:
-        return avg(hops_list)
+        return avg(hops_list),cnt_visited_nodes
 
+    def count_coords(self):
+        """
+        Count unique nodes coordinates in the network.
+        Returns a counter that contains the amount of times every coordinate
+        appear. We hope that every coordinate appears only once.
+        """
+
+        cnt_coord = collections.Counter()
+        for n in self.graph.nodes_iter():
+            coord = self.get_coord(n)
+            # Increase coordinate count:
+            cnt_coord[coord] += 1
+
+        return cnt_coord
 
 def geo_graph(m,n,d):
     """
@@ -226,18 +264,27 @@ def gen_gnp_graph(i):
 
 
 def check_random_walk():
-    # Print table's header:
+    # Amount of messages to simulate:
     num_messages = 0x20
+    # Sizes of graphs to check. The resulting graph will have size of about
+    # (2**i):
     i_range = range(6,16)
+    # Function used to generate the graph:
     gen_graph_func = gen_gnp_graph
+    # Base used to choosing weights for neighbours in random walk:
+    base=150
 
     print("||| graph generation func =",gen_gnp_graph.__name__)
     print("||| i's range =",i_range)
     print("||| num_messages =",num_messages)
     print()
 
-    header_ln = " {i:3s} | {k:6s} | {avg_num_hops:15s} ".format(\
-            i="i",k="k",avg_num_hops="Avg num hops")
+    # Print table's header:
+    header_ln = (" {i:3s} | {k:6s} | {avg_num_hops:15s} | {max_node_visits:16s} | "
+                 "{max_coord_occur:16s} ").format(\
+            i="i",k="k",avg_num_hops="Avg num hops"\
+            ,max_node_visits="Max Node Visits",max_coord_occur="Max Coord Occur")
+
     print(header_ln)
     print('-' * len(header_ln))
 
@@ -249,12 +296,70 @@ def check_random_walk():
         # Generate coordinates:
         gc = GraphCoords(graph=g,k=k)
         # Simulate Delivery of num_messages messages:
-        avg_num_hops = gc.get_avg_num_hops(num_messages)
+        avg_num_hops,cnt_visited_nodes =\
+                gc.get_avg_num_hops(num_messages,base=base)
 
-        table_ln = " {i:3d} | {k:6d} | {avg_num_hops:15f} ".format(\
-                i=i,k=k,avg_num_hops=avg_num_hops)
+        # Extract the most visited node with respect to random walks:
+        max_node,max_node_visits = cnt_visited_nodes.most_common(1)[0]
+
+        # Count coordinates:
+        cnt_coord = gc.count_coords()
+
+        # Extract the most common coordinate:
+        max_coord,max_coord_occur = cnt_coord.most_common(1)[0]
+
+
+        table_ln = (" {i:3d} | {k:6d} | {avg_num_hops:15f} | {max_node_visits:16d} |"
+                    "{max_coord_occur:16d} ").format(\
+                i=i,k=k,avg_num_hops=avg_num_hops,\
+                max_node_visits=max_node_visits,max_coord_occur=max_coord_occur)
         print(table_ln)
 
+def measure_load():
+    # Amount of messages to simulate:
+    num_messages = 0x1000
+    # Amount of most common visited nodes to show:
+    num_most_common = 0x20
+    # Parameter related to the size of the graph:
+    i = 10
+    # Function used to generate the graph:
+    gen_graph_func = gen_gnp_graph
+    # Base used to choosing weights for neighbours in random walk:
+    base=150
+
+    print("||| graph generation func =",gen_gnp_graph.__name__)
+    print("||| i =",i)
+    print("||| num_messages =",num_messages)
+    print()
+
+    # k = int(num_nodes**(1/2))
+    k = i**2
+    # Generate graph:
+    print("Generating graph...")
+    g = gen_graph_func(i)
+    # Generate coordinates:
+    print("Generating coordinates...")
+    gc = GraphCoords(graph=g,k=k)
+    # Simulate Delivery of num_messages messages:
+    print("Simulating messages delivery...")
+    avg_num_hops,cnt_visited_nodes =\
+            gc.get_avg_num_hops(num_messages,base=base)
+
+    # Extract the most visited node with respect to random walks:
+    max_node,max_mess = cnt_visited_nodes.most_common(1)[0]
+
+    print("\nmost commonly visited nodes:\n")
+    # Print header:
+    header_ln = " {node:15s} | {times:15s} ".format(\
+            node="node", times="Times visited")
+    print(header_ln)
+    print('-' * len(header_ln))
+
+    # Print table lines:
+    for node,times in cnt_visited_nodes.most_common(num_most_common):
+        ln = " {node:15d} | {times:15d} ".format(\
+                node=node,times=times)
+        print(ln)
 
 if __name__ == "__main__":
     check_random_walk()

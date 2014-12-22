@@ -28,7 +28,7 @@ def check_random_walk():
     # Function used to generate the graph:
     gen_graph_func = graph_coords.gen_gnp_graph
     # Base used to choosing weights for neighbours in random walk:
-    base=150
+    base=0x16
 
     print("Random walking using odist")
     print("---------------------------")

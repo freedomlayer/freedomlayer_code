@@ -48,7 +48,6 @@ def check_random_walk():
     print('-' * len(header_ln))
 
     for i in range(6,16):
-        # k = int(num_nodes**(1/2))
         k = i**2
         # Generate graph:
         g = gen_graph_func(i)

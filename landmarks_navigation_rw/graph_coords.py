@@ -1,6 +1,7 @@
 """
-17.12.2014
+22.12.2014
 by real
+http://www.freedomlayer.org
 
 Checking the idea of Landmarks Navigation with random walk.
 The Landmarks are a set of nodes that are known to every node in the network.

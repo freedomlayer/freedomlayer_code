@@ -23,7 +23,7 @@ def measure_load():
     # Amount of most common visited nodes to show:
     num_most_common = 0x20
     # Parameter related to the size of the graph:
-    i = 8
+    i = 14
     # Function used to generate the graph:
     gen_graph_func = graph_coords.gen_gnp_graph
     # Base used to choosing weights for neighbours in random walk:

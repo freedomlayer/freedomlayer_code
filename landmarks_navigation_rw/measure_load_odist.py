@@ -11,9 +11,14 @@ This code measures the network load that occures as a result of the random
 walks. For each node x, we count how many times a message was routed through x.
 Finally we print the nodes with the highest amount of messages routed through
 them. (Note that a message might visit one specific node more than once.)
+
+If a node is a landmark, it is printed with asterisks around its number.
 """
 
 import graph_coords
+
+
+
 
 
 def measure_load():
@@ -22,7 +27,7 @@ def measure_load():
     # Amount of most common visited nodes to show:
     num_most_common = 0x20
     # Parameter related to the size of the graph:
-    i = 10
+    i = 8
     # Function used to generate the graph:
     gen_graph_func = graph_coords.gen_gnp_graph
     # Base used to choosing weights for neighbours in random walk:
@@ -55,10 +60,21 @@ def measure_load():
     print(header_ln)
     print('-' * len(header_ln))
 
+    def node_str(node):
+        """
+        generate a string to represent a node.
+        If a node is a landmark, we add an asterisk.
+        """
+        if node not in gc.landmarks:
+            return str(node)
+
+        # landmark node:
+        return "*" + str(node) + "*"
+
     # Print table lines:
     for node,times in cnt_visited_nodes.most_common(num_most_common):
-        ln = " {node:15d} | {times:15d} ".format(\
-                node=node,times=times)
+        ln = " {node:15s} | {times:15d} ".format(\
+                node=node_str(node),times=times)
         print(ln)
 
 if __name__ == "__main__":

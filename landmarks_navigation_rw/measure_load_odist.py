@@ -17,10 +17,6 @@ If a node is a landmark, it is printed with asterisks around its number.
 
 import graph_coords
 
-
-
-
-
 def measure_load():
     # Amount of messages to simulate:
     num_messages = 0x1000

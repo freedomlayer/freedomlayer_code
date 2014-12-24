@@ -32,6 +32,7 @@ def measure_load():
     print("||| graph generation func =",gen_graph_func.__name__)
     print("||| i =",i)
     print("||| num_messages =",num_messages)
+    print("||| base = ",base)
     print()
 
     k = i**2

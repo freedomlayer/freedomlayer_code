@@ -36,6 +36,7 @@ def check_random_walk():
     print("||| graph generation func =",gen_graph_func.__name__)
     print("||| i's range =",i_range)
     print("||| num_messages =",num_messages)
+    print("||| base = ",base)
     print()
 
     # Print table's header:

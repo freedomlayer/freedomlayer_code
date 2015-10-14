@@ -279,13 +279,9 @@ def go():
         # Run the IterF algorithm until we reach a stationary state:
         algs.run_until_stat()
 
-        # Build a string that shows the properties of the resulting state:
-        # ++ means we are good on both tests.
-        str_trans = {True:"+",False:"-"}
-        res_str = ""
-        res_str += str_trans[algs.is_next_node_bijection()]
-        res_str += str_trans[algs.is_all_cycles_one_round()]
-        print(res_str)
+        # Print the properties of the resulting state:
+        print('next_node bijection: {} , One round cycles:  {}'.format(\
+                algs.is_next_node_bijection(),algs.is_all_cycles_one_round()))
 
 if __name__ == '__main__':
     go()

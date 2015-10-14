@@ -68,12 +68,6 @@ class AlgState:
             raise AlgStateError('First iteration did not make a change '
                     'to the fingers. Aborting.')
 
-    def graph(self):
-        """
-        Return the inner graph.
-        """
-        return self._g
-
     def next_node(self,node):
         """
         Return the "next node": The right node of finger 0.
@@ -177,8 +171,7 @@ class AlgState:
         """
         return min(nset,key=lambda z:self._d(loc,z))
 
-    ########################################################################
-
+    ##########[Some Checks]#################################################
 
     def is_next_node_bijection(self):
         """
@@ -258,6 +251,7 @@ class AlgState:
                 return False
 
         return True
+
 
 ###########################################################################
 ###########################################################################

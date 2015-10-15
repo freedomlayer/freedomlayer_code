@@ -114,9 +114,9 @@ class AlgState:
         # Update left side:
         for f in self._nodes[rnode].fingers:
             loc = (rnode + f) % self._mod
-
+            # Best left candidate:
             bl = self._best_l(loc,euset)
-
+            # Current left:
             cur_l = self._nodes[rnode].fingers[f].l
             if cur_l is None:
                 self._nodes[rnode].fingers[f].l = bl
@@ -130,9 +130,9 @@ class AlgState:
         # Update right side:
         for f in self._nodes[rnode].fingers:
             loc = (rnode + f) % self._mod
-
+            # Best right candidate:
             br = self._best_r(loc,euset)
-
+            # Current right:
             cur_r = self._nodes[rnode].fingers[f].r
             if cur_r is None:
                 self._nodes[rnode].fingers[f].r = br
@@ -143,7 +143,6 @@ class AlgState:
                     changed = True
 
         return changed
-
 
     def _time_tick(self,node):
         """
@@ -344,7 +343,7 @@ def go():
     """
     Run the IterF algorithm on some random graphs.
     """
-    l = 7
+    l = 9
     n = 2**l
     p = 3*math.log(n)/n
 

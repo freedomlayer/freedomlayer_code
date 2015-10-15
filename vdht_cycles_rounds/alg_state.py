@@ -77,10 +77,14 @@ class AlgState:
                 f = 2**j
                 self._nodes[node].fingers[f] = Finger()
                 
-        res = self.alg_iter()
-        if not res:
-            raise AlgStateError('First iteration did not make a change '
-                    'to the fingers. Aborting.')
+        # Let every node initialize his fingers with his direct connections:
+        for node in self._g:
+            self._process_update_msg(node,node,self._g.neighbors(node))
+
+        # res = self.alg_iter()
+        # if not res:
+        #     raise AlgStateError('First iteration did not make a change '
+        #             'to the fingers. Aborting.')
 
     def next_node(self,node):
         """

@@ -173,16 +173,16 @@ class AlgState:
 
     ##########[Some Checks]#################################################
 
-    def is_next_node_bijection(self):
+    def is_next_node_injection(self):
         """
-        Make sure that the next_node function is a bijection. (This means:
+        Make sure that the next_node function is injective. (This means:
         next_node(x) = next_node(y) ==> x = y)
         """
         # A set of nodes range:
         nrange = set()
         for node in self._g:
             nnode = self.next_node(node)
-            # If the value is already in the range, next_node is not a bijection.
+            # If the value is already in the range, next_node is not injective.
             if nnode in nrange:
                 return False
             # Add the value to the range:
@@ -274,8 +274,8 @@ def go():
         algs.run_until_stat()
 
         # Print the properties of the resulting state:
-        print('next_node bijection: {} , One round cycles:  {}'.format(\
-                algs.is_next_node_bijection(),algs.is_all_cycles_one_round()))
+        print('next_node Injective: {} , One round cycles:  {}'.format(\
+                algs.is_next_node_injection(),algs.is_all_cycles_one_round()))
 
 if __name__ == '__main__':
     go()

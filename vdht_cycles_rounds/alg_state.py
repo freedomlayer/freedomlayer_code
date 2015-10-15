@@ -55,6 +55,9 @@ class AlgState:
         # Calculate the highest possible l such that 2^{l-1} < len(g):
         self._l = int(math.log2(len(g) - 1)) + 1
 
+        # The modulo: The namespace for nodes is [0,self._mod)
+        self._mod = 2**self._l
+
 
         # Build a dictionary of nodes:
         self._nodes = {node:Node() for node in self._g}
@@ -110,7 +113,7 @@ class AlgState:
 
         # Update left side:
         for f in self._nodes[rnode].fingers:
-            loc = (rnode + f) % len(self._g)
+            loc = (rnode + f) % self._mod
 
             bl = self._best_l(loc,euset)
 
@@ -126,7 +129,7 @@ class AlgState:
 
         # Update right side:
         for f in self._nodes[rnode].fingers:
-            loc = (rnode + f) % len(self._g)
+            loc = (rnode + f) % self._mod
 
             br = self._best_r(loc,euset)
 
@@ -226,7 +229,7 @@ class AlgState:
         """
         Calculate cyclic distance between x and y (Modulo mod)
         """
-        return (y - x) % len(self._g)
+        return (y - x) % self._mod
 
     def _best_l(self,loc,nset):
         """

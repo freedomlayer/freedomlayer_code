@@ -43,11 +43,11 @@ class BCoords:
         
         # Make sure that the graph is big enough:
         if len(g) <= 1:
-            raise AlgStateError('Given graph contains just 1 or 0 nodes!')
+            raise RuntimeError('Given graph contains just 1 or 0 nodes!')
 
         # Make sure that the given graph is connected:
         if not nx.is_connected(g):
-            raise AlgStateError('The given graph is not connected!')
+            raise RuntimeError('The given graph is not connected!')
 
         self._seed = seed       # Sets choice random seed
         self._g = g             # Keep graph.

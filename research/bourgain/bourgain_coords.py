@@ -144,9 +144,33 @@ class BCoords:
         return res/(self._m * self._t)
 
 
-def go():
+def test_is_in_set():
+    """
+    Test if is_in_set works properly (If produces correct probabilities).
+    """
+    trials = 10000
 
-    l = 7
+    count = 0
+    j = 5
+    for i in range(trials):
+        if is_in_set(1,i,j,seed=0):
+            count += 1
+
+    assert abs((count/trials) - 2**(-j)) < (1/math.sqrt(trials))
+
+
+    count = 0
+    j = 9
+    for i in range(trials):
+        if is_in_set(1,i,j,seed=1):
+            count += 1
+
+    assert abs((count/trials) - 2**(-j)) < (1/math.sqrt(trials))
+
+
+
+def go():
+    l = 11
     n = 2**l
     p = 3*math.log(n)/n
     g = nx.fast_gnp_random_graph(n,p)
@@ -160,8 +184,8 @@ def go():
         # Get Bourgain's distance:
         b_dist = bc.get_distance(a,b)
 
-        print('{} {} : g_dist: {}, b_dist: {}'.\
-                format(a,b,g_dist,b_dist))
+        print('{} {} : g_dist: {}, b_dist: {}, b_dist_10: {}'.\
+                format(a,b,g_dist,b_dist,b_dist*10))
     
 
 

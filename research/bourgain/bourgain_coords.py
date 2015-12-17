@@ -56,7 +56,8 @@ class BCoords:
         # Calculate the required amount of coordinates, according to Bourgain's
         # theorem:
         self._t = math.ceil(math.log2(self._n))
-        self._m = 144*math.ceil(math.log2(self._n))
+        self._m = 18*math.ceil(math.log2(self._n))
+        # self._m = 144*math.ceil(math.log2(self._n))
 
         # Initialize coordinates for all nodes:
         self._calc_coords()
@@ -122,7 +123,7 @@ class BCoords:
             print('Iter...')
 
 
-    def get_distance(self,x,y):
+    def get_bdistance(self,x,y):
         """
         Get distance according to Bourgain's coordinates between two nodes on
         the graph: x and y.
@@ -142,6 +143,28 @@ class BCoords:
                 res += abs(self._coords[x][i][j] - self._coords[y][i][j])
 
         return res/(self._m * self._t)
+
+    def get_mdistance(self,x,y):
+        """
+        Get maximum style distance.
+        Rely on the fact that |d(x,S) - d(y,S)| <= d(x,y)
+        so calculate Max |d(x,S) - d(y,S)|
+        """
+        max_res = 0
+        for i in range(self._m):
+            for j in range(self._t):
+                if (self._coords[x][i][j] == None) and \
+                        (self._coords[y][i][j] == None):
+                            diff = 0
+                else:
+                    diff = abs(self._coords[x][i][j] - self._coords[y][i][j])
+
+                if max_res < diff:
+                    max_res = diff
+
+        return max_res
+
+
 
 
 def test_is_in_set():
@@ -170,22 +193,24 @@ def test_is_in_set():
 
 
 def go():
-    l = 11
+    l = 12
     n = 2**l
     p = 3*math.log(n)/n
     g = nx.fast_gnp_random_graph(n,p)
 
-    bc = BCoords(g,seed=4)
+    bc = BCoords(g,seed=5)
 
-    for i in range(20):
+    for i in range(64):
         a,b = random.sample(g.nodes(),2)
         # Get usual graph distance:
-        g_dist = len(nx.shortest_path(g,source=a,target=b))
+        g_dist = len(nx.shortest_path(g,source=a,target=b)) - 1
         # Get Bourgain's distance:
-        b_dist = bc.get_distance(a,b)
+        b_dist = bc.get_bdistance(a,b)
+        # Get maximum style distance:
+        m_dist = bc.get_mdistance(a,b)
 
-        print('{} {} : g_dist: {}, b_dist: {}, b_dist_10: {}'.\
-                format(a,b,g_dist,b_dist,b_dist*10))
+        print('{} {} : g_dist: {}, b_dist: {}, m_dist: {}'.\
+                format(a,b,g_dist,b_dist,m_dist))
     
 
 

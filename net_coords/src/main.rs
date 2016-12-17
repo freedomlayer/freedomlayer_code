@@ -28,7 +28,7 @@ mod network_sim {
             net
         }
 
-        pub fn build_network<R: Rng>(&mut self, rng: &mut R) -> &mut Self {
+        pub fn build_network<R: Rng>(mut self, rng: &mut R) -> Self {
             let rand_range: Range<u32> = Range::new(0,self.n);
             // Connect node v to about num_neighbours other nodes:
             for v in 0 .. self.n {
@@ -54,16 +54,14 @@ mod network_sim {
 
 #[cfg(test)]
 mod test {
-    extern crate rand;
-    use rand::Rng;
-    use rand::distributions::{IndependentSample, Range};
+    use rand;
     use network_sim::Network;
 
     #[test]
     fn test_build_network() {
         let mut rng = rand::thread_rng();
-        let net = Network::new(40,3).
-            build_network(&mut rng);
+        let net = Network::new(40,3)
+            .build_network(&mut rng);
     }
 }
 

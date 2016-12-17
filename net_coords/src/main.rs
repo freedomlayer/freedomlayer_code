@@ -26,7 +26,7 @@ impl Network {
         net
     }
 
-    fn build_network(&mut self, rng: &mut Rng) -> &mut Self {
+    fn build_network<R: Rng>(&mut self, rng: &mut R) -> &mut Self {
         let rand_range: Range<u32> = Range::new(0,self.n);
         // Connect node v to about num_neighbours other nodes:
         for v in 0 .. self.n {

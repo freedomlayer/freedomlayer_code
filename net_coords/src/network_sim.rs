@@ -28,13 +28,12 @@ fn choose_k_nums<R: Rng>(k:usize, n:usize, rng: &mut R) -> HashSet<usize> {
 
 impl Network {
     pub fn new() -> Self {
-        let net: Self = Network {
+        Network {
             n: 0, 
             neighbours: Vec::new(),
             landmarks: Vec::new(),
             coords: Vec::new(),
-        };
-        net
+        }
     }
 
     pub fn build_network<R: Rng>(

@@ -117,7 +117,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[allow(unused_variables)]
     fn test_basic() {
         let mut rng = rand::thread_rng();
         let mut net = Network::new()

@@ -1,5 +1,6 @@
 extern crate rand;
 
+use std::f64;
 use std::collections::HashSet;
 
 // use self::rand;
@@ -27,6 +28,29 @@ fn choose_k_nums<R: Rng>(k:usize, n:usize, rng: &mut R) -> HashSet<usize> {
         res_set.insert(x);
     }
     res_set
+}
+
+/// Convert network coordinate to chord value in [0,1) 
+/// by projection to a plane.
+pub fn coord_to_ring(coord: &Vec<Option<usize>>) -> f64 {
+    let fcoord: Vec<f64> = coord.iter().map(|a| a.unwrap() as f64).collect();
+
+    let k: f64 = fcoord.len() as f64;
+    let S_a:f64 = fcoord.iter().sum();
+    let normalize = |a| a/S_a - 1.0/k;
+    // let inter = fcoord.iter().map(|&a: &f64| normalize(a).powi(2) as f64);
+    // let L_a: f64 = (inter.sum::<f64>()).sqrt();
+    // let L_a: f64 = inter.sum().sqrt();
+    let L_a: f64 = fcoord.iter().
+        map(|&a: &f64| normalize(a).powi(2) as f64).sum::<f64>().sqrt();
+
+    let numerator: f64 = 
+        normalize(fcoord[0]) - 
+            (1.0/(k-1.0)) * fcoord.iter().skip(1).map(|&a| normalize(a)).sum::<f64>();
+
+    let denominator: f64 = L_a * (k/(k-1.0)).sqrt();
+
+    (numerator/denominator).acos() / f64::consts::PI
 }
 
 impl Network {
@@ -139,15 +163,19 @@ impl Network {
         true
     }
 
+    /// Get the cord id for soe node v
+    pub fn get_chord_id(&self, v:usize) {
+
+    }
     /// Print some coordinates
     pub fn print_some_coords(&self,amount: u32) {
         for v in 0..amount {
-            println!("{:?}",self.coords[v as usize]);
-
+            println!("{}",coord_to_ring(&self.coords[v as usize]));
+            // println!("{:?}",self.coords[v as usize]);
         }
-
     }
 }
+
 
 
 
@@ -176,6 +204,18 @@ mod tests {
         for x in knums.into_iter() {
             assert!(x < 100);
         }
+    }
+
+    #[test]
+    fn test_coord_to_ring() {
+        let mut my_coord = Vec::new();
+        my_coord.push(Some(5));
+        my_coord.push(Some(6));
+        my_coord.push(Some(1));
+        my_coord.push(Some(4));
+        coord_to_ring(&my_coord);
+
+        coord_to_ring(&(vec![5,1,5,6,1].iter().map(|&x| Some(x)).collect()));
     }
 
     #[test]

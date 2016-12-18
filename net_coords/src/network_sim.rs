@@ -92,7 +92,9 @@ impl Network {
 
     /// Every node asks neighbours about distance to landmarks and 
     /// updates his own distances accordingly.
-    pub fn iter_coords(&mut self) {
+    /// Returns true if anything in the coords state has changed.
+    pub fn iter_coords(&mut self) -> bool {
+        let mut has_changed = false;
         for v in 0..self.n {
             for &nei in self.neighbours[v].iter() {
                 for c in 0..self.coords[nei].len() {
@@ -103,13 +105,24 @@ impl Network {
                     let cdist = dist.unwrap() + 1;
                     if self.coords[v][c].is_none() {
                         self.coords[v][c] = Some(cdist);
+                        has_changed = true;
                         continue
                     }
                     if self.coords[v][c].unwrap() > cdist {
                         self.coords[v][c] = Some(cdist);
+                        has_changed = true;
                     }
                 }
             }
+        }
+        has_changed
+    }
+
+    pub fn iter_converge(&mut self) {
+        let mut has_changed = true;
+        while has_changed {
+            has_changed = self.iter_coords();
+            println!("Iter");
         }
     }
 

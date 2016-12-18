@@ -10,7 +10,8 @@ fn check_unique_coord() {
     let l: u32 = 20;
     let n: usize = ((2 as u64).pow(l)) as usize;
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
-    let num_landmarks: usize = (l*l) as usize;
+    let num_landmarks: usize = (((l*l) as u32)/3) as usize;
+    // let num_landmarks: usize = (5*l) as usize;
     let num_iter_coords = (1.5 * ((l as f64) / (num_neighbours as f64).ln())) as u32;
 
     println!("n = {}",n);
@@ -22,11 +23,7 @@ fn check_unique_coord() {
         .build_network(n,num_neighbours,&mut rng)
         .choose_landmarks(num_landmarks,&mut rng);
 
-    for i in 0..num_iter_coords {
-        net.iter_coords();
-        println!("Iter number {}",i);
-    }
-
+    net.iter_converge();
     
     let is_unique = net.is_coord_unique();
     println!("is_unique = {}",is_unique);

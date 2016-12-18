@@ -119,7 +119,6 @@ impl Network {
         let mut coord_set = HashSet::new();
         for coord in self.coords.iter() {
             if coord_set.contains(coord) {
-                println!("{:?}",coord);
                 return false
             }
             coord_set.insert(coord);

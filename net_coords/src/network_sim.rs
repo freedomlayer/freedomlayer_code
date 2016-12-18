@@ -1,7 +1,10 @@
+extern crate rand;
+
 use std::collections::HashSet;
-use rand;
-use rand::Rng;
-use rand::distributions::{IndependentSample, Range};
+
+// use self::rand;
+use self::rand::Rng;
+use self::rand::distributions::{IndependentSample, Range};
 
 pub struct Network {
     n: usize,
@@ -97,7 +100,7 @@ impl Network {
                     if dist.is_none() {
                         continue
                     }
-                    let cdist = dist.unwrap();
+                    let cdist = dist.unwrap() + 1;
                     if self.coords[v][c].is_none() {
                         self.coords[v][c] = Some(cdist);
                         continue
@@ -109,7 +112,31 @@ impl Network {
             }
         }
     }
+
+
+    /// Check if the coordinates system is unique
+    pub fn is_coord_unique(&self) -> bool {
+        let mut coord_set = HashSet::new();
+        for coord in self.coords.iter() {
+            if coord_set.contains(coord) {
+                println!("{:?}",coord);
+                return false
+            }
+            coord_set.insert(coord);
+        }
+        true
+    }
+
+    /// Print some coordinates
+    pub fn print_some_coords(&self,amount: u32) {
+        for v in 0..amount {
+            println!("{:?}",self.coords[v as usize]);
+
+        }
+
+    }
 }
+
 
 
 #[cfg(test)]
@@ -125,6 +152,8 @@ mod tests {
 
         net.iter_coords();
         net.iter_coords();
+
+        net.is_coord_unique();
     }
 
     #[test]
@@ -135,5 +164,13 @@ mod tests {
         for x in knums.into_iter() {
             assert!(x < 100);
         }
+    }
+
+    #[test]
+    fn test_hashset_vec() {
+        let mut my_set : HashSet<Vec<usize>> = HashSet::new();
+        my_set.insert(vec![1,2,3]);
+        assert!(my_set.contains(&vec![1,2,3]));
+        assert!(!my_set.contains(&vec![1,2,4]));
     }
 }

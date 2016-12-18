@@ -38,11 +38,8 @@ pub fn coord_to_ring(coord: &Vec<Option<usize>>) -> f64 {
     let k: f64 = fcoord.len() as f64;
     let S_a:f64 = fcoord.iter().sum();
     let normalize = |a| a/S_a - 1.0/k;
-    // let inter = fcoord.iter().map(|&a: &f64| normalize(a).powi(2) as f64);
-    // let L_a: f64 = (inter.sum::<f64>()).sqrt();
-    // let L_a: f64 = inter.sum().sqrt();
     let L_a: f64 = fcoord.iter().
-        map(|&a: &f64| normalize(a).powi(2) as f64).sum::<f64>().sqrt();
+        map(|&a| normalize(a).powi(2) as f64).sum::<f64>().sqrt();
 
     let numerator: f64 = 
         normalize(fcoord[0]) - 

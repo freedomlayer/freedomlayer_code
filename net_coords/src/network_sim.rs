@@ -37,7 +37,7 @@ pub fn coord_to_ring(coord: &Vec<Option<usize>>) -> f64 {
 
     let k: f64 = fcoord.len() as f64;
     let S_a:f64 = fcoord.iter().sum();
-    let normalize = |a| a/S_a - 1.0/k;
+    let normalize = |a| (a/S_a) - (1.0/k);
     let L_a: f64 = fcoord.iter().
         map(|&a| normalize(a).powi(2) as f64).sum::<f64>().sqrt();
 
@@ -45,9 +45,9 @@ pub fn coord_to_ring(coord: &Vec<Option<usize>>) -> f64 {
         normalize(fcoord[0]) - 
             (1.0/(k-1.0)) * fcoord.iter().skip(1).map(|&a| normalize(a)).sum::<f64>();
 
-    let denominator: f64 = L_a * (k/(k-1.0)).sqrt();
+    let denominator: f64 = L_a * ((k/(k-1.0))).sqrt();
 
-    (numerator/denominator).acos() / f64::consts::PI
+    (numerator/denominator).acos() / (f64::consts::PI)
 }
 
 impl Network {
@@ -168,7 +168,7 @@ impl Network {
     pub fn print_some_coords(&self,amount: u32) {
         for v in 0..amount {
             println!("{}",coord_to_ring(&self.coords[v as usize]));
-            // println!("{:?}",self.coords[v as usize]);
+            println!("{:?}",self.coords[v as usize]);
         }
     }
 }

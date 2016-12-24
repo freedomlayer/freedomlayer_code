@@ -21,12 +21,10 @@ fn check_unique_coord() {
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
     let num_landmarks: usize = (((l*l) as u32)/3) as usize;
     // let num_landmarks: usize = (5*l) as usize;
-    let num_iter_coords = (1.5 * ((l as f64) / (num_neighbours as f64).ln())) as u32;
 
     println!("n = {}",n);
     println!("num_neighbours = {}",num_neighbours);
     println!("num_landmarks = {}",num_landmarks);
-    println!("num_iters_coords = {}",num_iter_coords);
 
     let mut net = Network::new()
         .build_network(n,num_neighbours,&mut rng)

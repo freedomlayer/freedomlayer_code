@@ -57,23 +57,28 @@ fn check_ring_nums() {
     println!("{}",coord_to_ring(&vec![3,3,2,3]));
 
     println!("-----");
+    */
 
-    println!("{}",coord_to_ring(&vec![1,2]));
-    println!("{}",coord_to_ring(&vec![2,1]));
+    println!("{}",coord_to_ring(&vec![1,2,3]));
+    println!("{}",coord_to_ring(&vec![2,3,1]));
+    println!("{}",coord_to_ring(&vec![3,1,2]));
 
     println!("----------");
-    */
 
     println!("{}",coord_to_ring(&vec![5,2,4,8,5,9,4,1,1,5,8,7,3]));
     println!("{}",coord_to_ring(&vec![5,3,4,8,5,9,4,1,1,5,8,7,3]));
-    println!("{}",coord_to_ring(&vec![2,5,4,8,5,9,4,1,1,5,8,7,3]));
-    println!("{}",coord_to_ring(&vec![5,2,4,8,6,8,4,2,1,5,8,7,3]));
-    println!("{}",coord_to_ring(&vec![6,3,4,9,5,7,4,3,2,4,8,7,4]));
+    println!("{}",coord_to_ring(&vec![5,4,4,8,5,9,4,1,1,5,8,7,3]));
+    println!("{}",coord_to_ring(&vec![5,4,4,8,5,8,3,1,1,5,8,7,3]));
+    println!("{}",coord_to_ring(&vec![5,4,4,8,5,8,3,1,1,5,8,55,3]));
+    println!("{}",coord_to_ring(&vec![5,3,4,8,5,8,3,1,1,5,8,55,3]));
+    println!("{}",coord_to_ring(&vec![5,3,4,8,5,3,3,1,1,5,8,55,3]));
+    println!("{}",coord_to_ring(&vec![5,3,4,8,5,3,3,2,1,5,8,55,3]));
+    println!("{}",coord_to_ring(&vec![5,4,4,8,6,2,3,2,1,5,7,55,2]));
 }
 
 
 #[cfg(not(test))]
 fn main() {
-    check_ring_nums();
-    // check_unique_coord();
+    // check_ring_nums();
+    check_unique_coord();
 }

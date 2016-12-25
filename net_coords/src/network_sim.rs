@@ -1,11 +1,13 @@
 extern crate rand;
+extern crate num;
 
 use std::f64;
 use std::collections::HashSet;
 
-// use self::rand;
 use self::rand::Rng;
 use self::rand::distributions::{IndependentSample, Range};
+
+use self::num::Complex;
 
 pub struct Network {
     n: usize,
@@ -81,7 +83,7 @@ pub fn coord_to_ring_all_pairs(coord: &Vec<usize>) -> f64 {
     f
 }
 
-pub fn coord_to_ring(coord: &Vec<usize>) -> f64 {
+pub fn coord_to_ring_adj_pairs(coord: &Vec<usize>) -> f64 {
     assert!(coord.len() > 1);
     let fcoord: Vec<f64> = coord.iter().map(|&a| a as f64).collect();
 
@@ -105,6 +107,18 @@ pub fn coord_to_ring(coord: &Vec<usize>) -> f64 {
     let f = (sum).fract();
     assert!(f >= 0.0);
     f
+}
+
+pub fn coord_to_ring(coord: &Vec<usize>) -> f64 {
+    let k: f64 = coord.len() as f64;
+    let ang_part = (2.0 * f64::consts::PI) / k;
+
+    let sum: Complex<f64> = 
+        coord.iter().map(|&a| a as f64).enumerate()
+            .fold(Complex::new(0.0,0.0), |acc, (i,x)|
+                acc + Complex::from_polar(&((-x*2.0).exp()),&(ang_part * (i as f64))));
+
+    (sum.arg() + f64::consts::PI) / (2.0 * f64::consts::PI)
 }
 
 impl Network {
@@ -244,27 +258,13 @@ impl Network {
     pub fn print_some_coords(&self,amount: u32) {
 
         println!("coord_to_ring_all_pairs:");
-        println!("{}", coord_to_ring_all_pairs(&self.coords[0 as usize]));
+        println!("{}", coord_to_ring(&self.coords[0 as usize]));
         println!("-------------");
         for &nei in self.neighbours[0].iter() {
-            println!("{}", coord_to_ring_all_pairs(&self.coords[nei as usize]));
+            println!("{}", coord_to_ring(&self.coords[nei as usize]));
+            // println!("{:?}", self.coords[nei as usize]);
         }
 
-        /*
-        println!();
-        
-        for v in 0..amount {
-            println!("{}", coord_to_ring_all_pairs(&self.coords[v as usize]));
-            // println!("{:?}", self.coords[v as usize]);
-        }
-
-        println!();
-
-        for v in 0..amount {
-            println!("{}", coord_to_ring(&self.coords[v as usize]));
-            // println!("{:?}", self.coords[v as usize]);
-        }
-        */
     }
 }
 

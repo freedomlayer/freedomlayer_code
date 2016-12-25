@@ -4,4 +4,6 @@ version = "0.1.0"
 authors = ["real"]
 
 [dependencies]
+num = "0.1"
 rand = "0.3"
+

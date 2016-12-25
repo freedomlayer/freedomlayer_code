@@ -50,7 +50,7 @@ pub fn old_coord_to_ring(coord: &Vec<usize>) -> f64 {
     (numerator/denominator).acos() / (f64::consts::PI)
 }
 
-pub fn coord_to_ring(coord: &Vec<usize>) -> f64 {
+pub fn coord_to_ring_all_pairs(coord: &Vec<usize>) -> f64 {
     assert!(coord.len() > 1);
     let fcoord: Vec<f64> = coord.iter().map(|&a| a as f64).collect();
 
@@ -74,11 +74,36 @@ pub fn coord_to_ring(coord: &Vec<usize>) -> f64 {
         }
     }
 
-    let pairs: f64 = k * (k-1.0) / 2.0;
-    let mut f = (sum / pairs).fract();
-    if f < 0.0 {
-        f += 1.0;
+    // let pairs: f64 = k * (k-1.0) / 2.0;
+    let f = (sum).fract();
+    assert!(f >= 0.0);
+
+    f
+}
+
+pub fn coord_to_ring(coord: &Vec<usize>) -> f64 {
+    assert!(coord.len() > 1);
+    let fcoord: Vec<f64> = coord.iter().map(|&a| a as f64).collect();
+
+    let k: f64 = fcoord.len() as f64;
+    let S_a:f64 = fcoord.iter().sum();
+    let normalize = |a| (a/S_a) - (1.0/k);
+    let L_a: f64 = fcoord.iter().
+        map(|&a| normalize(a).powi(2) as f64).sum::<f64>().sqrt();
+
+    let scoord: Vec<f64> = fcoord.into_iter().map(|a| normalize(a) / L_a).collect();
+
+    let mut sum: f64 = 0.0;
+    for i in 0..scoord.len() {
+        let x = scoord[i];
+        let y = scoord[(i + 1) % scoord.len()];
+        let addition = 0.5 + (y.atan2(x) / (2.0 * f64::consts::PI));
+        // println!("Addition = {}",addition);
+        sum += addition;
     }
+
+    let f = (sum).fract();
+    assert!(f >= 0.0);
     f
 }
 
@@ -217,16 +242,27 @@ impl Network {
 
     /// Print some coordinates
     pub fn print_some_coords(&self,amount: u32) {
-        println!("{}", coord_to_ring(&self.coords[0 as usize]));
+
+        println!("coord_to_ring_all_pairs:");
+        println!("{}", coord_to_ring_all_pairs(&self.coords[0 as usize]));
         println!("-------------");
         for &nei in self.neighbours[0].iter() {
-            println!("{}", coord_to_ring(&self.coords[nei as usize]));
+            println!("{}", coord_to_ring_all_pairs(&self.coords[nei as usize]));
         }
 
         /*
+        println!();
+        
+        for v in 0..amount {
+            println!("{}", coord_to_ring_all_pairs(&self.coords[v as usize]));
+            // println!("{:?}", self.coords[v as usize]);
+        }
+
+        println!();
+
         for v in 0..amount {
             println!("{}", coord_to_ring(&self.coords[v as usize]));
-            println!("{:?}", self.coords[v as usize]);
+            // println!("{:?}", self.coords[v as usize]);
         }
         */
     }

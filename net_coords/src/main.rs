@@ -1,7 +1,7 @@
 extern crate rand;
 
 mod network_sim;
-use network_sim::{Network,coord_to_ring};
+use network_sim::{Network,coord_to_ring, coord_to_ring_all_pairs};
 
 
 
@@ -49,7 +49,6 @@ fn check_ring_nums() {
     println!("{}",vec_to_ring(vec![1,2,3]));
     println!("{}",vec_to_ring(vec![2,3,1]));
     println!("{}",vec_to_ring(vec![3,1,2]));
-    */
 
     println!("-----");
     println!("{}",coord_to_ring(&vec![3,3,3,2]));
@@ -63,6 +62,7 @@ fn check_ring_nums() {
     println!("{}",coord_to_ring(&vec![2,1]));
 
     println!("----------");
+    */
 
     println!("{}",coord_to_ring(&vec![5,2,4,8,5,9,4,1,1,5,8,7,3]));
     println!("{}",coord_to_ring(&vec![5,3,4,8,5,9,4,1,1,5,8,7,3]));
@@ -74,6 +74,6 @@ fn check_ring_nums() {
 
 #[cfg(not(test))]
 fn main() {
-    // check_ring_nums();
-    check_unique_coord();
+    check_ring_nums();
+    // check_unique_coord();
 }

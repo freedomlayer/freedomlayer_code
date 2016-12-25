@@ -4,14 +4,6 @@ mod network_sim;
 use network_sim::{Network,coord_to_ring};
 
 
-fn vec_to_ring(vec: Vec<usize>) -> f64 {
-    let mut tvec: Vec<Option<usize>> = Vec::new();
-    for &x in vec.iter() {
-        tvec.push(Some(x as usize));
-    }
-    println!("{:?}",tvec);
-    coord_to_ring(&tvec)
-}
 
 
 #[cfg(not(test))]
@@ -31,7 +23,10 @@ fn check_unique_coord() {
         .build_network(n,num_neighbours,&mut rng)
         .choose_landmarks(num_landmarks,&mut rng);
 
-    net.iter_converge();
+    if !net.converge_coords() {
+        println!("Resulting graph is not connected!");
+        return
+    }
     
     let is_unique = net.is_coord_unique();
     println!("is_unique = {}",is_unique);
@@ -56,15 +51,15 @@ fn check_ring_nums() {
     */
 
     println!("-----");
-    println!("{}",vec_to_ring(vec![3,3,3,2]));
-    println!("{}",vec_to_ring(vec![2,3,3,3]));
-    println!("{}",vec_to_ring(vec![3,2,3,3]));
-    println!("{}",vec_to_ring(vec![3,3,2,3]));
+    println!("{}",coord_to_ring(&vec![3,3,3,2]));
+    println!("{}",coord_to_ring(&vec![2,3,3,3]));
+    println!("{}",coord_to_ring(&vec![3,2,3,3]));
+    println!("{}",coord_to_ring(&vec![3,3,2,3]));
 
     println!("-----");
 
-    println!("{}",vec_to_ring(vec![1,2]));
-    println!("{}",vec_to_ring(vec![2,1]));
+    println!("{}",coord_to_ring(&vec![1,2]));
+    println!("{}",coord_to_ring(&vec![2,1]));
 }
 
 

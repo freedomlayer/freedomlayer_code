@@ -9,7 +9,7 @@ use network_sim::{Network,coord_to_ring};
 #[cfg(not(test))]
 fn check_unique_coord() {
     let mut rng = rand::thread_rng();
-    let l: u32 = 10;
+    let l: u32 = 16;
     let n: usize = ((2 as u64).pow(l)) as usize;
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
     let num_landmarks: usize = (((l*l) as u32)/3) as usize;
@@ -31,7 +31,8 @@ fn check_unique_coord() {
     let is_unique = net.is_coord_unique();
     println!("is_unique = {}",is_unique);
 
-    net.print_some_coords(100);
+    net.print_some_coords(20);
+
 
 }
 
@@ -60,11 +61,19 @@ fn check_ring_nums() {
 
     println!("{}",coord_to_ring(&vec![1,2]));
     println!("{}",coord_to_ring(&vec![2,1]));
+
+    println!("----------");
+
+    println!("{}",coord_to_ring(&vec![5,2,4,8,5,9,4,1,1,5,8,7,3]));
+    println!("{}",coord_to_ring(&vec![5,3,4,8,5,9,4,1,1,5,8,7,3]));
+    println!("{}",coord_to_ring(&vec![2,5,4,8,5,9,4,1,1,5,8,7,3]));
+    println!("{}",coord_to_ring(&vec![5,2,4,8,6,8,4,2,1,5,8,7,3]));
+    println!("{}",coord_to_ring(&vec![6,3,4,9,5,7,4,3,2,4,8,7,4]));
 }
 
 
 #[cfg(not(test))]
 fn main() {
-    check_ring_nums();
-    // check_unique_coord();
+    // check_ring_nums();
+    check_unique_coord();
 }

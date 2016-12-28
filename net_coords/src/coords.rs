@@ -1,36 +1,88 @@
-extern crate rand;
 extern crate num;
+extern crate petgraph;
 
 use std::f64;
 use std::collections::HashSet;
 
-use self::rand::Rng;
-use self::rand::distributions::{IndependentSample, Range};
-
 use self::num::Complex;
 
-pub struct Network {
-    n: usize,
-    neighbours: Vec<HashSet<usize>>,
-    landmarks: Vec<usize>,
-    coords: Vec<Vec<usize>>,
+use network::Network;
+use random_util::choose_k_nums;
+
+
+pub fn choose_landmarks<R: Rng> (net: Network<Node>, num_landmarks: usize, rng: &mut R) ->
+    Vec<usize> {
+    choose_k_nums(num_landmarks, net.node_count(), rng)
+        .into_iter().collect()
 }
 
 
-/// Randomly choose k distinct numbers from the range [0,n) 
-fn choose_k_nums<R: Rng>(k:usize, n:usize, rng: &mut R) -> HashSet<usize> {
-    
-    let mut res_set = HashSet::new();
-    let rand_range: Range<usize> = Range::new(0,n);
-    for _ in 0..k {
-        let mut x = rand_range.ind_sample(rng);
-        while res_set.contains(&x) {
-            x = rand_range.ind_sample(rng);
+fn iter_coords(net: &Network<Node>, work_coords: &mut Vec<Vec<Option<f64>>>) -> bool {
+    let mut has_changed = false;
+    for v in node_indices() {
+        for &edge in net.edges(v) {
+            let nei = edge.target();
+            for c in 0..work_coords[nei].len() {
+                let dist = work_coords[nei][c];
+                if dist.is_none() {
+                    continue
+                }
+                let cdist = dist.unwrap() + edge.weight;
+                if work_coords[v][c].is_none() {
+                    work_coords[v][c] = Some(cdist);
+                    has_changed = true;
+                    continue
+                }
+                if work_coords[v][c].unwrap() > cdist {
+                    work_coords[v][c] = Some(cdist);
+                    has_changed = true;
+                }
+            }
         }
-        res_set.insert(x);
     }
-    res_set
+    has_changed
 }
+
+pub fn build_coords(net: &Network<Node>, landmarks:Vec<usize>) -> Option<Vec<f64>> 
+{
+
+    let mut work_coords: Vec<Vec<Option<usize>>> = Vec::new();
+
+    // Initialize coordinates:
+    for v in net.node_indices() {
+        let mut v_coords = Vec::new();
+        for &l in landmarks.iter() {
+            if v != l {
+                v_coords.push(None)
+            } else {
+                v_coords.push(Some(0))
+            }
+        }
+        work_coords.push(v_coords);
+    }
+
+    let mut has_changed = true;
+    while has_changed {
+        has_changed = iter_coords(net, &mut work_coords);
+        println!("Iter");
+    }
+
+    let is_disconnected: bool = 
+        work_coords.iter().any(|coord| 
+               coord.iter().any(|&c_opt| c_opt.is_none()));
+
+    if is_disconnected {
+        return None;
+    }
+
+    Some(work_coords.into_iter().map(|coord_opt| 
+            coord_opt.into_iter().map(|c_opt| c_opt.unwrap()).collect::<Vec<_>>())
+            .collect::<Vec<_>>())
+    
+}
+
+
+
 
 /// Convert network coordinate to chord value in [0,1) 
 /// by projection to a plane.
@@ -173,68 +225,6 @@ impl Network {
     /// Every node asks neighbours about distance to landmarks and 
     /// updates his own distances accordingly.
     /// Returns true if anything in the coords state has changed.
-    pub fn iter_coords(&self, work_coords: &mut Vec<Vec<Option<usize>>>) -> bool {
-        let mut has_changed = false;
-        for v in 0..self.n {
-            for &nei in self.neighbours[v].iter() {
-                for c in 0..work_coords[nei].len() {
-                    let dist = work_coords[nei][c];
-                    if dist.is_none() {
-                        continue
-                    }
-                    let cdist = dist.unwrap() + 1;
-                    if work_coords[v][c].is_none() {
-                        work_coords[v][c] = Some(cdist);
-                        has_changed = true;
-                        continue
-                    }
-                    if work_coords[v][c].unwrap() > cdist {
-                        work_coords[v][c] = Some(cdist);
-                        has_changed = true;
-                    }
-                }
-            }
-        }
-        has_changed
-    }
-
-    pub fn converge_coords(&mut self) -> bool {
-        let mut work_coords: Vec<Vec<Option<usize>>> = Vec::new();
-
-        // Initialize coordinates:
-        for v in 0..self.n {
-            let mut v_coords = Vec::new();
-            for &l in self.landmarks.iter() {
-                if v != l {
-                    v_coords.push(None)
-                } else {
-                    v_coords.push(Some(0))
-                }
-            }
-            work_coords.push(v_coords);
-        }
-
-        let mut has_changed = true;
-        while has_changed {
-            has_changed = self.iter_coords(&mut work_coords);
-            println!("Iter");
-        }
-
-        let is_disconnected: bool = 
-            work_coords.iter().any(|coord| 
-                   coord.iter().any(|&c_opt| c_opt.is_none()));
-
-        if is_disconnected {
-            return false;
-        }
-
-        self.coords = 
-            work_coords.into_iter().map(|coord_opt| 
-                coord_opt.into_iter().map(|c_opt| c_opt.unwrap()).collect::<Vec<_>>())
-                .collect::<Vec<_>>();
-
-        true
-    }
 
 
     /// Check if the coordinates system is unique
@@ -249,10 +239,6 @@ impl Network {
         true
     }
 
-    /// Get the cord id for some node v
-    pub fn get_chord_id(&self, v:usize) {
-
-    }
 
     /// Print some coordinates
     pub fn print_some_coords(&self,amount: u32) {
@@ -286,15 +272,6 @@ mod tests {
         net.is_coord_unique();
     }
 
-    #[test]
-    fn test_choose_k_nums() {
-        let mut rng = rand::thread_rng();
-        let knums = choose_k_nums(3,100,&mut rng);
-        assert!(knums.len() == 3);
-        for x in knums.into_iter() {
-            assert!(x < 100);
-        }
-    }
 
     #[test]
     fn test_coord_to_ring() {

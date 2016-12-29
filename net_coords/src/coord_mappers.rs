@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 extern crate num;
 use self::num::Complex;
 use std::f64;

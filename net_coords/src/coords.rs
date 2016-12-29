@@ -1,16 +1,14 @@
-extern crate petgraph;
 extern crate rand;
 
 use std::collections::HashSet;
 
 use self::rand::Rng;
-use self::petgraph::graphmap::NodeTrait;
 
 use network::{Network};
 use random_util::choose_k_nums;
 
 
-pub fn choose_landmarks<R: Rng, Node: NodeTrait> 
+pub fn choose_landmarks<R: Rng, Node> 
     (net: &Network<Node>, num_landmarks: usize, rng: &mut R) 
     -> Vec<usize> {
     choose_k_nums(num_landmarks, net.igraph.node_count(), rng)
@@ -18,7 +16,7 @@ pub fn choose_landmarks<R: Rng, Node: NodeTrait>
 }
 
 
-fn iter_coords<Node: NodeTrait>(net: &Network<Node>, work_coords: &mut Vec<Vec<Option<u64>>>) -> bool {
+fn iter_coords<Node>(net: &Network<Node>, work_coords: &mut Vec<Vec<Option<u64>>>) -> bool {
     let mut has_changed = false;
     for v in net.igraph.nodes() {
         for (v,nei,&weight) in net.igraph.edges(v) {
@@ -46,7 +44,7 @@ fn iter_coords<Node: NodeTrait>(net: &Network<Node>, work_coords: &mut Vec<Vec<O
 /// Every node asks neighbours about distance to landmarks and 
 /// updates his own distances accordingly.
 /// Returns true if anything in the coords state has changed.
-pub fn build_coords<Node: NodeTrait>(net: &Network<Node>, landmarks:&Vec<usize>) -> Option<Vec<Vec<u64>>> 
+pub fn build_coords<Node>(net: &Network<Node>, landmarks:&Vec<usize>) -> Option<Vec<Vec<u64>>> 
 {
 
     let mut work_coords: Vec<Vec<Option<u64>>> = Vec::new();

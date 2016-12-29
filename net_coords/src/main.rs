@@ -27,8 +27,10 @@ fn check_unique_coord() {
 
     let seed: &[_] = &[1,2,3,4,5];
     let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+    println!("Creating the network...");
     let net = network::random_net(n,num_neighbours,&mut rng);
-    let landmarks = choose_landmarks(&net,num_landmarks);
+    let landmarks = choose_landmarks(&net,num_landmarks, &mut rng);
+    println!("Iterating through coordinates");
     let coords = build_coords(&net, &landmarks);
 
     if coords.is_none() {

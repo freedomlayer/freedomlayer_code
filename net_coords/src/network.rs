@@ -52,7 +52,7 @@ impl <Node: NodeTrait> Network <Node> {
 
 pub fn random_net<R: Rng>(n: usize, num_neighbours: usize, rng: &mut R) -> Network<usize> {
 
-    let mut net =  Network::<usize>::new();
+    let mut net = Network::<usize>::new();
 
     // Insert n nodes:
     for v in 0 .. n {

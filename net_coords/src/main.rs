@@ -1,64 +1,47 @@
 extern crate rand;
 
-mod network_sim;
-use network_sim::{Network,coord_to_ring, coord_to_ring_all_pairs};
+mod network;
+mod coords;
+mod coord_mappers;
+mod random_util;
 
+use network::{random_net};
+use coords::{build_coords, choose_landmarks, is_coord_unique};
+use coord_mappers::{coord_to_ring_all_pairs, coord_to_ring};
 
+use rand::{Rng, StdRng};
 
 
 #[cfg(not(test))]
 fn check_unique_coord() {
-    let mut rng = rand::thread_rng();
+
+    // Set up graph parameters:
     let l: u32 = 16;
     let n: usize = ((2 as u64).pow(l)) as usize;
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
     let num_landmarks: usize = (((l*l) as u32)/3) as usize;
-    // let num_landmarks: usize = (5*l) as usize;
 
     println!("n = {}",n);
     println!("num_neighbours = {}",num_neighbours);
     println!("num_landmarks = {}",num_landmarks);
 
-    let mut net = Network::new()
-        .build_network(n,num_neighbours,&mut rng)
-        .choose_landmarks(num_landmarks,&mut rng);
+    let seed: &[_] = &[1,2,3,4,5];
+    let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+    let mut net = network::random_net(n,num_neighbours,&mut rng);
+    let landmarks = choose_landmarks(&net,num_landmarks);
+    let coords = build_coords(&net, &landmarks);
 
-    if !net.converge_coords() {
-        println!("Resulting graph is not connected!");
+    if coords.is_none() {
+        println!("graph is not connected! Aborting.");
         return
     }
-    
-    let is_unique = net.is_coord_unique();
+
+    let is_unique = is_coord_unique(&(coords.unwrap()));
     println!("is_unique = {}",is_unique);
-
-    net.print_some_coords(20);
-
 
 }
 
 fn check_ring_nums() {
-    /*
-    println!("{}",vec_to_ring(vec![1,2,3,4,5]));
-    println!("{}",vec_to_ring(vec![5,2,3,4,5]));
-    println!("{}",vec_to_ring(vec![5,2,4,4,5]));
-    println!("{}",vec_to_ring(vec![5,2,4,8,5]));
-    println!("{}",vec_to_ring(vec![5,2,5,8,5]));
-    println!("{}",vec_to_ring(vec![5,3,5,9,6]));
-    println!("{}",vec_to_ring(vec![6,4,6,10,7]));
-
-    println!("{}",vec_to_ring(vec![1,2,3]));
-    println!("{}",vec_to_ring(vec![2,3,1]));
-    println!("{}",vec_to_ring(vec![3,1,2]));
-
-    println!("-----");
-    println!("{}",coord_to_ring(&vec![3,3,3,2]));
-    println!("{}",coord_to_ring(&vec![2,3,3,3]));
-    println!("{}",coord_to_ring(&vec![3,2,3,3]));
-    println!("{}",coord_to_ring(&vec![3,3,2,3]));
-
-    println!("-----");
-    */
-
     println!("{}",coord_to_ring(&vec![1,2,3]));
     println!("{}",coord_to_ring(&vec![2,3,1]));
     println!("{}",coord_to_ring(&vec![3,1,2]));
@@ -81,4 +64,21 @@ fn check_ring_nums() {
 fn main() {
     // check_ring_nums();
     check_unique_coord();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    #[test]
+    fn test_basic() {
+        let seed: &[_] = &[1,2,3,4,5];
+        let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+        let mut net = network::random_net(60,5,&mut rng);
+        let landmarks = choose_landmarks(&net,10,&mut rng);
+        let coords = build_coords(&net, &landmarks);
+
+        is_coord_unique(&(coords.unwrap()));
+    }
 }

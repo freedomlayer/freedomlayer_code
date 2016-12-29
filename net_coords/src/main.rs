@@ -9,7 +9,7 @@ use network::{random_net};
 use coords::{build_coords, choose_landmarks, is_coord_unique};
 use coord_mappers::{coord_to_ring_all_pairs, coord_to_ring};
 
-use rand::{Rng, StdRng};
+use rand::{StdRng};
 
 
 #[cfg(not(test))]
@@ -27,7 +27,7 @@ fn check_unique_coord() {
 
     let seed: &[_] = &[1,2,3,4,5];
     let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
-    let mut net = network::random_net(n,num_neighbours,&mut rng);
+    let net = network::random_net(n,num_neighbours,&mut rng);
     let landmarks = choose_landmarks(&net,num_landmarks);
     let coords = build_coords(&net, &landmarks);
 
@@ -75,7 +75,7 @@ mod tests {
     fn test_basic() {
         let seed: &[_] = &[1,2,3,4,5];
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
-        let mut net = network::random_net(60,5,&mut rng);
+        let net = network::random_net(60,5,&mut rng);
         let landmarks = choose_landmarks(&net,10,&mut rng);
         let coords = build_coords(&net, &landmarks);
 

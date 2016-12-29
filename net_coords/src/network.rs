@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use self::rand::{Rng, StdRng};
 use self::rand::distributions::{IndependentSample, Range};
 use self::petgraph::graphmap::NodeTrait;
+use self::petgraph::algo::dijkstra;
+use self::petgraph::visit::EdgeRef;
 
 pub struct Network<Node> {
     pub igraph: petgraph::graphmap::GraphMap<usize,u64,petgraph::Undirected>,
@@ -46,6 +48,15 @@ impl <Node: NodeTrait> Network <Node> {
 
     pub fn node_to_index(&self, node: &Node) -> Option<usize> {
         self.nodes_index.get(node).map(|&num| num)
+    }
+
+    pub fn dist(&self, a_index: usize, b_index: usize) -> Option<u64> {
+        let scores = dijkstra(&self.igraph, 
+                 a_index,
+                 Some(b_index),
+                 |e| *e.weight());
+
+        scores.get(&b_index).map(|x| *x)
     }
 }
 
@@ -92,5 +103,23 @@ mod tests {
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
         let net = random_net(100,5,&mut rng);
         assert!(net.igraph.node_count() == 100);
+    }
+
+    #[test]
+    fn test_net_dist() {
+        let mut net = Network::<usize>::new();
+
+        // Insert n nodes:
+        for v in 0 .. 5 {
+            net.add_node(v);
+        }
+
+        net.igraph.add_edge(0,1,1);
+        net.igraph.add_edge(1,2,2);
+        net.igraph.add_edge(2,4,3);
+
+        assert!(net.dist(0,4).unwrap() == 6);
+        assert!(net.dist(1,4).unwrap() == 5);
+        assert!(net.dist(1,3).is_none());
     }
 }

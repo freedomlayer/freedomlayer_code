@@ -5,6 +5,8 @@ use self::num::{Num, Zero, One, FromPrimitive};
 use std::fmt::Debug;
 use std::iter::Sum;
 use std::ops::Div;
+use std::cmp::Ordering::Less;
+
 
 
 trait Stream<N> {
@@ -18,7 +20,7 @@ impl<N> Stream<N> for Vec<N> where
 
     fn to_rank(&self) -> Vec<usize> {
         let mut svec: Vec<(usize,&N)> = self.iter().enumerate().collect();
-        svec.sort_by(|&(_, &val_a), &(_, &val_b)| val_a.partial_cmp(&val_b).unwrap());
+        svec.sort_by(|&(_, &val_a), &(_, &val_b)| val_a.partial_cmp(&val_b).unwrap_or(Less));
         // TODO: Use quickersort package here instead---^^^^^^^^^^^
 
         let mut perm_vec: Vec<(usize, usize)> = 

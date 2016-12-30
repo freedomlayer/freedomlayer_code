@@ -4,6 +4,7 @@ mod network;
 mod coords;
 mod coord_mappers;
 mod random_util;
+mod statistic;
 
 use network::{random_net};
 use coords::{build_coords, choose_landmarks, is_coord_unique};

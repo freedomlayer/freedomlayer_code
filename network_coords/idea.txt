@@ -1,0 +1,75 @@
+24.12.2016
+----------
+
+Network coordinate:
+
+A = (a_1, a_2, ... , a_k) (All a_i are non negative)
+Let O(0,0,...,0) be the origin.
+
+How to turn it into a number between 0 and 1 ?
+
+---
+
+Consider the horizon:
+
+H: x_1 + x_2 + ... + x_k = 1
+
+The intersection of the line OA and H is:
+
+t*a_1 + ... + t*a_k = 1
+t = 1 / (a_1 + ... + a_k) = 1 / S_a
+
+Where S_a = (a_1 + ... + a_k)
+So the intersection is V = (a_1/S_a, a_2/S_a, ..., a_k/S_a)
+
+---
+
+Consider the point P = (1,0,...,0) on H, 
+and the neutral point N(1/k,...,1/k) on H.
+
+We will calculate the angle between NP and NV, using inner product.
+
+<NP,NV> = |NP| * |NV| * cos(alpha)
+cos(alpha) = <NP, NV> / (|NP| * |NV|)
+
+
+<NP,NV> = (1 - 1/k) * (a_1/S_a - 1/k) + Sigma[2..k]((0-1/k)*(a_i/S_a - 1/k) = 
+	(k-1)/k * a~_1 + Sigma[2..k](-1/k)*a~_i
+
+Where a~_i := (a_i/S_a - 1/k)
+
+|NP|^2 = ((k-1)/k)^2 + (k-1)*(1/k^2) = (k^2 - 2k + 1)/k^2 + (k-1)/k^2 
+	= (k^2 - k)/k^2 = (k-1)/k
+
+|NV|^2 = Sigma[1..k](a~_i^2)
+
+
+cos(alpha) = (k-1)/k * a~_i - (1/k)Sigma[2..k]a~_i
+						 ----------------------------------------- = 
+						 sqrt((k-1)/k) * sqrt(Sigma[1..k](a~_i^2))
+
+( L_a = sqrt(Sigma[1..k](a~_i^2) )
+
+=						(k-1) * a~_1 - Sigma[2..k]a~_i
+            ------------------------------- = 
+						sqrt(k(k-1)) * L_a
+
+						a~_1 - (1/(k-1))Sigma[2..k]a~_i
+=           ---------------------------------
+						sqrt(k/(k-1)) * L_a
+
+
+
+
+
+---
+
+
+We need to know the sign of the angle, because arccos will only give us one
+option.
+
+Ideas:
+
+- Using two calculations (Finding angle against another coordinate, and make
+	conclustions).
+- Isometry to a two dimensional space and cross product there.

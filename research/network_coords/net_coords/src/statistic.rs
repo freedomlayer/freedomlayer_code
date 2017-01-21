@@ -43,7 +43,7 @@ impl<N> Stream<N> for Vec<N> where
 }
 
 /// Calculate pearson correlation coefficient between two streams.
-fn pearson<N>(a: &Vec<N>, b: &Vec<N>) -> Option<N> 
+pub fn pearson<N>(a: &Vec<N>, b: &Vec<N>) -> Option<N> 
     where N: Float + Div + Copy + FromPrimitive {
 
     if a.len() != b.len() {
@@ -63,7 +63,7 @@ fn pearson<N>(a: &Vec<N>, b: &Vec<N>) -> Option<N>
 }
 
 /// Calculate spearman monotonicity correlation coefficient between two streams.
-fn spearman<N>(a: &Vec<N>, b:&Vec<N>) -> Option<N>
+pub fn spearman<N>(a: &Vec<N>, b:&Vec<N>) -> Option<N>
     where N: Float + Div + Copy + FromPrimitive {
 
     let rank_n = |v: &Vec<N>| v.to_rank().into_iter()
@@ -72,7 +72,6 @@ fn spearman<N>(a: &Vec<N>, b:&Vec<N>) -> Option<N>
 
     pearson(&rank_n(a), &rank_n(b))
 }
-
 
 
 #[cfg(test)]

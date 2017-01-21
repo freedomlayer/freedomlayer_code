@@ -8,7 +8,7 @@ use std::ops::Div;
 use std::cmp::Ordering::Less;
 
 
-trait Stream<N> {
+pub trait Stream<N> {
     fn to_rank(&self) -> Vec<usize>;
     fn mean(&self) -> N;
     fn variance(&self, origin: N) -> N;

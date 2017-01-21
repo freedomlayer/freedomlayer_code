@@ -6,7 +6,7 @@ use std::f64;
 
 /// Convert network coordinate to chord value in [0,1) 
 /// by projection to a plane.
-pub fn old_coord_to_ring(coord: &Vec<usize>) -> f64 {
+pub fn old_coord_to_ring(coord: &Vec<u64>) -> f64 {
     let fcoord: Vec<f64> = coord.iter().map(|&a| a as f64).collect();
 
     let k: f64 = fcoord.len() as f64;
@@ -24,7 +24,7 @@ pub fn old_coord_to_ring(coord: &Vec<usize>) -> f64 {
     (numerator/denominator).acos() / (f64::consts::PI)
 }
 
-pub fn coord_to_ring_all_pairs(coord: &Vec<usize>) -> f64 {
+pub fn coord_to_ring_all_pairs(coord: &Vec<u64>) -> f64 {
     assert!(coord.len() > 1);
     let fcoord: Vec<f64> = coord.iter().map(|&a| a as f64).collect();
 
@@ -55,7 +55,7 @@ pub fn coord_to_ring_all_pairs(coord: &Vec<usize>) -> f64 {
     f
 }
 
-pub fn coord_to_ring_adj_pairs(coord: &Vec<usize>) -> f64 {
+pub fn coord_to_ring_adj_pairs(coord: &Vec<u64>) -> f64 {
     assert!(coord.len() > 1);
     let fcoord: Vec<f64> = coord.iter().map(|&a| a as f64).collect();
 
@@ -81,7 +81,7 @@ pub fn coord_to_ring_adj_pairs(coord: &Vec<usize>) -> f64 {
     f
 }
 
-pub fn coord_to_ring(coord: &Vec<usize>) -> f64 {
+pub fn coord_to_ring(coord: &Vec<u64>) -> f64 {
     let k: f64 = coord.len() as f64;
     let ang_part = (2.0 * f64::consts::PI) / k;
 

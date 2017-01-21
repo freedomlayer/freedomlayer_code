@@ -3,13 +3,15 @@ extern crate rand;
 use network::{random_net};
 use coords::{build_coords, choose_landmarks, is_coord_unique};
 use coord_mappers::{coord_to_ring_all_pairs, coord_to_ring};
+use statistic::spearman;
+use random_util::choose_k_nums;
 
 use self::rand::{StdRng};
 
 pub fn check_unique_coord(l: u32) {
 
     // Set up graph parameters:
-    let l: u32 = 16;
+    // let l: u32 = 16;
     let n: usize = ((2 as u64).pow(l)) as usize;
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
     let num_landmarks: usize = (((l*l) as u32)/3) as usize;
@@ -54,10 +56,11 @@ pub fn check_ring_nums() {
     println!("{}",coord_to_ring(&vec![5,4,4,8,6,2,3,2,1,5,7,55,2]));
 }
 
-pub fn check_approx_dist(l: u32) {
+pub fn check_approx_dist<F>(l: u32, fdist: F) 
+    where F: Fn(usize,usize,&Vec<Vec<u64>>,&Vec<usize>) -> f64 {
 
     // Set up graph parameters:
-    let l: u32 = 16;
+    // let l: u32 = 16;
     let n: usize = ((2 as u64).pow(l)) as usize;
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
     let num_landmarks: usize = (((l*l) as u32)/3) as usize;
@@ -79,9 +82,25 @@ pub fn check_approx_dist(l: u32) {
         return
     }
 
-    let is_unique = is_coord_unique(&(coords.unwrap()));
-    println!("is_unique = {}",is_unique);
+    let coords = coords.unwrap();
 
+    let node_pair: Vec<usize> = choose_k_nums(2,n,&mut rng)
+        .into_iter().collect::<Vec<_>>();
+
+    let mut dists = Vec::new();
+    let mut adists = Vec::new();
+
+    for _ in 0 .. l*l {
+        let (u,v) = (node_pair[0], node_pair[1]);
+
+        // Push real distance between u and v on the network:
+        dists.push(net.dist(u,v).unwrap() as f64);
+
+        // Push approximated distance between u and v:
+        adists.push(fdist(u,v,&coords,&landmarks));
+    }
+
+    println!("spearman: {}",spearman(&dists,&adists).unwrap());
 }
 
 #[cfg(test)]

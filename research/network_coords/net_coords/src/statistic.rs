@@ -34,6 +34,12 @@ impl<N> Stream<N> for Vec<N> where
         self.iter().fold::<N,_>(num::zero(),|acc, &val| acc + val) / 
             (FromPrimitive::from_usize(self.len()).unwrap())
     }
+
+    fn variance(&self) -> N {
+        let m: N = self.mean();
+        self.iter().fold::<N,_>(num::zero(),|acc, &val| acc + (m - val) * (m - val)) / 
+            (FromPrimitive::from_usize(self.len()).unwrap())
+    }
 }
 
 
@@ -48,8 +54,22 @@ mod tests {
     }
 
     #[test]
+    fn test_stream_to_rank_equals() {
+        let rank = vec![5,5,4].to_rank();
+        assert!(rank[2] == 0);
+        assert!(vec![rank[0],rank[1]] == vec![1,2]);
+    }
+
+    #[test]
     fn test_mean() {
         let mean: f64 = vec![1.0,1.5,2.0].mean();
         assert!((mean - 1.5) < 0.0001);
+    }
+
+    #[test]
+    fn test_variance() {
+        let var: f64 = vec![1.0,1.5,2.0].variance();
+        let var2: f64 = vec![0.5*0.5, 0.0, 0.5*0.5].mean();
+        assert!((var - var2) < 0.0001)
     }
 }

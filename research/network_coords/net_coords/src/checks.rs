@@ -60,6 +60,8 @@ pub fn check_ring_nums() {
     println!("{}",coord_to_ring(&vec![5,4,4,8,6,2,3,2,1,5,7,55,2]));
 }
 
+/// Check the quality of distance approximation with the function fdisk using the pearson
+/// monotonic correlation coefficient (Comparing to the real network distance)
 pub fn check_approx_dist<F>(l: u32, fdist: F) 
     where F: DistAFunc {
 
@@ -106,6 +108,7 @@ pub fn check_approx_dist<F>(l: u32, fdist: F)
 
     println!("spearman: {}",spearman(&dists,&adists).unwrap());
 }
+
 
 pub fn check_routing<F>(l: u32, fdist: F) 
     where F: DistAFunc {

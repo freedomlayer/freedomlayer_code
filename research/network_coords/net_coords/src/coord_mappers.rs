@@ -3,6 +3,7 @@
 extern crate num;
 use self::num::Complex;
 use std::f64;
+use std::cmp::Ordering::Less;
 
 /// Convert network coordinate to chord value in [0,1) 
 /// by projection to a plane.
@@ -91,4 +92,37 @@ pub fn coord_to_ring(coord: &Vec<u64>) -> f64 {
                 acc + Complex::from_polar(&((-x*2.0).exp()),&(ang_part * (i as f64))));
 
     (sum.arg() + f64::consts::PI) / (2.0 * f64::consts::PI)
+}
+
+
+/////////////////////////////////////////////////////////////////////
+
+
+/// Approximate distance between two nodes in the network using network coordinates
+pub fn approx_max_dist(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
+    -> f64 {
+    let u_coord = &coords[u];
+    let v_coord = &coords[v];
+
+    let max_floats = |v: Vec<f64>| -> Option<f64> {
+        if v.len() == 0 {
+            return None
+        }
+
+        let mut cur_max = v[0];
+        for i in 1 .. v.len() {
+            match cur_max.partial_cmp(&v[i]) {
+                None => return None,
+                Some(Less) => cur_max = v[i],
+                _ => {},
+            }
+        }
+        Some(cur_max)
+    };
+
+    max_floats(
+        u_coord.iter().enumerate()
+            .map(|(i , _) | ((u_coord[i] as f64) - (v_coord[i]) as f64).abs())
+            .collect()
+    ).unwrap()
 }

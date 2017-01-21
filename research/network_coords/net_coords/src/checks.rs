@@ -88,13 +88,13 @@ pub fn check_approx_dist<F>(l: u32, fdist: F)
 
     let coords = coords.unwrap();
 
-    let node_pair: Vec<usize> = choose_k_nums(2,n,&mut rng)
-        .into_iter().collect::<Vec<_>>();
-
     let mut dists = Vec::new();
     let mut adists = Vec::new();
 
     for _ in 0 .. l*l {
+        let node_pair: Vec<usize> = choose_k_nums(2,n,&mut rng)
+            .into_iter().collect::<Vec<_>>();
+
         let (u,v) = (node_pair[0], node_pair[1]);
 
         // Push real distance between u and v on the network:
@@ -138,11 +138,14 @@ pub fn check_routing<F>(l: u32, fdist: F)
     let node_pair: Vec<usize> = choose_k_nums(2,n,&mut rng)
         .into_iter().collect::<Vec<_>>();
 
+    /*
     let mut dists = Vec::new();
     let mut adists = Vec::new();
 
     for _ in 0 .. l*l {
         let (u,v) = (node_pair[0], node_pair[1]);
+        random_route(u,v,|x,y| {
+        });
 
         // Push real distance between u and v on the network:
         dists.push(net.dist(u,v).unwrap() as f64);
@@ -152,6 +155,7 @@ pub fn check_routing<F>(l: u32, fdist: F)
     }
 
     println!("spearman: {}",spearman(&dists,&adists).unwrap());
+    */
 }
 
 #[cfg(test)]

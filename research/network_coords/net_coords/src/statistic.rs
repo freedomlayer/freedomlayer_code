@@ -12,11 +12,30 @@ use std::cmp::Ordering::Less;
 trait Stream<N> {
     fn to_rank(&self) -> Vec<usize>;
     fn mean(&self) -> N;
-    // fn variance(&self) -> N;
+    fn variance(&self) -> N;
 }
 
+/// Calculate pearson correlation coefficient between two streams.
+fn pearson<N>(a: Vec<N>, b: Vec<N>) -> Option<N> 
+    where N: Num + Div + PartialOrd + Copy + FromPrimitive {
+
+    if a.len() != b.len() {
+        return None
+    }
+
+    let mean_a = a.mean();
+    let var_a = a.variance();
+
+    let mean_b = b.mean();
+    let var_b = b.variance();
+
+    (0 .. a.len()).map(|i| (a[i] - mean_a) * (b[i] - mean_b)).mean() / 
+        (var_a * var_b)
+}
+
+
 impl<N> Stream<N> for Vec<N> where
-    N: Num + Div + PartialOrd + Copy + FromPrimitive + Debug {
+    N: Num + Div + PartialOrd + Copy + FromPrimitive {
 
     fn to_rank(&self) -> Vec<usize> {
         let mut svec: Vec<(usize,&N)> = self.iter().enumerate().collect();

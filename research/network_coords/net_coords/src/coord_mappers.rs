@@ -1,10 +1,14 @@
 #![allow(non_snake_case)]
 
 extern crate num;
+extern crate itertools;
+
+
 use self::num::Complex;
 use std::f64;
 use std::cmp::Ordering::Less;
 use statistic::Stream;
+use self::itertools::Itertools;
 
 /// Convert network coordinate to chord value in [0,1) 
 /// by projection to a plane.
@@ -167,9 +171,9 @@ pub fn approx_pairs_dist_normalized(u: usize, v: usize, coords: &Vec<Vec<u64>>, 
     // A function to calculate landmarks distance:
     let lm_dist = |i: usize, j:usize| coords[landmarks[i]][j];
 
+
     // Get a "signature" for location of node w:
-    let sig = |w: usize| (0 .. landmarks.len())
-                    .zip(0 .. landmarks.len())
+    let sig = |w: usize| (0 .. landmarks.len()).tuple_combinations()
                     .map(|(i,j)| ((coords[w][i] + coords[w][j] - lm_dist(i,j)) as f64) / (lm_dist(i,j) as f64))
                     .collect::<Vec<_>>();
 

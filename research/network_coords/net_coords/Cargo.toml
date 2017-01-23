@@ -7,4 +7,5 @@ authors = ["real"]
 num = "0.1"
 rand = "0.3"
 petgraph = "0.4"
+itertools = "0.5.9"
 

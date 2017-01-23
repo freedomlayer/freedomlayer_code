@@ -29,7 +29,7 @@ fn main() {
     // Set up graph parameters:
     // let l: u32 = 16;
     //
-    let l: u32 = 15;
+    let l: u32 = 18;
     let n: usize = ((2 as u64).pow(l)) as usize;
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
     let num_landmarks: usize = (((l*l) as u32)/3) as usize;
@@ -59,7 +59,7 @@ fn main() {
     check_approx_dist(l*l,approx_avg_dist, &net, &coords, &landmarks, &mut rng);
     println!("approx_pairs_dist");
     check_approx_dist(l*l,approx_pairs_dist,&net, &coords, &landmarks, &mut rng);
-    println!("approx_pairs_dist");
+    println!("approx_pairs_dist_normalized");
     check_approx_dist(l*l,approx_pairs_dist_normalized,&net, &coords, &landmarks, &mut rng);
 }
 

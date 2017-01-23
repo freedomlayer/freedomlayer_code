@@ -53,13 +53,20 @@ fn main() {
 
     let coords = coords.unwrap();
 
+    // TODO: Possibly feed all check_approx_dist calls with the same list of pairs of nodes.
+    // Currently each one generates a different set of pairs, which might affect the results.
+
     println!("approx_max_dist");
-    check_approx_dist(l*l,approx_max_dist, &net, &coords, &landmarks, &mut rng);
+    check_approx_dist(l*l,approx_max_dist, &net, &coords, &landmarks, &mut (rng.clone()));
     println!("approx_avg_dist");
-    check_approx_dist(l*l,approx_avg_dist, &net, &coords, &landmarks, &mut rng);
-    println!("approx_pairs_dist");
-    check_approx_dist(l*l,approx_pairs_dist,&net, &coords, &landmarks, &mut rng);
-    println!("approx_pairs_dist_normalized");
-    check_approx_dist(l*l,approx_pairs_dist_normalized,&net, &coords, &landmarks, &mut rng);
+    check_approx_dist(l*l,approx_avg_dist, &net, &coords, &landmarks, &mut (rng.clone()));
+    println!("approx_pairs_dist1");
+    check_approx_dist(l*l,approx_pairs_dist1,&net, &coords, &landmarks, &mut (rng.clone()));
+    println!("approx_pairs_dist1_normalized");
+    check_approx_dist(l*l,approx_pairs_dist1_normalized,&net, &coords, &landmarks, &mut (rng.clone()));
+    println!("approx_pairs_dist2");
+    check_approx_dist(l*l,approx_pairs_dist2,&net, &coords, &landmarks, &mut (rng.clone()));
+    println!("approx_pairs_dist2_normalized");
+    check_approx_dist(l*l,approx_pairs_dist2_normalized,&net, &coords, &landmarks, &mut (rng.clone()));
 }
 

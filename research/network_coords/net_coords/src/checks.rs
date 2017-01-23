@@ -1,6 +1,6 @@
 extern crate rand;
 
-use network::{random_net};
+use network::{random_net, Network};
 use coords::{build_coords, choose_landmarks, is_coord_unique};
 use coord_mappers::{coord_to_ring_all_pairs, coord_to_ring};
 use statistic::spearman;
@@ -62,39 +62,15 @@ pub fn check_ring_nums() {
 
 /// Check the quality of distance approximation with the function fdisk using the pearson
 /// monotonic correlation coefficient (Comparing to the real network distance)
-pub fn check_approx_dist<F>(l: u32, fdist: F) 
+pub fn check_approx_dist<F>(num_iters: u32, fdist: F, 
+    net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>, mut rng: &mut StdRng) 
     where F: DistAFunc {
-
-    // Set up graph parameters:
-    // let l: u32 = 16;
-    let n: usize = ((2 as u64).pow(l)) as usize;
-    let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
-    let num_landmarks: usize = (((l*l) as u32)/3) as usize;
-
-    println!("n = {}",n);
-    println!("num_neighbours = {}",num_neighbours);
-    println!("num_landmarks = {}",num_landmarks);
-
-    let seed: &[_] = &[1,2,3,4,5];
-    let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
-    println!("Creating the network...");
-    let net = random_net(n,num_neighbours,&mut rng);
-    let landmarks = choose_landmarks(&net,num_landmarks, &mut rng);
-    println!("Iterating through coordinates");
-    let coords = build_coords(&net, &landmarks);
-
-    if coords.is_none() {
-        println!("graph is not connected! Aborting.");
-        return
-    }
-
-    let coords = coords.unwrap();
 
     let mut dists = Vec::new();
     let mut adists = Vec::new();
 
-    for _ in 0 .. l*l {
-        let node_pair: Vec<usize> = choose_k_nums(2,n,&mut rng)
+    for _ in 0 .. num_iters {
+        let node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)
             .into_iter().collect::<Vec<_>>();
 
         let (u,v) = (node_pair[0], node_pair[1]);

@@ -10,7 +10,8 @@ mod checks;
 use rand::{StdRng};
 
 use coord_mappers::{approx_max_dist, approx_avg_dist,
-    approx_pairs_dist, approx_pairs_dist_normalized};
+    approx_pairs_dist1, approx_pairs_dist1_normalized,
+    approx_pairs_dist2, approx_pairs_dist2_normalized};
 use network::{random_net};
 use coords::{build_coords, choose_landmarks};
 
@@ -29,7 +30,7 @@ fn main() {
     // Set up graph parameters:
     // let l: u32 = 16;
     //
-    let l: u32 = 19;
+    let l: u32 = 10;
     let n: usize = ((2 as u64).pow(l)) as usize;
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
     let num_landmarks: usize = (((l*l) as u32)/3) as usize;

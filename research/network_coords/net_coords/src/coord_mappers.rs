@@ -144,7 +144,7 @@ pub fn approx_avg_dist(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &V
 }
 
 
-pub fn approx_pairs_dist(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
+pub fn approx_pairs_dist2(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
     -> f64 {
 
     // A function to calculate landmarks distance:
@@ -165,7 +165,28 @@ pub fn approx_pairs_dist(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: 
 
 }
 
-pub fn approx_pairs_dist_normalized(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
+pub fn approx_pairs_dist1(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
+    -> f64 {
+
+    // A function to calculate landmarks distance:
+    let lm_dist = |i: usize, j:usize| coords[landmarks[i]][j];
+
+    // Get a "signature" for location of node w:
+    let sig = |w: usize| (0 .. landmarks.len())
+                    .zip(0 .. landmarks.len())
+                    .map(|(i,j)| coords[w][i] + coords[w][j] - lm_dist(i,j))
+                    .map(|val| val as f64)
+                    .collect::<Vec<_>>();
+
+
+    // Calculate square distance between signatures:
+    sig(u).iter().zip(sig(v).iter())
+        .map(|(x,y)| (x - y).abs())
+        .sum()
+
+}
+
+pub fn approx_pairs_dist2_normalized(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
     -> f64 {
 
     // A function to calculate landmarks distance:
@@ -181,6 +202,26 @@ pub fn approx_pairs_dist_normalized(u: usize, v: usize, coords: &Vec<Vec<u64>>, 
     // Calculate square distance between signatures:
     sig(u).iter().zip(sig(v).iter())
         .map(|(x,y)| (x - y).powi(2))
+        .sum()
+
+}
+
+pub fn approx_pairs_dist1_normalized(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
+    -> f64 {
+
+    // A function to calculate landmarks distance:
+    let lm_dist = |i: usize, j:usize| coords[landmarks[i]][j];
+
+
+    // Get a "signature" for location of node w:
+    let sig = |w: usize| (0 .. landmarks.len()).tuple_combinations()
+                    .map(|(i,j)| ((coords[w][i] + coords[w][j] - lm_dist(i,j)) as f64) / (lm_dist(i,j) as f64))
+                    .collect::<Vec<_>>();
+
+
+    // Calculate square distance between signatures:
+    sig(u).iter().zip(sig(v).iter())
+        .map(|(x,y)| (x - y).abs())
         .sum()
 
 }

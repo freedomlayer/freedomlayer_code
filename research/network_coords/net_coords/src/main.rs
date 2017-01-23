@@ -10,7 +10,7 @@ mod checks;
 use rand::{StdRng};
 
 use coord_mappers::{approx_max_dist, approx_avg_dist,
-    approx_pairs_dist};
+    approx_pairs_dist, approx_pairs_dist_normalized};
 use network::{random_net};
 use coords::{build_coords, choose_landmarks};
 
@@ -55,9 +55,11 @@ fn main() {
 
     println!("approx_max_dist");
     check_approx_dist(l*l,approx_max_dist, &net, &coords, &landmarks, &mut rng);
-    println!("approx_max_dist");
+    println!("approx_avg_dist");
     check_approx_dist(l*l,approx_avg_dist, &net, &coords, &landmarks, &mut rng);
     println!("approx_pairs_dist");
     check_approx_dist(l*l,approx_pairs_dist,&net, &coords, &landmarks, &mut rng);
+    println!("approx_pairs_dist");
+    check_approx_dist(l*l,approx_pairs_dist_normalized,&net, &coords, &landmarks, &mut rng);
 }
 

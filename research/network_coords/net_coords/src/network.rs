@@ -1,7 +1,7 @@
 extern crate petgraph;
 extern crate rand;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use self::rand::{Rng, StdRng};
 use self::rand::distributions::{IndependentSample, Range};
@@ -25,10 +25,13 @@ impl <Node: NodeTrait> Network <Node> {
         }
     }
 
-    pub fn add_node(&mut self, node: Node) {
+    pub fn add_node(&mut self, node: Node) -> usize {
         let node_num = self.index_nodes.len();
         self.index_nodes.push(node);
         self.igraph.add_node(node_num);
+
+        // Return the index of the new node:
+        node_num
     }
 
     /*
@@ -57,6 +60,20 @@ impl <Node: NodeTrait> Network <Node> {
                  |e| *e.weight());
 
         scores.get(&b_index).map(|x| *x)
+    }
+
+    /// Get all nodes of distance <= dist from a given node
+    /// Returns a set of all those nodes
+    pub fn get_near_nodes(&self, index: usize, dist: usize) -> HashSet<usize> {
+        let res_set = HashSet::new();
+        res_set.insert(index);
+
+        for node_index in res_set.clone() {
+            for nei_index in self.igraph.neighbors(node_index) {
+                res_set.insert(nei_index)
+            }
+        }
+        return res_set
     }
 }
 

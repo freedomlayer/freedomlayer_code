@@ -99,16 +99,20 @@ fn try_route(src_node: usize, dst_node: usize,
 
     let mut cur_node = src_node;
 
+    // println!("------------------------");
+    // println!("Routing from {} to {}",src_node, dst_node); 
+    
     while cur_node != dst_node {
         let new_cur_node: usize = net.closest_nodes(cur_node)
             .take(amount_close)
-            .min_by_key(|&i| OrderedFloat(node_dist(cur_node, i))).unwrap();
+            .min_by_key(|&i| OrderedFloat(node_dist(dst_node, i))).unwrap();
 
         if new_cur_node == cur_node {
             return None;
         }
         num_hops += 1;
         cur_node = new_cur_node;
+        // println!("cur_node = {}",cur_node);
     }
     Some(num_hops)
 }

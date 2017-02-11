@@ -28,12 +28,16 @@ impl<'a, Node: NodeTrait> Iterator for ClosestNodes<'a, Node> {
     type Item = usize;
 
     fn next(&mut self) -> Option<usize> {
-        let min_elem = self.pending.iter()
-            .min_by_key(|&(_, dist)| dist);
+        let (node_index, node_dist) : (usize, u64) = { 
+            let min_elem = self.pending.iter()
+                .min_by_key(|&(_, dist)| dist);
 
-        let (&node_index, node_dist) = match min_elem {
-            None => return None,
-            Some(x) => x,
+            let (&node_index, &node_dist) = match min_elem {
+                None => return None,
+                Some(x) => x,
+            };
+
+            (node_index, node_dist)
         };
 
         for (_, nei_index, weight) in self.net.igraph.edges(node_index) {

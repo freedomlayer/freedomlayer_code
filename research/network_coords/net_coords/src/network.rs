@@ -15,6 +15,47 @@ pub struct Network<Node> {
     index_nodes: Vec<Node>, // Index -> Node
 }
 
+struct ClosestNodes<'a, Node: 'a> {
+    net: &'a Network<Node>,
+    pending: HashMap<usize, u64>,
+    done: HashSet<usize>,
+}
+
+
+/// An iterator for closest nodes to a given
+/// node in a graph.
+impl<'a, Node: NodeTrait> Iterator for ClosestNodes<'a, Node> {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<usize> {
+        let min_elem = self.pending.iter()
+            .min_by_key(|&(_, dist)| dist);
+
+        let (&node_index, node_dist) = match min_elem {
+            None => return None,
+            Some(x) => x,
+        };
+
+        for (_, nei_index, weight) in self.net.igraph.edges(node_index) {
+            let new_dist = node_dist + weight;
+            if self.done.contains(&nei_index) {
+                continue;
+            }
+            if !self.pending.contains_key(&nei_index) {
+                *self.pending.get_mut(&nei_index).unwrap() = new_dist;
+                continue;
+            }
+            if self.pending[&nei_index] > new_dist {
+                *self.pending.get_mut(&nei_index).unwrap() = new_dist;
+                continue;
+            }
+        }
+
+        self.done.insert(node_index);
+        Some(node_index)
+    }
+}
+
 
 impl <Node: NodeTrait> Network <Node> {
     pub fn new() -> Self {
@@ -62,18 +103,13 @@ impl <Node: NodeTrait> Network <Node> {
         scores.get(&b_index).map(|x| *x)
     }
 
-    /// Get all nodes of distance <= dist from a given node
-    /// Returns a set of all those nodes
-    pub fn get_near_nodes(&self, index: usize, dist: usize) -> HashSet<usize> {
-        let res_set = HashSet::new();
-        res_set.insert(index);
-
-        for node_index in res_set.clone() {
-            for nei_index in self.igraph.neighbors(node_index) {
-                res_set.insert(nei_index)
-            }
+    /// Get an Iterator for the closest nodes to node <index>
+    pub fn closest_nodes<'a>(&'a self, index: usize) -> ClosestNodes<'a, Node> {
+        ClosestNodes {
+            net: &self,
+            pending: [(index, 0),].iter().cloned().collect(),
+            done: HashSet::new(),
         }
-        return res_set
     }
 }
 
@@ -138,5 +174,48 @@ mod tests {
         assert!(net.dist(0,4).unwrap() == 6);
         assert!(net.dist(1,4).unwrap() == 5);
         assert!(net.dist(1,3).is_none());
+    }
+
+    #[test]
+    fn test_closest_nodes() {
+        let mut net = Network::<usize>::new();
+
+        // Insert n nodes:
+        for v in 0 .. 5 {
+            net.add_node(v);
+        }
+
+        net.igraph.add_edge(0,1,1);
+        net.igraph.add_edge(1,2,2);
+        net.igraph.add_edge(2,4,3);
+
+        let closest: Vec<usize> = net.closest_nodes(1).take(1).collect();
+        assert!(closest.len() == 1);
+        assert!(closest[0] == 1);
+
+        let closest: Vec<usize> = net.closest_nodes(1).take(2).collect();
+        assert!(closest.len() == 2);
+        assert!(closest[0] == 1);
+        assert!(closest[1] == 0);
+
+        let closest: Vec<usize> = net.closest_nodes(1).take(3).collect();
+        assert!(closest.len() == 3);
+        assert!(closest[0] == 1);
+        assert!(closest[1] == 0);
+        assert!(closest[2] == 2);
+
+        let closest: Vec<usize> = net.closest_nodes(1).take(4).collect();
+        assert!(closest.len() == 4);
+        assert!(closest[0] == 1);
+        assert!(closest[1] == 0);
+        assert!(closest[2] == 2);
+        assert!(closest[3] == 4);
+
+        let closest: Vec<usize> = net.closest_nodes(1).take(5).collect();
+        assert!(closest.len() == 4);
+        assert!(closest[0] == 1);
+        assert!(closest[1] == 0);
+        assert!(closest[2] == 2);
+        assert!(closest[3] == 4);
     }
 }

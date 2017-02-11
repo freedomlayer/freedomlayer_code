@@ -48,11 +48,11 @@ impl<'a, Node: NodeTrait> Iterator for ClosestNodes<'a, Node> {
                 continue;
             }
             if !self.pending.contains_key(&nei_index) {
-                *self.pending.get_mut(&nei_index).unwrap() = new_dist;
+                self.pending.insert(nei_index, new_dist);
                 continue;
             }
             if self.pending[&nei_index] > new_dist {
-                *self.pending.get_mut(&nei_index).unwrap() = new_dist;
+                self.pending.insert(nei_index, new_dist);
                 continue;
             }
         }
@@ -195,14 +195,17 @@ mod tests {
         net.igraph.add_edge(1,2,2);
         net.igraph.add_edge(2,4,3);
 
+
         let closest: Vec<usize> = net.closest_nodes(1).take(1).collect();
         assert!(closest.len() == 1);
         assert!(closest[0] == 1);
+
 
         let closest: Vec<usize> = net.closest_nodes(1).take(2).collect();
         assert!(closest.len() == 2);
         assert!(closest[0] == 1);
         assert!(closest[1] == 0);
+
 
         let closest: Vec<usize> = net.closest_nodes(1).take(3).collect();
         assert!(closest.len() == 3);
@@ -210,12 +213,14 @@ mod tests {
         assert!(closest[1] == 0);
         assert!(closest[2] == 2);
 
+
         let closest: Vec<usize> = net.closest_nodes(1).take(4).collect();
         assert!(closest.len() == 4);
         assert!(closest[0] == 1);
         assert!(closest[1] == 0);
         assert!(closest[2] == 2);
         assert!(closest[3] == 4);
+
 
         let closest: Vec<usize> = net.closest_nodes(1).take(5).collect();
         assert!(closest.len() == 4);

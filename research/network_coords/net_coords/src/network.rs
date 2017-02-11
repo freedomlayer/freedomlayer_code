@@ -40,6 +40,8 @@ impl<'a, Node: NodeTrait> Iterator for ClosestNodes<'a, Node> {
             (node_index, node_dist)
         };
 
+        self.pending.remove(&node_index);
+
         for (_, nei_index, weight) in self.net.igraph.edges(node_index) {
             let new_dist = node_dist + weight;
             if self.done.contains(&nei_index) {

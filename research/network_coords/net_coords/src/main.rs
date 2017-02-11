@@ -16,7 +16,8 @@ use network::{random_net};
 use coords::{build_coords, choose_landmarks};
 
 #[cfg(not(test))]
-use checks::{check_unique_coord, check_approx_dist};
+use checks::{check_unique_coord, check_approx_dist,
+    check_routing};
 
 #[cfg(not(test))]
 fn main() {
@@ -30,7 +31,7 @@ fn main() {
     // Set up graph parameters:
     // let l: u32 = 16;
     //
-    let l: u32 = 20;
+    let l: u32 = 12;
     let n: usize = ((2 as u64).pow(l)) as usize;
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
     let num_landmarks: usize = (((l*l) as u32)/3) as usize;
@@ -56,7 +57,10 @@ fn main() {
 
     // TODO: Possibly feed all check_approx_dist calls with the same list of pairs of nodes.
     // Currently each one generates a different set of pairs, which might affect the results.
+    
+    check_routing(&net, &coords, &landmarks, &mut (rng.clone()), 256, 256);
 
+    /*
     println!("approx_max_dist");
     check_approx_dist(l*l,approx_max_dist, &net, &coords, &landmarks, &mut (rng.clone()));
     println!("approx_avg_dist");
@@ -69,5 +73,6 @@ fn main() {
     check_approx_dist(l*l,approx_pairs_dist2,&net, &coords, &landmarks, &mut (rng.clone()));
     println!("approx_pairs_dist2_normalized");
     check_approx_dist(l*l,approx_pairs_dist2_normalized,&net, &coords, &landmarks, &mut (rng.clone()));
+    */
 }
 

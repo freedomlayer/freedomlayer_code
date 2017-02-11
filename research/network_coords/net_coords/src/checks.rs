@@ -2,7 +2,8 @@ extern crate rand;
 
 use network::{random_net, Network};
 use coords::{build_coords, choose_landmarks, is_coord_unique};
-use coord_mappers::{coord_to_ring_all_pairs, coord_to_ring};
+use coord_mappers::{coord_to_ring_all_pairs, coord_to_ring, 
+    approx_max_dist};
 use statistic::spearman;
 use random_util::choose_k_nums;
 
@@ -85,15 +86,37 @@ pub fn check_approx_dist<F>(num_iters: u32, fdist: F,
     println!("spearman: {}",spearman(&dists,&adists).unwrap());
 }
 
+/// Try to find a path in the network between src_node and dst_node.
+/// Returns None if path was not found, or Some(path_length
+fn try_route(src_node: usize, dst_node: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) -> Option<usize> {
+    // Node distance function:
+    let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
+    let num_hops = 0;
 
-pub fn check_routing<F>(l: u32, fdist: F) 
-    where F: DistAFunc {
+    while cur_node != dest_node {
+        let new_cur_node: usize = net.get_near_nodes(cur_node,gdist)
+                                    .min_by(|i| node_dist(cur_node, i));
+        if new_cur_node == cur_node {
+            return None;
+        }
+        num_hops += 1;
+        cur_node = new_cur_node;
+    }
+    Some(num_hops)
+}
+
+///
+/// Check the success rate of routing in the network.
+/// gdist is the greedy distance for hopping.
+/// iters is the amount of iterations for this check.
+pub fn check_routing(l: u32, gdist: usize, iters: usize) {
 
     // Set up graph parameters:
     // let l: u32 = 16;
     let n: usize = ((2 as u64).pow(l)) as usize;
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
     let num_landmarks: usize = (((l*l) as u32)/3) as usize;
+    let gdist: usize = 3; // Distance for greedy algorithm
 
     println!("n = {}",n);
     println!("num_neighbours = {}",num_neighbours);
@@ -114,27 +137,18 @@ pub fn check_routing<F>(l: u32, fdist: F)
 
     let coords = coords.unwrap();
 
-    let node_pair: Vec<usize> = choose_k_nums(2,n,&mut rng)
-        .into_iter().collect::<Vec<_>>();
+    // Amount of routing failures:
+    let num_route_fails: usize = 0;
+    // Sum of path length (Used for average later)
+    let sum_route_length: usize = 0;
 
-    /*
-    let mut dists = Vec::new();
-    let mut adists = Vec::new();
+    for _ in iters {
+        let node_pair: Vec<usize> = choose_k_nums(2,n,&mut rng)
+            .into_iter().collect::<Vec<_>>();
 
-    for _ in 0 .. l*l {
-        let (u,v) = (node_pair[0], node_pair[1]);
-        random_route(u,v,|x,y| {
-        });
-
-        // Push real distance between u and v on the network:
-        dists.push(net.dist(u,v).unwrap() as f64);
-
-        // Push approximated distance between u and v:
-        adists.push(fdist(u,v,&coords,&landmarks));
+        let num_hops = try_route(node_pair[0], node_pair[1]);
     }
 
-    println!("spearman: {}",spearman(&dists,&adists).unwrap());
-    */
 }
 
 #[cfg(test)]

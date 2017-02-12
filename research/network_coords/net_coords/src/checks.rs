@@ -89,10 +89,10 @@ pub fn check_approx_dist<F>(num_iters: u32, fdist: F,
 }
 
 /// Try to find a path in the network between src_node and dst_node.
-/// Returns None if path was not found, or Some(path_length
+/// Returns None if path was not found, or Some(path_length)
 fn try_route(src_node: usize, dst_node: usize, 
          amount_close: usize, net: &Network<usize>, 
-         coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) -> Option<usize> {
+         coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) -> Option<u64> {
     // Node distance function:
     let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
     let mut num_hops = 0;
@@ -103,20 +103,20 @@ fn try_route(src_node: usize, dst_node: usize,
     // println!("Routing from {} to {}",src_node, dst_node); 
     
     while cur_node != dst_node {
-        let new_cur_node: usize = net.closest_nodes(cur_node)
+        let (new_cur_node, new_dist): (usize, u64) = 
+            net.closest_nodes(cur_node)
             .take(amount_close)
-            .map(|(index, dist)| index)
-            .min_by_key(|&i| OrderedFloat(node_dist(dst_node, i))).unwrap();
+            .min_by_key(|&(i, dist)| OrderedFloat(node_dist(dst_node, i))).unwrap();
 
         if new_cur_node == cur_node {
             return None;
         }
-        num_hops += 1;
+        num_hops += new_dist;
         cur_node = new_cur_node;
-        // println!("cur_node = {}",cur_node);
     }
     Some(num_hops)
 }
+
 
 ///
 /// Check the success rate of routing in the network.
@@ -128,7 +128,7 @@ pub fn check_routing(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &V
     // Amount of routing failures:
     let mut num_route_fails: usize = 0;
     // Sum of path length (Used for average later)
-    let mut sum_route_length: usize = 0;
+    let mut sum_route_length: u64 = 0;
 
     for _ in 0 .. iters {
         let node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)

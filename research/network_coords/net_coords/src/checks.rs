@@ -105,6 +105,7 @@ fn try_route(src_node: usize, dst_node: usize,
     while cur_node != dst_node {
         let new_cur_node: usize = net.closest_nodes(cur_node)
             .take(amount_close)
+            .map(|(index, dist)| index)
             .min_by_key(|&i| OrderedFloat(node_dist(dst_node, i))).unwrap();
 
         if new_cur_node == cur_node {

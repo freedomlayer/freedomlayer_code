@@ -25,9 +25,9 @@ struct ClosestNodes<'a, Node: 'a> {
 /// An iterator for closest nodes to a given
 /// node in a graph.
 impl<'a, Node: NodeTrait> Iterator for ClosestNodes<'a, Node> {
-    type Item = usize;
+    type Item = (usize, u64);
 
-    fn next(&mut self) -> Option<usize> {
+    fn next(&mut self) -> Option<(usize,u64)> {
         let (node_index, node_dist) : (usize, u64) = { 
             let min_elem = self.pending.iter()
                 .min_by_key(|&(_, dist)| dist);
@@ -58,7 +58,7 @@ impl<'a, Node: NodeTrait> Iterator for ClosestNodes<'a, Node> {
         }
 
         self.done.insert(node_index);
-        Some(node_index)
+        Some((node_index, node_dist))
     }
 }
 
@@ -196,37 +196,11 @@ mod tests {
         net.igraph.add_edge(2,4,3);
 
 
-        let closest: Vec<usize> = net.closest_nodes(1).take(1).collect();
-        assert!(closest.len() == 1);
-        assert!(closest[0] == 1);
-
-
-        let closest: Vec<usize> = net.closest_nodes(1).take(2).collect();
-        assert!(closest.len() == 2);
-        assert!(closest[0] == 1);
-        assert!(closest[1] == 0);
-
-
-        let closest: Vec<usize> = net.closest_nodes(1).take(3).collect();
-        assert!(closest.len() == 3);
-        assert!(closest[0] == 1);
-        assert!(closest[1] == 0);
-        assert!(closest[2] == 2);
-
-
-        let closest: Vec<usize> = net.closest_nodes(1).take(4).collect();
+        let closest: Vec<_> = net.closest_nodes(1).take(5).collect();
         assert!(closest.len() == 4);
-        assert!(closest[0] == 1);
-        assert!(closest[1] == 0);
-        assert!(closest[2] == 2);
-        assert!(closest[3] == 4);
-
-
-        let closest: Vec<usize> = net.closest_nodes(1).take(5).collect();
-        assert!(closest.len() == 4);
-        assert!(closest[0] == 1);
-        assert!(closest[1] == 0);
-        assert!(closest[2] == 2);
-        assert!(closest[3] == 4);
+        assert!(closest[0] == (1,0));
+        assert!(closest[1] == (0,1));
+        assert!(closest[2] == (2,2));
+        assert!(closest[3] == (4,5));
     }
 }

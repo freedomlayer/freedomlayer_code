@@ -8,7 +8,8 @@ use coord_mappers::{coord_to_ring_all_pairs, coord_to_ring,
 use statistic::spearman;
 use random_util::choose_k_nums;
 
-use self::rand::{StdRng};
+use self::rand::{Rng, StdRng};
+use self::rand::distributions::{IndependentSample, Range};
 use self::ordered_float::OrderedFloat;
 
 // A trait alias for the distance function:
@@ -151,6 +152,42 @@ pub fn check_routing(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &V
     println!("success_ratio = {}", success_ratio);
     println!("mean_route_length = {}", mean_route_length);
 }
+
+/// Try to find a path in the network between src_node and dst_node.
+/// Using a variation of random walk.
+/// Returns None if path was not found, or Some(path_length)
+fn try_route_random(src_node: usize, dst_node: usize, 
+         amount_close: usize, net: &Network<usize>, 
+         coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>,
+         mut rng: &mut StdRng) -> Option<u64> {
+
+    // Node distance function:
+    let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
+    let mut num_hops = 0;
+
+    let mut cur_node = src_node;
+
+    // println!("------------------------");
+    // println!("Routing from {} to {}",src_node, dst_node); 
+    
+    while cur_node != dst_node {
+        let closest_nodes: Vec<(usize, u64)> = net.closest_nodes(cur_node)
+            .take(amount_close)
+            .collect::<Vec<_>>();
+
+        let &(mut new_cur_node, new_dist): &(usize, u64) = closest_nodes.iter()
+            .min_by_key(|&&(i, dist)| OrderedFloat(node_dist(dst_node, i))).unwrap();
+
+        while new_cur_node == cur_node {
+            let rand_range: Range<usize> = Range::new(0,closest_nodes.len());
+            new_cur_node = closest_nodes[rand_range.ind_sample(rng)].0;
+        }
+        num_hops += new_dist;
+        cur_node = new_cur_node;
+    }
+    Some(num_hops)
+}
+
 
 #[cfg(test)]
 mod tests {

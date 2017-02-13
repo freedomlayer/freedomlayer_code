@@ -190,6 +190,39 @@ fn try_route_random(src_node: usize, dst_node: usize,
     Some(num_hops)
 }
 
+///
+/// Check the success rate of routing in the network.
+/// amount_close is the amount of close nodes every node keeps.
+/// iters is the amount of iterations for this check.
+pub fn check_routing_random(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>, 
+         mut rng: &mut StdRng, amount_close: usize, iters: usize) {
+
+    // Amount of routing failures:
+    let mut num_route_fails: usize = 0;
+    // Sum of path length (Used for average later)
+    let mut sum_route_length: u64 = 0;
+
+    for _ in 0 .. iters {
+        let node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)
+            .into_iter().collect::<Vec<_>>();
+
+        let num_hops = try_route_random(node_pair[0], node_pair[1],
+                            amount_close, &net, &coords, &landmarks, &mut rng);
+
+        match num_hops {
+            Some(num) => sum_route_length += num,
+            None => num_route_fails += 1,
+        };
+    }
+
+    let num_route_success = iters - num_route_fails;
+    let mean_route_length = (sum_route_length as f64) / (num_route_success as f64);
+
+    let success_ratio = (num_route_success as f64) / (iters as f64);
+
+    println!("success_ratio = {}", success_ratio);
+    println!("mean_route_length = {}", mean_route_length);
+}
 
 #[cfg(test)]
 mod tests {

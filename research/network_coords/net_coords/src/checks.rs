@@ -175,12 +175,14 @@ fn try_route_random(src_node: usize, dst_node: usize,
             .take(amount_close)
             .collect::<Vec<_>>();
 
-        let &(mut new_cur_node, new_dist): &(usize, u64) = closest_nodes.iter()
+        let &(mut new_cur_node, mut new_dist): &(usize, u64) = closest_nodes.iter()
             .min_by_key(|&&(i, dist)| OrderedFloat(node_dist(dst_node, i))).unwrap();
 
         while new_cur_node == cur_node {
             let rand_range: Range<usize> = Range::new(0,closest_nodes.len());
-            new_cur_node = closest_nodes[rand_range.ind_sample(rng)].0;
+            let tup = closest_nodes[rand_range.ind_sample(rng)];
+            new_cur_node = tup.0;
+            new_dist = tup.1;
         }
         num_hops += new_dist;
         cur_node = new_cur_node;

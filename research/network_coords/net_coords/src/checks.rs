@@ -224,6 +224,43 @@ pub fn check_routing_random(net: &Network<usize>, coords: &Vec<Vec<u64>>, landma
     println!("mean_route_length = {}", mean_route_length);
 }
 
+/// Check if there are any local minima for network coordinates.
+pub fn check_local_minima(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>, 
+         mut rng: &mut StdRng, amount_close: usize, iters: usize) {
+
+    // Node distance function:
+    let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
+
+    let mut sum_ratio: f64 = 0.0;
+
+    for _ in 0 .. iters {
+        let rand_range: Range<usize> = Range::new(0,net.igraph.node_count());
+        let dst_node = rand_range.ind_sample(rng);
+
+        let mut num_not_minimum = 0;
+
+        for src_node in 0 .. net.igraph.node_count() {
+            if src_node == dst_node {
+                continue
+            }
+            let found_better: bool = net.closest_nodes(src_node)
+                .take(amount_close)
+                .any(|(i, dist)| node_dist(i, dst_node) < node_dist(src_node, dst_node));
+
+            if found_better {
+                num_not_minimum += 1;
+            }
+        }
+
+        let ratio_not_minimum = 
+            (num_not_minimum as f64) / ((net.igraph.node_count() - 1) as f64);
+
+        sum_ratio += ratio_not_minimum;
+    }
+
+    println!("success_ratio = {}", sum_ratio / (iters as f64));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

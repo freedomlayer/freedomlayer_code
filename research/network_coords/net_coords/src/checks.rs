@@ -145,7 +145,7 @@ pub fn check_routing(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &V
     }
 
     let num_route_success = iters - num_route_fails;
-    let mean_route_length = (sum_route_length as f64) / (num_route_fails as f64);
+    let mean_route_length = (sum_route_length as f64) / (num_route_success as f64);
 
     let success_ratio = (num_route_success as f64) / (iters as f64);
 

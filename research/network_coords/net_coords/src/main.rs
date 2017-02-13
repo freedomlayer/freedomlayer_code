@@ -32,7 +32,7 @@ fn main() {
     // Set up graph parameters:
     // let l: u32 = 16;
     //
-    let l: u32 = 12;
+    let l: u32 = 20;
     let n: usize = ((2 as u64).pow(l)) as usize;
     let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
     let num_landmarks: usize = (((l*l) as u32)/3) as usize;
@@ -59,11 +59,13 @@ fn main() {
     // TODO: Possibly feed all check_approx_dist calls with the same list of pairs of nodes.
     // Currently each one generates a different set of pairs, which might affect the results.
     
-    // check_routing_random(&net, &coords, &landmarks, &mut (rng.clone()), 
-    //               num_neighbours.pow(3), 1000);
-
-    check_local_minima(&net, &coords, &landmarks, &mut (rng.clone()), 
+    println!("check_routing_random:");
+    check_routing_random(&net, &coords, &landmarks, &mut (rng.clone()), 
                   num_neighbours.pow(3), 1000);
+
+    println!("check_local_minima:");
+    check_local_minima(&net, &coords, &landmarks, &mut (rng.clone()), 
+                  num_neighbours.pow(3), 100);
 
     /*
     println!("approx_max_dist");

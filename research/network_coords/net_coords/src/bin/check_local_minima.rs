@@ -1,7 +1,7 @@
 extern crate net_coords;
 extern crate rand;
 
-use rand::{StdRng};
+use rand::{Rng, StdRng};
 
 use net_coords::coord_mappers::{approx_max_dist, approx_avg_dist,
     approx_pairs_dist1, approx_pairs_dist1_normalized,
@@ -10,7 +10,6 @@ use net_coords::network::{Network, random_net};
 use net_coords::coords::{build_coords, choose_landmarks};
 
 
-use self::rand::{Rng, StdRng};
 use rand::distributions::{IndependentSample, Range};
 
 /// Check if there are any local minima for network coordinates.

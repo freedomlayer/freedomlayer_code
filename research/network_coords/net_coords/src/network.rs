@@ -15,7 +15,7 @@ pub struct Network<Node> {
     index_nodes: Vec<Node>, // Index -> Node
 }
 
-struct ClosestNodes<'a, Node: 'a> {
+pub struct ClosestNodes<'a, Node: 'a> {
     net: &'a Network<Node>,
     pending: HashMap<usize, u64>,
     done: HashSet<usize>,

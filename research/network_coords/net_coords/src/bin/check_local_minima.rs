@@ -1,22 +1,16 @@
+extern crate net_coords;
 extern crate rand;
-
-mod network;
-mod coords;
-mod coord_mappers;
-mod random_util;
-mod statistic;
-mod checks;
 
 use rand::{StdRng};
 
-use coord_mappers::{approx_max_dist, approx_avg_dist,
+use net_coords::coord_mappers::{approx_max_dist, approx_avg_dist,
     approx_pairs_dist1, approx_pairs_dist1_normalized,
     approx_pairs_dist2, approx_pairs_dist2_normalized};
-use network::{random_net};
-use coords::{build_coords, choose_landmarks};
+use net_coords::network::{random_net};
+use net_coords::coords::{build_coords, choose_landmarks};
 
 #[cfg(not(test))]
-use checks::{check_unique_coord, check_approx_dist,
+use net_coords::checks::{check_unique_coord, check_approx_dist,
     check_routing, check_routing_random,
     check_local_minima};
 

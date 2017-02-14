@@ -6,13 +6,49 @@ use rand::{StdRng};
 use net_coords::coord_mappers::{approx_max_dist, approx_avg_dist,
     approx_pairs_dist1, approx_pairs_dist1_normalized,
     approx_pairs_dist2, approx_pairs_dist2_normalized};
-use net_coords::network::{random_net};
+use net_coords::network::{Network, random_net};
 use net_coords::coords::{build_coords, choose_landmarks};
 
-#[cfg(not(test))]
-use net_coords::checks::{check_unique_coord, check_approx_dist,
-    check_routing, check_routing_random,
-    check_local_minima};
+
+use self::rand::{Rng, StdRng};
+use rand::distributions::{IndependentSample, Range};
+
+/// Check if there are any local minima for network coordinates.
+pub fn check_local_minima(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>, 
+         mut rng: &mut StdRng, amount_close: usize, iters: usize) {
+
+    // Node distance function:
+    let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
+
+    let mut sum_ratio: f64 = 0.0;
+
+    for _ in 0 .. iters {
+        let rand_range: Range<usize> = Range::new(0,net.igraph.node_count());
+        let dst_node = rand_range.ind_sample(rng);
+
+        let mut num_not_minimum = 0;
+
+        for src_node in 0 .. net.igraph.node_count() {
+            if src_node == dst_node {
+                continue
+            }
+            let found_better: bool = net.closest_nodes(src_node)
+                .take(amount_close)
+                .any(|(i, dist)| node_dist(i, dst_node) < node_dist(src_node, dst_node));
+
+            if found_better {
+                num_not_minimum += 1;
+            }
+        }
+
+        let ratio_not_minimum = 
+            (num_not_minimum as f64) / ((net.igraph.node_count() - 1) as f64);
+
+        sum_ratio += ratio_not_minimum;
+    }
+
+    println!("success_ratio = {}", sum_ratio / (iters as f64));
+}
 
 #[cfg(not(test))]
 fn main() {
@@ -53,9 +89,11 @@ fn main() {
     // TODO: Possibly feed all check_approx_dist calls with the same list of pairs of nodes.
     // Currently each one generates a different set of pairs, which might affect the results.
     
+    /*
     println!("check_routing_random:");
     check_routing_random(&net, &coords, &landmarks, &mut (rng.clone()), 
                   num_neighbours.pow(3), 1000);
+    */
 
     println!("check_local_minima:");
     check_local_minima(&net, &coords, &landmarks, &mut (rng.clone()), 

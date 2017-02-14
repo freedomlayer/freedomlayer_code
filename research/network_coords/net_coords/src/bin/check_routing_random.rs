@@ -1,18 +1,90 @@
 extern crate net_coords;
 extern crate rand;
+extern crate ordered_float;
 
 use rand::{StdRng};
+use rand::distributions::{IndependentSample, Range};
 
 use net_coords::coord_mappers::{approx_max_dist, approx_avg_dist,
     approx_pairs_dist1, approx_pairs_dist1_normalized,
     approx_pairs_dist2, approx_pairs_dist2_normalized};
-use net_coords::network::{random_net};
+use net_coords::network::{Network, random_net};
 use net_coords::coords::{build_coords, choose_landmarks};
+use net_coords::random_util::choose_k_nums;
 
-#[cfg(not(test))]
-use net_coords::checks::{check_unique_coord, check_approx_dist,
-    check_routing, check_routing_random,
-    check_local_minima};
+use self::ordered_float::OrderedFloat;
+
+
+/// Try to find a path in the network between src_node and dst_node.
+/// Using a variation of random walk.
+/// Returns None if path was not found, or Some(path_length)
+fn try_route_random(src_node: usize, dst_node: usize, 
+         amount_close: usize, net: &Network<usize>, 
+         coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>,
+         mut rng: &mut StdRng) -> Option<u64> {
+
+    // Node distance function:
+    let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
+    let mut num_hops = 0;
+
+    let mut cur_node = src_node;
+
+    // println!("------------------------");
+    // println!("Routing from {} to {}",src_node, dst_node); 
+    
+    while cur_node != dst_node {
+        let closest_nodes: Vec<(usize, u64)> = net.closest_nodes(cur_node)
+            .take(amount_close)
+            .collect::<Vec<_>>();
+
+        let &(mut new_cur_node, mut new_dist): &(usize, u64) = closest_nodes.iter()
+            .min_by_key(|&&(i, dist)| OrderedFloat(node_dist(dst_node, i))).unwrap();
+
+        while new_cur_node == cur_node {
+            let rand_range: Range<usize> = Range::new(0,closest_nodes.len());
+            let tup = closest_nodes[rand_range.ind_sample(rng)];
+            new_cur_node = tup.0;
+            new_dist = tup.1;
+        }
+        num_hops += new_dist;
+        cur_node = new_cur_node;
+    }
+    Some(num_hops)
+}
+
+///
+/// Check the success rate of routing in the network.
+/// amount_close is the amount of close nodes every node keeps.
+/// iters is the amount of iterations for this check.
+pub fn check_routing_random(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>, 
+         mut rng: &mut StdRng, amount_close: usize, iters: usize) {
+
+    // Amount of routing failures:
+    let mut num_route_fails: usize = 0;
+    // Sum of path length (Used for average later)
+    let mut sum_route_length: u64 = 0;
+
+    for _ in 0 .. iters {
+        let node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)
+            .into_iter().collect::<Vec<_>>();
+
+        let num_hops = try_route_random(node_pair[0], node_pair[1],
+                            amount_close, &net, &coords, &landmarks, &mut rng);
+
+        match num_hops {
+            Some(num) => sum_route_length += num,
+            None => num_route_fails += 1,
+        };
+    }
+
+    let num_route_success = iters - num_route_fails;
+    let mean_route_length = (sum_route_length as f64) / (num_route_success as f64);
+
+    let success_ratio = (num_route_success as f64) / (iters as f64);
+
+    println!("success_ratio = {}", success_ratio);
+    println!("mean_route_length = {}", mean_route_length);
+}
 
 #[cfg(not(test))]
 fn main() {
@@ -53,10 +125,7 @@ fn main() {
     // TODO: Possibly feed all check_approx_dist calls with the same list of pairs of nodes.
     // Currently each one generates a different set of pairs, which might affect the results.
     
-    // check_routing_random(&net, &coords, &landmarks, &mut (rng.clone()), 
-    //               num_neighbours.pow(3), 1000);
-
-    check_local_minima(&net, &coords, &landmarks, &mut (rng.clone()), 
+    check_routing_random(&net, &coords, &landmarks, &mut (rng.clone()), 
                   num_neighbours.pow(3), 1000);
 
     /*

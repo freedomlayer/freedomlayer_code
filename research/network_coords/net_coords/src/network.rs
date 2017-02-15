@@ -30,7 +30,7 @@ impl<'a, Node: NodeTrait> Iterator for ClosestNodes<'a, Node> {
     fn next(&mut self) -> Option<(usize,u64)> {
         let (node_index, node_dist) : (usize, u64) = { 
             let min_elem = self.pending.iter()
-                .min_by_key(|&(_, dist)| dist);
+                .min_by_key(|&(index, dist)| (dist,index));
 
             let (&node_index, &node_dist) = match min_elem {
                 None => return None,
@@ -202,5 +202,20 @@ mod tests {
         assert!(closest[1] == (0,1));
         assert!(closest[2] == (2,2));
         assert!(closest[3] == (4,5));
+    }
+
+    #[test]
+    fn test_lexicographic() {
+        let a = (1,2);
+        let b = (1,3);
+        assert!(a < b);
+
+        let a = (1,1,9);
+        let b = (1,1,10);
+        assert!(a < b);
+
+        let a = (2,3,9);
+        let b = (2,3,8);
+        assert!(a > b);
     }
 }

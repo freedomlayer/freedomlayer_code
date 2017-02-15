@@ -123,6 +123,7 @@ fn main() {
     // TODO: Possibly feed all check_approx_dist calls with the same list of pairs of nodes.
     // Currently each one generates a different set of pairs, which might affect the results.
     
+    println!("check_routing_random...");
     check_routing_random(&net, &coords, &landmarks, &mut (rng.clone()), 
                   num_neighbours.pow(3), 1000);
 

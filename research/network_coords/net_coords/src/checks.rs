@@ -10,7 +10,7 @@ use random_util::choose_k_nums;
 
 use self::rand::{Rng, StdRng};
 use self::rand::distributions::{IndependentSample, Range};
-use self::ordered_float::OrderedFloat;
+// use self::ordered_float::OrderedFloat;
 
 // A trait alias for the distance function:
 pub trait DistAFunc: Fn(usize,usize,&Vec<Vec<u64>>,&Vec<usize>) -> f64 {}

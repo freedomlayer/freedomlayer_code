@@ -12,8 +12,6 @@ use net_coords::network::{Network, random_net};
 use net_coords::coords::{build_coords, choose_landmarks};
 use net_coords::random_util::choose_k_nums;
 
-use self::ordered_float::OrderedFloat;
-
 
 /// Try to find a path in the network between src_node and dst_node.
 /// Using a variation of random walk.
@@ -38,7 +36,7 @@ fn try_route_random(src_node: usize, dst_node: usize,
             .collect::<Vec<_>>();
 
         let &(mut new_cur_node, mut new_dist): &(usize, u64) = closest_nodes.iter()
-            .min_by_key(|&&(i, dist)| OrderedFloat(node_dist(dst_node, i))).unwrap();
+            .min_by_key(|&&(i, dist)| node_dist(dst_node, i)).unwrap();
 
         while new_cur_node == cur_node {
             let rand_range: Range<usize> = Range::new(0,closest_nodes.len());

@@ -103,33 +103,24 @@ pub fn coord_to_ring(coord: &Vec<u64>) -> f64 {
 /////////////////////////////////////////////////////////////////////
 
 
+fn dist_u64(a: u64, b: u64) -> u64 {
+    if a > b {
+        return a - b
+    }
+    b - a
+}
+
 /// Approximate distance between two nodes in the network using network coordinates
 pub fn approx_max_dist(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
-    -> f64 {
+    -> u64 {
     let u_coord = &coords[u];
     let v_coord = &coords[v];
 
-    let max_floats = |v: Vec<f64>| -> Option<f64> {
-        if v.len() == 0 {
-            return None
-        }
 
-        let mut cur_max = v[0];
-        for i in 1 .. v.len() {
-            match cur_max.partial_cmp(&v[i]) {
-                None => return None,
-                Some(Less) => cur_max = v[i],
-                _ => {},
-            }
-        }
-        Some(cur_max)
-    };
-
-    max_floats(
-        u_coord.iter().enumerate()
-            .map(|(i , _) | ((u_coord[i] as f64) - (v_coord[i]) as f64).abs())
-            .collect()
-    ).unwrap()
+    u_coord.iter()
+        .zip(v_coord)
+        .map(|(&u,&v): (&u64, &u64)| dist_u64(u,v))
+        .max().unwrap()
 }
 
 /// Approximate distance between two nodes in the network using network coordinates

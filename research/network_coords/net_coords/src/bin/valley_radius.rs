@@ -14,20 +14,23 @@ use rand::distributions::{IndependentSample, Range};
 
 /// Check if there are any local minima for network coordinates.
 pub fn find_max_area(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>, 
-         mut rng: &mut StdRng, iters: usize) {
+         mut rng: &mut StdRng, iters: usize, node_sample: usize) {
 
     // Node distance function:
     let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
 
     let mut max_area: u64 = 0;
+    let mut sum_area: u64 = 0;
 
     for _ in 0 .. iters {
         let rand_range: Range<usize> = Range::new(0,net.igraph.node_count());
         let dst_node = rand_range.ind_sample(rng);
 
-        for src_node in 0 .. net.igraph.node_count() {
-            if src_node == dst_node {
-                continue
+        for _ in 0 .. node_sample {
+            // pick a random source node which is not the dest node:
+            let mut src_node = dst_node;
+            while src_node == dst_node {
+                src_node = rand_range.ind_sample(rng);
             }
 
             let area: u64 = net.closest_nodes(src_node)
@@ -38,10 +41,13 @@ pub fn find_max_area(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &V
             if max_area < area {
                 max_area = area;
             }
+            sum_area += area;
         }
     }
 
     println!("max_area = {}", max_area);
+    println!("avg_area = {}", 
+             (sum_area as f64) / ((iters * node_sample) as f64));
 }
 
 #[cfg(not(test))]
@@ -81,7 +87,7 @@ fn main() {
     let coords = coords.unwrap();
 
     println!("find_max_area:");
-    find_max_area(&net, &coords, &landmarks, &mut (rng.clone()), 100);
+    find_max_area(&net, &coords, &landmarks, &mut (rng.clone()), 100,100);
 
 }
 

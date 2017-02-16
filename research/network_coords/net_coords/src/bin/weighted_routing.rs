@@ -93,32 +93,35 @@ pub fn check_weighted_routing(net: &Network<usize>, coords: &Vec<Vec<u64>>, land
 
 #[cfg(not(test))]
 fn main() {
-    let l: u32 = 20;
-    let n: usize = ((2 as u64).pow(l)) as usize;
-    let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
-    let num_landmarks: usize = (((l*l) as u32)/3) as usize;
+    for l in 11 .. 21 {
+        // let l: u32 = 21;
+        println!("--------------------------------");
+        let n: usize = ((2 as u64).pow(l)) as usize;
+        let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
+        let num_landmarks: usize = (((l*l) as u32)/3) as usize;
 
-    println!("n = {}",n);
-    println!("num_neighbours = {}",num_neighbours);
-    println!("num_landmarks = {}",num_landmarks);
+        println!("n = {}",n);
+        println!("num_neighbours = {}",num_neighbours);
+        println!("num_landmarks = {}",num_landmarks);
 
-    let seed: &[_] = &[1,2,3,4,5];
-    let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
-    println!("Creating the network...");
-    let net = random_net(n,num_neighbours,&mut rng);
-    let landmarks = choose_landmarks(&net,num_landmarks, &mut rng);
-    println!("Iterating through coordinates");
-    let coords = build_coords(&net, &landmarks);
+        let seed: &[_] = &[1,2,3,4,5];
+        let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+        println!("Creating the network...");
+        let net = random_net(n,num_neighbours,&mut rng);
+        let landmarks = choose_landmarks(&net,num_landmarks, &mut rng);
+        println!("Iterating through coordinates");
+        let coords = build_coords(&net, &landmarks);
 
-    if coords.is_none() {
-        println!("graph is not connected! Aborting.");
-        return
+        if coords.is_none() {
+            println!("graph is not connected! Aborting.");
+            return
+        }
+
+        let coords = coords.unwrap();
+        
+        println!("weighted_routing...");
+        check_weighted_routing(&net, &coords, &landmarks, &mut (rng.clone()), 
+                      num_neighbours.pow(3), 100);
     }
-
-    let coords = coords.unwrap();
-    
-    println!("weighted_routing...");
-    check_weighted_routing(&net, &coords, &landmarks, &mut (rng.clone()), 
-                  num_neighbours.pow(3), 100);
 }
 

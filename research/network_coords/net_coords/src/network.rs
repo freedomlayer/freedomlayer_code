@@ -131,7 +131,41 @@ impl <Node: NodeTrait> Network <Node> {
 }
 
 
+/// A random network where all edges are of weight 1.
 pub fn random_net<R: Rng>(n: usize, num_neighbours: usize, rng: &mut R) -> Network<usize> {
+
+    let mut net = Network::<usize>::new();
+
+    // Insert n nodes:
+    for v in 0 .. n {
+        net.add_node(v);
+    }
+
+    let rand_node: Range<usize> = Range::new(0,n);
+    // Generate random distance between pairs of nodes:
+    // let rand_dist: Range<u64> = Range::new(1,10);
+
+    // Connect node v to about num_neighbours other nodes:
+    for v in 0 .. n {
+        for _ in 0 .. num_neighbours {
+            let u = rand_node.ind_sample(rng);
+            if u == v {
+                // Avoid self loops
+                continue
+            }
+            if net.igraph.contains_edge(v,u) {
+                // Already has this edge.
+                continue
+            }
+            // Add edge:
+            net.igraph.add_edge(v,u,1);
+        }
+    }
+    net
+}
+
+/// A random network where edges are weighted.
+pub fn random_net_weighted<R: Rng>(n: usize, num_neighbours: usize, rng: &mut R) -> Network<usize> {
 
     let mut net = Network::<usize>::new();
 
@@ -172,6 +206,14 @@ mod tests {
         let seed: &[_] = &[1,2,3,4];
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
         let net = random_net(100,5,&mut rng);
+        assert!(net.igraph.node_count() == 100);
+    }
+
+    #[test]
+    fn test_random_net_weighted() {
+        let seed: &[_] = &[1,2,3,4];
+        let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+        let net = random_net_weighted(100,5,&mut rng);
         assert!(net.igraph.node_count() == 100);
     }
 

@@ -26,7 +26,7 @@ fn try_route_weighted_random(src_node: usize, dst_node: usize,
     let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
     let calc_weight = |i: usize| ((-(node_dist(i, dst_node) as f64)).exp() * 100.0) as u64;
 
-    let mut num_hops = 0;
+    let mut total_distance = 0;
     let mut cur_node = src_node;
 
     // println!("------------------------");
@@ -35,27 +35,29 @@ fn try_route_weighted_random(src_node: usize, dst_node: usize,
     while cur_node != dst_node {
         // println!("dst_node = {}. cur_node = {}", dst_node, cur_node);
         
-        let mut items = net.closest_nodes(cur_node).take(amount_close)
-            .map(|(i, dist, _)| 
-                 Weighted { weight: calc_weight(i) as u32, item: (i, dist) })
-            .collect::<Vec<_>>();
-
-
-        let (mut new_cur_node, mut new_dist, _): (usize, u64, _) = 
+        let (mut new_cur_node, _ , mut gateway_index): (usize, u64, _) = 
             net.closest_nodes(cur_node).take(amount_close)
                 .min_by_key(|&(i, dist, _)| node_dist(dst_node, i)).unwrap();
 
         if node_dist(new_cur_node, dst_node) >= node_dist(cur_node, dst_node) {
-        // while new_cur_node == cur_node {
+
+            // Pick a best local destination randomly in a "smart" way:
+            let mut items = net.closest_nodes(cur_node).take(amount_close)
+                .map(|(i, dist, gateway)| 
+                     Weighted { weight: calc_weight(i) as u32, item: (i, dist, gateway) })
+                .collect::<Vec<_>>();
+
+            // Pick the next step as the gateway of the chosen local destination:
             let wc = WeightedChoice::new(&mut items);
             let smp = wc.ind_sample(&mut rng);
-            new_cur_node = smp.0;
-            new_dist = smp.1;
+            gateway_index = smp.2;
         }
-        num_hops += new_dist;
-        cur_node = new_cur_node;
+
+        total_distance += *net.igraph.edge_weight(cur_node, gateway_index).unwrap();
+        cur_node = gateway_index;
+
     }
-    Some(num_hops)
+    Some(total_distance)
 }
 
 ///
@@ -74,10 +76,10 @@ pub fn check_weighted_routing(net: &Network<usize>, coords: &Vec<Vec<u64>>, land
         let node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)
             .into_iter().collect::<Vec<_>>();
 
-        let num_hops = try_route_weighted_random(node_pair[0], node_pair[1],
+        let total_distance = try_route_weighted_random(node_pair[0], node_pair[1],
                             amount_close, &net, &coords, &landmarks, &mut rng);
 
-        match num_hops {
+        match total_distance {
             Some(num) => sum_route_length += num,
             None => num_route_fails += 1,
         };

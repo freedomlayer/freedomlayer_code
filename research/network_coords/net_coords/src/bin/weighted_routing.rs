@@ -36,14 +36,14 @@ fn try_route_weighted_random(src_node: usize, dst_node: usize,
         // println!("dst_node = {}. cur_node = {}", dst_node, cur_node);
         
         let mut items = net.closest_nodes(cur_node).take(amount_close)
-            .map(|(i, dist)| 
+            .map(|(i, dist, _)| 
                  Weighted { weight: calc_weight(i) as u32, item: (i, dist) })
             .collect::<Vec<_>>();
 
 
-        let (mut new_cur_node, mut new_dist): (usize, u64) = 
+        let (mut new_cur_node, mut new_dist, _): (usize, u64, _) = 
             net.closest_nodes(cur_node).take(amount_close)
-                .min_by_key(|&(i, dist)| node_dist(dst_node, i)).unwrap();
+                .min_by_key(|&(i, dist, _)| node_dist(dst_node, i)).unwrap();
 
         while new_cur_node == cur_node {
             let wc = WeightedChoice::new(&mut items);

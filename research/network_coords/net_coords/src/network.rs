@@ -17,7 +17,7 @@ pub struct Network<Node> {
 
 pub struct ClosestNodes<'a, Node: 'a> {
     net: &'a Network<Node>,
-    pending: HashMap<usize, u64>,
+    pending: HashMap<usize, (u64, Option<usize>)>,
     done: HashSet<usize>,
 }
 
@@ -25,40 +25,51 @@ pub struct ClosestNodes<'a, Node: 'a> {
 /// An iterator for closest nodes to a given
 /// node in a graph.
 impl<'a, Node: NodeTrait> Iterator for ClosestNodes<'a, Node> {
-    type Item = (usize, u64);
+    // node_index, distance from source, gateway node index
+    type Item = (usize, u64, usize); 
 
-    fn next(&mut self) -> Option<(usize,u64)> {
-        let (node_index, node_dist) : (usize, u64) = { 
+    fn next(&mut self) -> Option<(usize,u64, usize)> {
+        let (node_index, node_dist, gateway_index) : (usize, u64, Option<usize>) = { 
             let min_elem = self.pending.iter()
-                .min_by_key(|&(index, dist)| (dist,index));
+                .min_by_key(|&(index, &(dist, gateway))| (dist,index));
 
-            let (&node_index, &node_dist) = match min_elem {
+            let (&node_index, &(node_dist, gateway_index)) = match min_elem {
                 None => return None,
                 Some(x) => x,
             };
 
-            (node_index, node_dist)
+            (node_index, node_dist, gateway_index)
         };
 
         self.pending.remove(&node_index);
 
         for (_, nei_index, weight) in self.net.igraph.edges(node_index) {
+
+            let nei_gateway = match gateway_index {
+                Some(index) => index,
+                None => nei_index,
+            };
+
             let new_dist = node_dist + weight;
             if self.done.contains(&nei_index) {
                 continue;
             }
             if !self.pending.contains_key(&nei_index) {
-                self.pending.insert(nei_index, new_dist);
+                self.pending.insert(nei_index, (new_dist, Some(nei_gateway)));
                 continue;
             }
-            if self.pending[&nei_index] > new_dist {
-                self.pending.insert(nei_index, new_dist);
+            if self.pending[&nei_index].0 > new_dist {
+                self.pending.insert(nei_index, (new_dist, Some(nei_gateway)));
                 continue;
             }
         }
 
         self.done.insert(node_index);
-        Some((node_index, node_dist))
+
+        match gateway_index {
+            Some(gindex) => Some((node_index, node_dist, gindex)),
+            None => self.next(),
+        }
     }
 }
 
@@ -113,7 +124,7 @@ impl <Node: NodeTrait> Network <Node> {
     pub fn closest_nodes<'a>(&'a self, index: usize) -> ClosestNodes<'a, Node> {
         ClosestNodes {
             net: &self,
-            pending: [(index, 0),].iter().cloned().collect(),
+            pending: [(index, (0, None)),].iter().cloned().collect(),
             done: HashSet::new(),
         }
     }
@@ -187,21 +198,26 @@ mod tests {
         let mut net = Network::<usize>::new();
 
         // Insert n nodes:
-        for v in 0 .. 5 {
+        for v in 0 .. 7 {
             net.add_node(v);
         }
 
         net.igraph.add_edge(0,1,1);
         net.igraph.add_edge(1,2,2);
         net.igraph.add_edge(2,4,3);
+        net.igraph.add_edge(4,6,2);
 
 
         let closest: Vec<_> = net.closest_nodes(1).take(5).collect();
         assert!(closest.len() == 4);
-        assert!(closest[0] == (1,0));
-        assert!(closest[1] == (0,1));
-        assert!(closest[2] == (2,2));
-        assert!(closest[3] == (4,5));
+        println!("0");
+        assert!(closest[0] == (0,1,0));
+        println!("1");
+        assert!(closest[1] == (2,2,2));
+        println!("2");
+        assert!(closest[2] == (4,5,2));
+        println!("3");
+        assert!(closest[3] == (6,7,2));
     }
 
     #[test]

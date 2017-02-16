@@ -33,6 +33,7 @@ fn try_route_random(src_node: usize, dst_node: usize,
     while cur_node != dst_node {
         let closest_nodes: Vec<(usize, u64)> = net.closest_nodes(cur_node)
             .take(amount_close)
+            .map(|(index, dist, _)| (index,dist))
             .collect::<Vec<_>>();
 
         let &(mut new_cur_node, mut new_dist): &(usize, u64) = closest_nodes.iter()

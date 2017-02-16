@@ -34,7 +34,7 @@ pub fn find_max_area(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmarks: &V
             }
 
             let area: u64 = net.closest_nodes(src_node)
-                .position(|(node_index, _)| 
+                .position(|(node_index, _, _)| 
                           node_dist(node_index, dst_node) < node_dist(src_node, dst_node))
                 .unwrap() as u64;
 

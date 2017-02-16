@@ -104,10 +104,10 @@ fn try_route(src_node: usize, dst_node: usize,
     // println!("Routing from {} to {}",src_node, dst_node); 
     
     while cur_node != dst_node {
-        let (new_cur_node, new_dist): (usize, u64) = 
+        let (new_cur_node, new_dist, _): (usize, u64, usize) = 
             net.closest_nodes(cur_node)
             .take(amount_close)
-            .min_by_key(|&(i, _)| node_dist(dst_node, i)).unwrap();
+            .min_by_key(|&(i, _, _)| node_dist(dst_node, i)).unwrap();
 
         if new_cur_node == cur_node {
             return None;

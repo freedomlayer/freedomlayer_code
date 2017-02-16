@@ -33,7 +33,7 @@ pub fn check_local_minima(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmark
             }
             let found_better: bool = net.closest_nodes(src_node)
                 .take(amount_close)
-                .any(|(i, dist)| node_dist(i, dst_node) < node_dist(src_node, dst_node));
+                .any(|(i, dist, _)| node_dist(i, dst_node) < node_dist(src_node, dst_node));
 
             if found_better {
                 num_not_minimum += 1;

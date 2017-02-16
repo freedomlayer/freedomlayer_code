@@ -45,7 +45,8 @@ fn try_route_weighted_random(src_node: usize, dst_node: usize,
             net.closest_nodes(cur_node).take(amount_close)
                 .min_by_key(|&(i, dist, _)| node_dist(dst_node, i)).unwrap();
 
-        while new_cur_node == cur_node {
+        if node_dist(new_cur_node, dst_node) >= node_dist(cur_node, dst_node) {
+        // while new_cur_node == cur_node {
             let wc = WeightedChoice::new(&mut items);
             let smp = wc.ind_sample(&mut rng);
             new_cur_node = smp.0;

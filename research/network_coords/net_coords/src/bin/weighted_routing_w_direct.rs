@@ -9,7 +9,7 @@ use rand::distributions::{Weighted, WeightedChoice,
 use net_coords::coord_mappers::{approx_max_dist, approx_avg_dist,
     approx_pairs_dist1, approx_pairs_dist1_normalized,
     approx_pairs_dist2, approx_pairs_dist2_normalized};
-use net_coords::network::{Network, random_net_weighted};
+use net_coords::network::{Network, random_net, random_net_weighted};
 use net_coords::coords::{build_coords, choose_landmarks};
 use net_coords::random_util::choose_k_nums;
 
@@ -106,7 +106,8 @@ fn main() {
         println!("--------------------------------");
         let n: usize = ((2 as u64).pow(l)) as usize;
         let num_neighbours: usize = (1.5 * (n as f64).ln()) as usize;
-        let num_landmarks: usize = (((l*l) as u32)/3) as usize;
+        let num_landmarks: usize = (((l*l) as u32)) as usize;
+        // let num_landmarks: usize = (((l*l) as u32)) as usize;
 
         println!("n = {}",n);
         println!("num_neighbours = {}",num_neighbours);
@@ -115,7 +116,7 @@ fn main() {
         let seed: &[_] = &[1,2,3,4,5];
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
         println!("Creating the network...");
-        let net = random_net_weighted(n,num_neighbours,&mut rng);
+        let net = random_net(n,num_neighbours,&mut rng);
         let landmarks = choose_landmarks(&net,num_landmarks, &mut rng);
         println!("Iterating through coordinates");
         let coords = build_coords(&net, &landmarks);

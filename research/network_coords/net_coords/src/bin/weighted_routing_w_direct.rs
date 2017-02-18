@@ -101,7 +101,7 @@ pub fn check_weighted_routing(net: &Network<usize>, coords: &Vec<Vec<u64>>, land
 
 #[cfg(not(test))]
 fn main() {
-    for l in 11 .. 21 {
+    for l in 11 .. 22 {
     // let l: u32 = 15;
         println!("--------------------------------");
         let n: usize = ((2 as u64).pow(l)) as usize;

@@ -78,6 +78,12 @@ fn extract_chains<'a> (fingers: &'a ChordFingers) ->
     res
 }
 
+/// Pass over a chain of node ids. Remove cycles of node ids.
+fn remove_cycles(chain: &NodeChain) {
+
+}
+
+
 /// Perform one fingers iteration for node x: 
 /// Take all chains from neighbors and update own chains to the best found chains.
 fn iter_fingers<Node: NodeTrait>(x_i: usize, net: Network<Node>, 

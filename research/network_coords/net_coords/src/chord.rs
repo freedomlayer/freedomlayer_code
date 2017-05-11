@@ -102,6 +102,13 @@ impl Iterator for IdsChain {
     }
 }
 
+fn ids_chain(src_id: RingKey, dst_id: RingKey) -> IdsChain {
+    IdsChain {
+        cur_id: src_id,
+        dst_id: dst_id,
+    }
+}
+
 /// Calculate ring distance from x to y clockwise
 fn vdist(xk:RingKey, yk: RingKey) -> RingKey {
     (yk - xk) % 2_u64.pow(L as u32)
@@ -169,6 +176,9 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: Network<Node>,
             all_chains.iter().min_by_key(|c| (vdist((x_id - 2_u64.pow(i as u32)) % 2_u64.pow(L as u32), c[0]), c.len()) ).unwrap().clone();
     }
 
+    for neighbor_index in net.igraph.neighbors(x_i) {
+        
+    }
     // fingers.neighbor_connectors
 
 

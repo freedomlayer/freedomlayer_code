@@ -5,7 +5,8 @@ pub mod index_id;
 
 use self::petgraph::graphmap::NodeTrait;
 use network::{Network};
-use chord::index_id::{IndexId};
+use self::index_id::{IndexId};
+use self::ids_chain::{ids_chain};
 
 type RingKey = u64; // A key in the chord ring
 type NodeChain = Vec<RingKey>;
@@ -61,6 +62,30 @@ fn extract_chains<'a> (fingers: &'a ChordFingers) ->
 fn remove_cycles(chain: &NodeChain) {
 }
 
+/// Prepare all candidate chains for node x_i.
+fn prepare_candidates<Node: NodeTrait>(x_i: usize, net: &Network<Node>, index_id: &IndexId, 
+                      fingers: &Vec<ChordFingers>) -> Vec<NodeChain> {
+    let x_id: RingKey = index_id.index_to_id(x_i).unwrap();
+
+    // Collect all chains to one vector. 
+    let mut candidates: Vec<NodeChain> = Vec::new();
+
+    // Add trivial chain (x):
+    candidates.push(vec![x_id]);
+
+    // Add trivial chains (x,nei) where nei is any neighbor of x:
+    for neighbor_index in net.igraph.neighbors(x_i) {
+        candidates.push(vec![index_id.index_to_id(neighbor_index).unwrap(), x_id])
+    }
+
+    // Add all current chains:
+    candidates.extend(
+        extract_chains(&fingers[x_i]).iter().map(|&chain| chain.clone())
+    );
+
+    candidates
+}
+
 
 
 /// Perform one fingers iteration for node x: 
@@ -70,27 +95,14 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: Network<Node>,
 
     let x_id: RingKey = index_id.index_to_id(x_i).unwrap();
 
-    // Collect all chains to one vector. 
-    let mut all_chains: Vec<NodeChain> = Vec::new();
-
-    // Add trivial chain (x):
-    all_chains.push(vec![x_id]);
-
-    // Add trivial chains (x,nei) where nei is any neighbor of x:
-    for neighbor_index in net.igraph.neighbors(x_i) {
-        all_chains.push(vec![index_id.index_to_id(neighbor_index).unwrap(), x_id])
-    }
-
-    // Add all current chains:
-    all_chains.extend(
-        extract_chains(&fingers[x_i]).iter().map(|&chain| chain.clone())
-    );
+    // Get all chain candidates:
+    let candidates = prepare_candidates(x_i, &net,  &index_id, &fingers);
 
     // Update left finger:
-    fingers[x_i].left = all_chains.iter().min_by_key(|c| (vdist(c[0], x_id), c.len()) ).unwrap().clone();
+    fingers[x_i].left = candidates.iter().min_by_key(|c| (vdist(c[0], x_id), c.len()) ).unwrap().clone();
 
     // Find the chain that is closest to target_id from the right.
-    let best_right_chain = |target_id| all_chains.iter().min_by_key(|c| 
+    let best_right_chain = |target_id| candidates.iter().min_by_key(|c| 
                                          (vdist(target_id, c[0]), c.len()) ).unwrap().clone();
 
     // Update all right fingers:
@@ -104,17 +116,17 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: Network<Node>,
     // Update neighbor connectors.
     // For determinism, we sort the neighbors before iterating.
     // TODO: Finish here.
-    /*
-    for (neighbor_vec_index, neighbor_index) in net.igraph.neighbors(x_i).collect::<Vec<_>>().inplace_sort().iter().enumerate() {
+    let mut s_neighbors: Vec<usize> = net.igraph.neighbors(x_i).collect::<Vec<_>>();
+    s_neighbors.sort();
+
+    for (neighbor_vec_index, &neighbor_index) in s_neighbors.iter().enumerate() {
         let neighbor_id: RingKey = index_id.index_to_id(neighbor_index).unwrap();
 
-        for cur_id in ids_chain(x_id, neighbor_id) {
-            fingers[x_i].neighbor_connectors[neighbor_vec_index]
-
+        for (j,cur_id) in ids_chain(x_id, neighbor_id).enumerate() {
+            fingers[x_i].neighbor_connectors[neighbor_vec_index][j] = 
+                best_right_chain(cur_id);
         }
-
     }
-    */
 
     // For every maintained chain: Find the best chain.
     //  - Closest to wanted target.

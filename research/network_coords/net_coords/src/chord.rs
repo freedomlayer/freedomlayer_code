@@ -8,6 +8,9 @@ type RingKey = u64; // A key in the chord ring
 type NodeChain = Vec<RingKey>;
 type NeighborConnector = Vec<NodeChain>;
 
+// Size of keyspace is 2^L:
+const L: usize = 42;
+
 pub struct ChordFingers {
     left: NodeChain<>, 
     right_positive: Vec<NodeChain>,

@@ -86,21 +86,35 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: Network<Node>,
         extract_chains(&fingers[x_i]).iter().map(|&chain| chain.clone())
     );
 
+    // Update left finger:
     fingers[x_i].left = all_chains.iter().min_by_key(|c| (vdist(c[0], x_id), c.len()) ).unwrap().clone();
+
+    // Find the chain that is closest to target_id from the right.
+    let best_right_chain = |target_id| all_chains.iter().min_by_key(|c| 
+                                         (vdist(target_id, c[0]), c.len()) ).unwrap().clone();
+
+    // Update all right fingers:
     for i in 0 .. L {
-        fingers[x_i].right_positive[i] = 
-            all_chains.iter().min_by_key(|c| (vdist((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(L as u32), c[0]), c.len()) ).unwrap().clone();
+        fingers[x_i].right_positive[i] = best_right_chain((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(L as u32));
     }
     for i in 0 .. L {
-        fingers[x_i].right_negative[i] = 
-            all_chains.iter().min_by_key(|c| (vdist((x_id - 2_u64.pow(i as u32)) % 2_u64.pow(L as u32), c[0]), c.len()) ).unwrap().clone();
+        fingers[x_i].right_negative[i] = best_right_chain((x_id - 2_u64.pow(i as u32)) % 2_u64.pow(L as u32));
     }
 
-    for neighbor_index in net.igraph.neighbors(x_i) {
-        
-    }
-    // fingers.neighbor_connectors
+    // Update neighbor connectors.
+    // For determinism, we sort the neighbors before iterating.
+    // TODO: Finish here.
+    /*
+    for (neighbor_vec_index, neighbor_index) in net.igraph.neighbors(x_i).collect::<Vec<_>>().inplace_sort().iter().enumerate() {
+        let neighbor_id: RingKey = index_id.index_to_id(neighbor_index).unwrap();
 
+        for cur_id in ids_chain(x_id, neighbor_id) {
+            fingers[x_i].neighbor_connectors[neighbor_vec_index]
+
+        }
+
+    }
+    */
 
     // For every maintained chain: Find the best chain.
     //  - Closest to wanted target.

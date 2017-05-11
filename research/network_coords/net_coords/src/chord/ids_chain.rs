@@ -15,7 +15,7 @@ fn get_msb(mut x: RingKey) -> Option<usize> {
                 x >>= 1;
                 index += 1;
             }
-            Some(index)
+            Some(index - 1)
         }
     }
 }
@@ -52,5 +52,33 @@ fn ids_chain(src_id: RingKey, dst_id: RingKey) -> IdsChain {
     IdsChain {
         cur_id: src_id,
         dst_id: dst_id,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_msb() {
+        assert!(get_msb(0) == None);
+        assert!(get_msb(1) == Some(0));
+        assert!(get_msb(2) == Some(1));
+        assert!(get_msb(3) == Some(1));
+        assert!(get_msb(4) == Some(2));
+        assert!(get_msb(5) == Some(2));
+        assert!(get_msb(6) == Some(2));
+        assert!(get_msb(7) == Some(2));
+        assert!(get_msb(8) == Some(3));
+        assert!(get_msb(9) == Some(3));
+    }
+
+    #[test]
+    fn test_ids_chain() {
+        let ic = ids_chain(0,1).collect::<Vec<_>>();
+        println!("{:?}",ic);
+        assert!(ic[0] == 0);
+        assert!(ic[1] == 1);
+        assert!(ic.len() == 2);
     }
 }

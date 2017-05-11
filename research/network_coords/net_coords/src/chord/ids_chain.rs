@@ -55,7 +55,7 @@ impl Iterator for IdsChain {
     }
 }
 
-fn ids_chain(src_id: RingKey, dst_id: RingKey) -> IdsChain {
+pub fn ids_chain(src_id: RingKey, dst_id: RingKey) -> IdsChain {
     IdsChain {
         cur_id: Some(src_id),
         dst_id: dst_id,

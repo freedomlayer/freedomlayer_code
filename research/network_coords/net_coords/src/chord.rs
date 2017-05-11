@@ -103,8 +103,8 @@ impl Iterator for IdsChain {
 }
 
 /// Calculate ring distance from x to y clockwise
-fn d(xk:RingKey, yk: RingKey) -> RingKey {
-    yk.wrapping_sub(xk)
+fn vdist(xk:RingKey, yk: RingKey) -> RingKey {
+    (yk - xk) % 2_u64.pow(L as u32)
 }
 
 
@@ -132,8 +132,8 @@ fn extract_chains<'a> (fingers: &'a ChordFingers) ->
 
 /// Pass over a chain of node ids. Remove cycles of node ids.
 fn remove_cycles(chain: &NodeChain) {
-
 }
+
 
 
 /// Perform one fingers iteration for node x: 
@@ -141,21 +141,36 @@ fn remove_cycles(chain: &NodeChain) {
 fn iter_fingers<Node: NodeTrait>(x_i: usize, net: Network<Node>, 
              index_id: &IndexId, fingers: &mut Vec<ChordFingers>) {
 
+    let x_id: RingKey = index_id.index_to_id(x_i).unwrap();
+
     // Collect all chains to one vector. 
     let mut all_chains: Vec<NodeChain> = Vec::new();
 
-    // Add trivial chain to x:
-    all_chains.push(vec![index_id.index_to_id(x_i).unwrap()]);
+    // Add trivial chain (x):
+    all_chains.push(vec![x_id]);
 
-    // Add trivial chains to all neighbors:
+    // Add trivial chains (x,nei) where nei is any neighbor of x:
     for neighbor_index in net.igraph.neighbors(x_i) {
-        all_chains.push(vec![index_id.index_to_id(neighbor_index).unwrap(), index_id.index_to_id(x_i).unwrap()])
+        all_chains.push(vec![index_id.index_to_id(neighbor_index).unwrap(), x_id])
     }
 
     // Add all current chains:
     all_chains.extend(
         extract_chains(&fingers[x_i]).iter().map(|&chain| chain.clone())
     );
+
+    fingers[x_i].left = all_chains.iter().min_by_key(|c| (vdist(c[0], x_id), c.len()) ).unwrap().clone();
+    for i in 0 .. L {
+        fingers[x_i].right_positive[i] = 
+            all_chains.iter().min_by_key(|c| (vdist((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(L as u32), c[0]), c.len()) ).unwrap().clone();
+    }
+    for i in 0 .. L {
+        fingers[x_i].right_negative[i] = 
+            all_chains.iter().min_by_key(|c| (vdist((x_id - 2_u64.pow(i as u32)) % 2_u64.pow(L as u32), c[0]), c.len()) ).unwrap().clone();
+    }
+
+    // fingers.neighbor_connectors
+
 
     // For every maintained chain: Find the best chain.
     //  - Closest to wanted target.

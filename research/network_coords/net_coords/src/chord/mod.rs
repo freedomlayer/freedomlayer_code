@@ -31,7 +31,7 @@ pub struct ChordFingers {
 
 /// Calculate ring distance from x to y clockwise
 fn vdist(xk:RingKey, yk: RingKey) -> RingKey {
-    (yk - xk) % 2_u64.pow(L as u32)
+    (yk.wrapping_sub(xk)) % 2_u64.pow(L as u32)
 }
 
 
@@ -115,10 +115,10 @@ mod tests {
 
     #[test]
     fn test_d() {
-        assert!(d(1u64,2) == 1);
-        assert!(d(1u64,101) == 100);
-        assert!(d(0u64.wrapping_sub(1),1) == 2);
-        assert!(d(0u64.wrapping_sub(1),0) == 1);
-        assert!(d(1,0) == 0u64.wrapping_sub(1));
+        assert!(vdist(1u64,2) == 1);
+        assert!(vdist(1u64,101) == 100);
+        assert!(vdist(2_u64.pow(L as u32) - 1,1) == 2);
+        assert!(vdist(2_u64.pow(L as u32) - 1,0) == 1);
+        assert!(vdist(1,0) == 2_u64.pow(L as u32) - 1);
     }
 }

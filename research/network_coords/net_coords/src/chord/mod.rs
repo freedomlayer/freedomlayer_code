@@ -1,4 +1,5 @@
 extern crate petgraph;
+extern crate rand;
 
 pub mod ids_chain;
 pub mod index_id;
@@ -8,12 +9,19 @@ use network::{Network};
 use self::index_id::{IndexId};
 use self::ids_chain::{ids_chain};
 
+use self::rand::{StdRng};
+use self::rand::distributions::{Weighted, WeightedChoice, 
+    IndependentSample, Range};
+
 type RingKey = u64; // A key in the chord ring
 type NodeChain = Vec<RingKey>;
 type NeighborConnector = Vec<NodeChain>;
 
 // Size of keyspace is 2^L:
 const L: usize = 42;
+
+// Global seed for deterministic randomization of randomized fingers.
+const FINGERS_SEED: u64 = 0x1337;
 
 
 pub struct ChordFingers {
@@ -24,8 +32,9 @@ pub struct ChordFingers {
     neighbor_connectors: Vec<NeighborConnector>,
 
     right_randomized: Vec<NodeChain>,
-    // Additional random nodes from the keyspace:
-    rand_nodes: Vec<NodeChain>, 
+
+    // Additional random fingers from the keyspace:
+    fully_randomized: Vec<NodeChain>, 
 }
 
 
@@ -58,8 +67,17 @@ fn extract_chains<'a> (fingers: &'a ChordFingers) ->
     res
 }
 
-/// Pass over a chain of node ids. Remove cycles of node ids.
-fn remove_cycles(chain: &NodeChain) {
+
+/// Add an id to chain. Eliminate cycle if created.
+fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
+    match chain.iter().position(|&x| x == id) {
+        None => {
+            chain.push(id);
+        },
+        Some(position) => {
+            chain.resize(position + 1, 0);
+        }
+    };
 }
 
 /// Prepare all candidate chains for node x_i.
@@ -76,6 +94,20 @@ fn prepare_candidates<Node: NodeTrait>(x_i: usize, net: &Network<Node>, index_id
     // Add trivial chains (x,nei) where nei is any neighbor of x:
     for neighbor_index in net.igraph.neighbors(x_i) {
         candidates.push(vec![index_id.index_to_id(neighbor_index).unwrap(), x_id])
+    }
+
+    // Add all "proposed" chains from all neighbors:
+    for neighbor_index in net.igraph.neighbors(x_i) {
+        // Add trivial chain (x,nei):
+        candidates.push(vec![index_id.index_to_id(neighbor_index).unwrap(), x_id]);
+
+        // Add proposed chains:
+        for &chain in extract_chains(&fingers[neighbor_index]).iter() {
+            let mut cchain = chain.clone();
+            // Add our own id to the chain, possibly eliminating cycles:
+            add_id_to_chain(&mut cchain, x_id);
+            candidates.push(cchain);
+        }
     }
 
     // Add all current chains:
@@ -102,6 +134,8 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: Network<Node>,
     fingers[x_i].left = candidates.iter().min_by_key(|c| (vdist(c[0], x_id), c.len()) ).unwrap().clone();
 
     // Find the chain that is closest to target_id from the right.
+    // Lexicographic sorting: 
+    // We first care about closest id in keyspace. Next we want the shortest chain possible.
     let best_right_chain = |target_id| candidates.iter().min_by_key(|c| 
                                          (vdist(target_id, c[0]), c.len()) ).unwrap().clone();
 
@@ -115,7 +149,6 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: Network<Node>,
 
     // Update neighbor connectors.
     // For determinism, we sort the neighbors before iterating.
-    // TODO: Finish here.
     let mut s_neighbors: Vec<usize> = net.igraph.neighbors(x_i).collect::<Vec<_>>();
     s_neighbors.sort();
 
@@ -128,10 +161,26 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: Network<Node>,
         }
     }
 
-    // For every maintained chain: Find the best chain.
-    //  - Closest to wanted target.
-    //  - Shortest possible.
-    //      - Eliminate cycles?
+    // Obtain deterministic rng to be used with the following randomized
+    // fingers:
+    let seed: &[_] = &[FINGERS_SEED as usize, x_i as usize];
+    let mut rng: StdRng = rand::SeedableRng::<&[usize]>::from_seed(seed);
+
+    // Update right randomized fingers:
+    for i in 0 .. L {
+        // Randomize a finger value in [2^i, 2^(i+1))
+        let rand_range: Range<RingKey> = Range::new(2_u64.pow(i as u32),2_u64.pow((i + 1) as u32));
+        let rand_id = rand_range.ind_sample(&mut rng);
+        fingers[x_i].right_randomized[i] = best_right_chain(rand_id);
+    }
+
+    // Update random fingers:
+    for i in 0 .. L {
+        // Randomize a finger value in [0, 2^L). Completely random in the ring key space.
+        let rand_range: Range<RingKey> = Range::new(0u64,2_u64.pow(L as u32));
+        let rand_id = rand_range.ind_sample(&mut rng);
+        fingers[x_i].fully_randomized[i] = best_right_chain(rand_id);
+    }
 }
 
 

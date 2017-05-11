@@ -1,7 +1,7 @@
 use chord::{RingKey};
 
 pub struct IdsChain {
-    cur_id: RingKey, // Current id
+    cur_id: Option<RingKey>, // Current id
     dst_id: RingKey, // Destination id
 }
 
@@ -20,6 +20,18 @@ fn get_msb(mut x: RingKey) -> Option<usize> {
     }
 }
 
+fn advance_id(cur_id: RingKey, dst_id: RingKey) -> RingKey {
+    // Find the most significant different bit between cur_id and dst_id:
+    let msb_diff: usize = get_msb(cur_id ^ dst_id).unwrap();
+
+    // Check if we need to add or to subtract:
+    let pow_diff: RingKey = 2_u64.pow(msb_diff as u32);
+    match (cur_id >> msb_diff) & 1 {
+        0 => cur_id + pow_diff,
+        _ => cur_id - pow_diff,
+    }
+}
+
 ///
 /// Iterator for a chain of ids between some source id and a destination id.
 /// Every two adjacent produced ids have a difference which is an exact
@@ -29,28 +41,23 @@ fn get_msb(mut x: RingKey) -> Option<usize> {
 impl Iterator for IdsChain {
     type Item = RingKey;
     fn next(&mut self) -> Option<RingKey> {
-        if self.cur_id == self.dst_id {
-            // We have already arrived:
-            return None
+        match self.cur_id {
+            None => None,
+            Some(cur_id) => {
+                if cur_id == self.dst_id {
+                    self.cur_id = None
+                } else {
+                    self.cur_id = Some(advance_id(cur_id, self.dst_id));
+                }
+                Some(cur_id)
+            }
         }
-
-        // Find the most significant different bit between cur_id and dst_id:
-        let msb_diff: usize = get_msb(self.cur_id ^ self.dst_id).unwrap();
-
-        // Check if we need to add or to subtract:
-        let pow_diff: RingKey = 2_u64.pow(msb_diff as u32);
-        if (self.cur_id >> msb_diff) & 1 == 0 {
-            self.cur_id += pow_diff;
-        } else {
-            self.cur_id -= pow_diff;
-        }
-        Some(self.cur_id)
     }
 }
 
 fn ids_chain(src_id: RingKey, dst_id: RingKey) -> IdsChain {
     IdsChain {
-        cur_id: src_id,
+        cur_id: Some(src_id),
         dst_id: dst_id,
     }
 }
@@ -74,11 +81,37 @@ mod tests {
     }
 
     #[test]
-    fn test_ids_chain() {
+    fn test_ids_chain_trivial() {
         let ic = ids_chain(0,1).collect::<Vec<_>>();
         println!("{:?}",ic);
         assert!(ic[0] == 0);
         assert!(ic[1] == 1);
         assert!(ic.len() == 2);
+    }
+
+    fn is_power2(x: u64) -> bool {
+        match x {
+            0 => false, 
+            1 => true,
+            _ => x & (x - 1) == 0,
+        }
+    }
+    
+    /// Check if two ids are adjacent
+    fn is_adjacent(id_a: RingKey, id_b: RingKey) -> bool {
+        match id_a >= id_b {
+            true => is_power2(id_a - id_b),
+            _ => is_power2(id_b - id_a),
+        }
+    }
+
+    #[test]
+    fn test_ids_chain_long() {
+        let ic = ids_chain(0xdeadbeef,0x12345678).collect::<Vec<_>>();
+        let ic0 = ic.iter();
+        let ic1 = ic.iter().skip(1);
+
+        assert!(ic1.zip(ic0).all(|(&next_id, &id)| is_adjacent(next_id, id)));
+        assert!(ic.len() > 2);
     }
 }

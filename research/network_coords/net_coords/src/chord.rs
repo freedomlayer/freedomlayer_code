@@ -15,9 +15,10 @@ pub struct ChordFingers {
     left: NodeChain<>, 
     right_positive: Vec<NodeChain>,
     right_negative: Vec<NodeChain>,
-    right_randomized: Vec<NodeChain>,
     // Connectors for neighbors:
     neighbor_connectors: Vec<NeighborConnector>,
+
+    right_randomized: Vec<NodeChain>,
     // Additional random nodes from the keyspace:
     rand_nodes: Vec<NodeChain>, 
 }

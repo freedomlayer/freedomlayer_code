@@ -191,9 +191,8 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
     }
 }
 
-/*
 /// Find next best chain of steps in the network to arrive the node dst_index.
-fn next_best_chain<Node: NodeTrait>(cur_index: usize, dst_index: usize, 
+fn next_chain<Node: NodeTrait>(cur_index: usize, dst_index: usize, 
         net: &Network<Node>, index_id: &IndexId, fingers: &Vec<ChordFingers>)
             -> Option<NodeChain>{
 
@@ -201,15 +200,35 @@ fn next_best_chain<Node: NodeTrait>(cur_index: usize, dst_index: usize,
     let cur_id: RingKey = index_id.index_to_id(cur_index).unwrap();
     let dst_id: RingKey = index_id.index_to_id(dst_index).unwrap();
 
+    // Get all chains of order 1:
+    let chains1 = prepare_candidates(cur_index, &net,  &index_id, &fingers);
+    let all_chains: Vec<NodeChain> = chains1.clone();
+
+    for &c1 in chains1.iter() {
+        let vneighbor_id: RingKey = c1[0];
+        let vneighbor_index: usize = index_id.id_to_index(vneighbor_id).unwrap();
+
+        // Concatenate pairs of chains.
+        // Remember that a chain from id x to id y is of the form:
+        // 0 1 2 3 4  <-- Vector index
+        // y . . . x  <-- Value
+        all_chains.extend(
+            prepare_candidates(vneighbor_index, &net, &index_id, &fingers).iter()
+                .map(|c| c.clone().extend(c1.iter().skip(1)))
+        );
+    }
+
+    // TODO: Remove this later:
+    None
+
     // Collect all relevant chains:
     // - Regular one iteration chain.
     // - Two iters chains: According to "Know thy neighbor" article
 
     // Pick the closest chain, with some tiebreaker.
-
+    // Return chosen chain.
 
 }
-*/
 
 
 #[cfg(test)]

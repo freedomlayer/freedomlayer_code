@@ -122,7 +122,7 @@ fn prepare_candidates<Node: NodeTrait>(x_i: usize, net: &Network<Node>, index_id
 
 /// Perform one fingers iteration for node x: 
 /// Take all chains from neighbors and update own chains to the best found chains.
-fn iter_fingers<Node: NodeTrait>(x_i: usize, net: Network<Node>, 
+fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>, 
              index_id: &IndexId, fingers: &mut Vec<ChordFingers>) {
 
     let x_id: RingKey = index_id.index_to_id(x_i).unwrap();

@@ -118,6 +118,9 @@ fn prepare_candidates<Node: NodeTrait>(x_i: usize, net: &Network<Node>, index_id
     candidates
 }
 
+fn get_address<T>(x: &T) -> usize {
+    (x as *const _) as usize
+}
 
 
 /// Perform one fingers iteration for node x: 
@@ -131,14 +134,14 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
     let candidates = prepare_candidates(x_i, &net,  &index_id, &fingers);
 
     // Update left finger:
-    fingers[x_i].left = candidates.iter().min_by_key(|c| 
-                                        (vdist(c[0], x_id), c.len(), &c )).unwrap().clone();
+    fingers[x_i].left = candidates.iter().min_by_key(|c: &&NodeChain| 
+                                (vdist(c[0], x_id), c.len(), get_address(c) )).unwrap().clone();
 
     // Find the chain that is closest to target_id from the right.
     // Lexicographic sorting: 
     // We first care about closest id in keyspace. Next we want the shortest chain possible.
     let best_right_chain = |target_id| candidates.iter().min_by_key(|c| 
-                                         (vdist(target_id, c[0]), c.len(), &c )).unwrap().clone();
+                                 (vdist(target_id, c[0]), c.len(), get_address(c) )).unwrap().clone();
 
     // Update all right fingers:
     for i in 0 .. L {
@@ -196,5 +199,32 @@ mod tests {
         assert!(vdist(2_u64.pow(L as u32) - 1,1) == 2);
         assert!(vdist(2_u64.pow(L as u32) - 1,0) == 1);
         assert!(vdist(1,0) == 2_u64.pow(L as u32) - 1);
+    }
+
+    #[test]
+    fn test_get_address() {
+        let x = 5;
+        println!("{}",get_address(&x));
+        assert!(get_address(&x) != 0);
+    }
+
+    #[test]
+    fn test_inner_lexicographic() {
+        // Make sure that vectors participate inside
+        // lexicographic comparison.
+        let d = (1,2,vec![3,6]);
+        let a = (1,2,vec![3,4]);
+        let b = (1,2,vec![3,5]);
+        let c = (1,2,vec![3,6]);
+
+        assert!(a < b);
+        assert!(a < c);
+        assert!(a < d);
+
+        let aa = (1,2,vec![4,4]);
+        assert!(aa > a);
+
+        let m = (5,2,vec![1,1]);
+        assert!(m > a);
     }
 }

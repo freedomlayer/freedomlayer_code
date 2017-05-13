@@ -131,13 +131,14 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
     let candidates = prepare_candidates(x_i, &net,  &index_id, &fingers);
 
     // Update left finger:
-    fingers[x_i].left = candidates.iter().min_by_key(|c| (vdist(c[0], x_id), c.len()) ).unwrap().clone();
+    fingers[x_i].left = candidates.iter().min_by_key(|c| 
+                                        (vdist(c[0], x_id), c.len(), &c )).unwrap().clone();
 
     // Find the chain that is closest to target_id from the right.
     // Lexicographic sorting: 
     // We first care about closest id in keyspace. Next we want the shortest chain possible.
     let best_right_chain = |target_id| candidates.iter().min_by_key(|c| 
-                                         (vdist(target_id, c[0]), c.len()) ).unwrap().clone();
+                                         (vdist(target_id, c[0]), c.len(), &c )).unwrap().clone();
 
     // Update all right fingers:
     for i in 0 .. L {

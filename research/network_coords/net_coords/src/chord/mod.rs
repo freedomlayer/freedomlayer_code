@@ -187,6 +187,15 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
     }
 }
 
+/*
+/// Find next best chain of steps in the network to arrive the node dst_index.
+fn next_best_chain<Node: NodeTrait>(cur_index: usize, dst_index: usize, 
+        net: &Network<Node>, index_id: &IndexId, fingers: &Vec<ChordFingers>)
+            -> Option<NodeChain>{
+
+}
+*/
+
 
 #[cfg(test)]
 mod tests {

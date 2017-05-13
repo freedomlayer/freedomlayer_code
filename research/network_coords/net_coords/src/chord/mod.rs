@@ -118,8 +118,10 @@ fn prepare_candidates<Node: NodeTrait>(x_i: usize, net: &Network<Node>, index_id
     candidates
 }
 
-fn get_address<T>(x: &T) -> usize {
-    (x as *const _) as usize
+
+/// Checksum the contents of a chain
+fn csum_chain(chain: &NodeChain) -> RingKey {
+    chain.iter().fold(0, |acc, &x| acc.wrapping_add(x) % (2_u64.pow(L as u32)))
 }
 
 
@@ -135,13 +137,13 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
 
     // Update left finger:
     fingers[x_i].left = candidates.iter().min_by_key(|c: &&NodeChain| 
-                                (vdist(c[0], x_id), c.len(), get_address(c) )).unwrap().clone();
+                                (vdist(c[0], x_id), c.len(), csum_chain(c) )).unwrap().clone();
 
     // Find the chain that is closest to target_id from the right.
     // Lexicographic sorting: 
     // We first care about closest id in keyspace. Next we want the shortest chain possible.
     let best_right_chain = |target_id| candidates.iter().min_by_key(|c| 
-                                 (vdist(target_id, c[0]), c.len(), get_address(c) )).unwrap().clone();
+                                 (vdist(target_id, c[0]), c.len(), csum_chain(c) )).unwrap().clone();
 
     // Update all right fingers:
     for i in 0 .. L {
@@ -195,6 +197,17 @@ fn next_best_chain<Node: NodeTrait>(cur_index: usize, dst_index: usize,
         net: &Network<Node>, index_id: &IndexId, fingers: &Vec<ChordFingers>)
             -> Option<NodeChain>{
 
+    // Get ids on the ring:
+    let cur_id: RingKey = index_id.index_to_id(cur_index).unwrap();
+    let dst_id: RingKey = index_id.index_to_id(dst_index).unwrap();
+
+    // Collect all relevant chains:
+    // - Regular one iteration chain.
+    // - Two iters chains: According to "Know thy neighbor" article
+
+    // Pick the closest chain, with some tiebreaker.
+
+
 }
 */
 
@@ -212,11 +225,12 @@ mod tests {
         assert!(vdist(1,0) == 2_u64.pow(L as u32) - 1);
     }
 
+
     #[test]
-    fn test_get_address() {
-        let x = 5;
-        println!("{}",get_address(&x));
-        assert!(get_address(&x) != 0);
+    fn test_csum_chain() {
+        assert!(csum_chain(&vec![1,2,3,4]) == 10);
+        assert!(csum_chain(&vec![]) == 0);
+        assert!(csum_chain(&vec![1]) == 1);
     }
 
     #[test]

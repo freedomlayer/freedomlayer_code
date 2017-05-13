@@ -145,10 +145,12 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
 
     // Update all right fingers:
     for i in 0 .. L {
-        fingers[x_i].right_positive[i] = best_right_chain((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(L as u32));
+        fingers[x_i].right_positive[i] = 
+            best_right_chain((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(L as u32));
     }
     for i in 0 .. L {
-        fingers[x_i].right_negative[i] = best_right_chain((x_id - 2_u64.pow(i as u32)) % 2_u64.pow(L as u32));
+        fingers[x_i].right_negative[i] = 
+            best_right_chain((x_id - 2_u64.pow(i as u32)) % 2_u64.pow(L as u32));
     }
 
     // Update neighbor connectors.

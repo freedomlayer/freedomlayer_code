@@ -25,7 +25,7 @@ const FINGERS_SEED: u64 = 0x1337;
 
 
 pub struct ChordFingers {
-    left: NodeChain<>, 
+    left: NodeChain, 
     right_positive: Vec<NodeChain>,
     right_negative: Vec<NodeChain>,
     // Connectors for neighbors:
@@ -37,6 +37,41 @@ pub struct ChordFingers {
     fully_randomized: Vec<NodeChain>, 
 }
 
+/// Create initial ChordFingers structure for node with index x_i
+fn init_node_chord_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>, index_id: &IndexId) 
+    -> ChordFingers {
+
+    let x_id: RingKey = index_id.index_to_id(x_i).unwrap();
+
+    let mut cf = ChordFingers {
+        left: vec![x_id],
+        right_positive: Vec::new(),
+        right_negative: Vec::new(),
+        neighbor_connectors: Vec::new(),
+        right_randomized: Vec::new(),
+        fully_randomized: Vec::new(),
+    };
+
+    for i in 0 .. L {
+        cf.right_positive.push(vec![x_id]);
+        cf.right_negative.push(vec![x_id]);
+        cf.right_randomized.push(vec![x_id]);
+        cf.fully_randomized.push(vec![x_id]);
+    }
+
+    // Initialize neighbor connectors (Depends on neighbors):
+    let mut s_neighbors: Vec<usize> = net.igraph.neighbors(x_i).collect::<Vec<_>>();
+    s_neighbors.sort();
+
+    for (neighbor_vec_index, &neighbor_index) in s_neighbors.iter().enumerate() {
+        let neighbor_id: RingKey = index_id.index_to_id(neighbor_index).unwrap();
+        cf.neighbor_connectors.push(NeighborConnector::new());
+        for (j,cur_id) in ids_chain(x_id, neighbor_id).enumerate() {
+            cf.neighbor_connectors[neighbor_vec_index].push(vec![x_id]);
+        }
+    }
+    cf
+}
 
 
 /// Calculate ring distance from x to y clockwise

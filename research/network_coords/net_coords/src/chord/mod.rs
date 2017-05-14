@@ -124,12 +124,22 @@ fn csum_chain(chain: &NodeChain) -> RingKey {
     chain.iter().fold(0, |acc, &x| acc.wrapping_add(x) % (2_u64.pow(L as u32)))
 }
 
+///
+/// Assign value and check if value has changed.
+fn assign_check_changed<T: Eq>(dest: &mut T, src: T) -> bool {
+    let has_changed: bool = *dest == src;
+    *dest = src;
+    has_changed
+}
+
 
 /// Perform one fingers iteration for node x: 
 /// Take all chains from neighbors and update own chains to the best found chains.
+/// Return true if any assignment has changed, false otherwise (Stationary state).
 fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>, 
-             index_id: &IndexId, fingers: &mut Vec<ChordFingers>) {
+             index_id: &IndexId, fingers: &mut Vec<ChordFingers>) -> bool {
 
+    let mut has_changed: bool = false;
 
     let x_id: RingKey = index_id.index_to_id(x_i).unwrap();
 
@@ -137,23 +147,24 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
     let candidates = prepare_candidates(x_i, &net,  &index_id, &fingers);
 
     // Update left finger:
-    fingers[x_i].left = candidates.iter().min_by_key(|c: &&NodeChain| 
-                                (vdist(c[0], x_id), c.len(), csum_chain(c) )).unwrap().clone();
+    has_changed |= assign_check_changed(&mut fingers[x_i].left, 
+        candidates.iter().min_by_key(|c: &&NodeChain| 
+            (vdist(c[0], x_id), c.len(), csum_chain(c) )).unwrap().clone());
 
     // Find the chain that is closest to target_id from the right.
     // Lexicographic sorting: 
     // We first care about closest id in keyspace. Next we want the shortest chain possible.
     let best_right_chain = |target_id| candidates.iter().min_by_key(|c| 
-                                 (vdist(target_id, c[0]), c.len(), csum_chain(c) )).unwrap().clone();
+             (vdist(target_id, c[0]), c.len(), csum_chain(c) )).unwrap().clone();
 
     // Update all right fingers:
     for i in 0 .. L {
-        fingers[x_i].right_positive[i] = 
-            best_right_chain((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(L as u32));
+        has_changed |= assign_check_changed(&mut fingers[x_i].right_positive[i], 
+            best_right_chain((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(L as u32)));
     }
     for i in 0 .. L {
-        fingers[x_i].right_negative[i] = 
-            best_right_chain((x_id - 2_u64.pow(i as u32)) % 2_u64.pow(L as u32));
+        has_changed |= assign_check_changed(&mut fingers[x_i].right_negative[i], 
+            best_right_chain((x_id - 2_u64.pow(i as u32)) % 2_u64.pow(L as u32)));
     }
 
     // Update neighbor connectors.
@@ -165,8 +176,9 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
         let neighbor_id: RingKey = index_id.index_to_id(neighbor_index).unwrap();
 
         for (j,cur_id) in ids_chain(x_id, neighbor_id).enumerate() {
-            fingers[x_i].neighbor_connectors[neighbor_vec_index][j] = 
-                best_right_chain(cur_id);
+            has_changed |= assign_check_changed(
+                &mut fingers[x_i].neighbor_connectors[neighbor_vec_index][j], 
+                best_right_chain(cur_id));
         }
     }
 
@@ -180,7 +192,8 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
         // Randomize a finger value in [2^i, 2^(i+1))
         let rand_range: Range<RingKey> = Range::new(2_u64.pow(i as u32),2_u64.pow((i + 1) as u32));
         let rand_id = rand_range.ind_sample(&mut rng);
-        fingers[x_i].right_randomized[i] = best_right_chain(rand_id);
+        has_changed |= assign_check_changed(&mut fingers[x_i].right_randomized[i], 
+                        best_right_chain(rand_id));
     }
 
     // Update random fingers:
@@ -188,8 +201,11 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
         // Randomize a finger value in [0, 2^L). Completely random in the ring key space.
         let rand_range: Range<RingKey> = Range::new(0u64,2_u64.pow(L as u32));
         let rand_id = rand_range.ind_sample(&mut rng);
-        fingers[x_i].fully_randomized[i] = best_right_chain(rand_id);
+        has_changed |= assign_check_changed(&mut fingers[x_i].fully_randomized[i], 
+            best_right_chain(rand_id));
     }
+
+    has_changed
 }
 
 /// Find next best chain of steps in the network to arrive the node dst_index.

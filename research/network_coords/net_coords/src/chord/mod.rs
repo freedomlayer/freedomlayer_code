@@ -130,6 +130,7 @@ fn csum_chain(chain: &NodeChain) -> RingKey {
 fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>, 
              index_id: &IndexId, fingers: &mut Vec<ChordFingers>) {
 
+
     let x_id: RingKey = index_id.index_to_id(x_i).unwrap();
 
     // Get all chain candidates:
@@ -202,9 +203,12 @@ fn next_chain<Node: NodeTrait>(cur_index: usize, dst_index: usize,
 
     // Get all chains of order 1:
     let chains1 = prepare_candidates(cur_index, &net,  &index_id, &fingers);
-    let all_chains: Vec<NodeChain> = chains1.clone();
+    let mut all_chains: Vec<NodeChain> = chains1.clone();
 
-    for &c1 in chains1.iter() {
+    // Collect all relevant chains:
+    // - Regular one iteration chain.
+    // - Two iters chains: According to "Know thy neighbor" article
+    for c1 in chains1.iter() {
         let vneighbor_id: RingKey = c1[0];
         let vneighbor_index: usize = index_id.id_to_index(vneighbor_id).unwrap();
 
@@ -214,20 +218,26 @@ fn next_chain<Node: NodeTrait>(cur_index: usize, dst_index: usize,
         // y . . . x  <-- Value
         all_chains.extend(
             prepare_candidates(vneighbor_index, &net, &index_id, &fingers).iter()
-                .map(|c| c.clone().extend(c1.iter().skip(1)))
+                .map(|c| {
+                    let mut clone: NodeChain = c.clone();
+                    // Concatenate chains:
+                    clone.extend(c1.iter().skip(1).cloned().collect::<NodeChain>());
+                    clone
+                })
+                .collect::<Vec<NodeChain>>()
         );
     }
 
-    // TODO: Remove this later:
-    None
+    
+    // Pick the closest chain, using csum_chain as tie breaker:
+    let best_chain: NodeChain = all_chains.iter().min_by_key(|c: &&NodeChain| 
+         ( vdist(c[0], dst_id), c.len(), csum_chain(c) )).unwrap().clone();
 
-    // Collect all relevant chains:
-    // - Regular one iteration chain.
-    // - Two iters chains: According to "Know thy neighbor" article
-
-    // Pick the closest chain, with some tiebreaker.
-    // Return chosen chain.
-
+    // If chain leads to us, return None. Otherwise return the chain.
+    match best_chain[0] == cur_id {
+        true => None,
+        false => Some(best_chain)
+    }
 }
 
 

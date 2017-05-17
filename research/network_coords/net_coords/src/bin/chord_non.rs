@@ -24,6 +24,7 @@ fn main() {
 
         let num_neighbours: usize = 3;
 
+        println!("g = {}", g);
         println!("num_nodes = {}",num_nodes);
         println!("num_neighbours = {}",num_neighbours);
 

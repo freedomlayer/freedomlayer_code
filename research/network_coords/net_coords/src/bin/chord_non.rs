@@ -13,8 +13,8 @@ const FINGERS_SEED: usize = 0x1337;
 
 #[cfg(not(test))]
 fn main() {
-    let pair_iters = 1000;
-    for g in 11 .. 12 {
+    let pair_iters = 100;
+    for g in 13 .. 16 {
         // Keyspace size:
         let l: usize = (2 * g + 1)  as usize;
 

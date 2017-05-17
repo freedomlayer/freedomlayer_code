@@ -159,7 +159,7 @@ fn csum_chain(chain: &NodeChain) -> RingKey {
 ///
 /// Assign value and check if value has changed.
 fn assign_check_changed<T: Eq>(dest: &mut T, src: T) -> bool {
-    let has_changed: bool = *dest == src;
+    let has_changed: bool = *dest != src;
     *dest = src;
     has_changed
 }
@@ -426,6 +426,15 @@ mod tests {
 
         let m = (5,2,vec![1,1]);
         assert!(m > a);
+    }
+
+    #[test]
+    fn test_assign_check_changed() {
+        let mut x = 5;
+        assert!(!assign_check_changed(&mut x, 5));
+        assert!(assign_check_changed(&mut x, 6));
+        assert!(!assign_check_changed(&mut x, 6));
+        assert!(assign_check_changed(&mut x, 7));
     }
 
     #[test]

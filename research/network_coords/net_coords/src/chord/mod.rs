@@ -442,16 +442,34 @@ mod tests {
     }
 
     #[test]
-    fn test_random_net_chord() {
-        let seed: &[_] = &[1,2,3,4,5];
+    fn test_chord_basic() {
+        let seed: &[_] = &[1,2,3,4,9];
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
-        let num_nodes = 7;
+        let num_nodes = 30;
         let num_neighbors = 2;
-        let l: usize = 8; // Size of keyspace
+        let l: usize = 10; // Size of keyspace
         let net = random_net_chord(num_nodes,num_neighbors,l,&mut rng);
         let mut chord_fingers = init_chord_fingers(&net,l);
-        let fingers_seed = 0x1337;
+        let fingers_seed = 0x1338;
         converge_fingers(&net, &mut chord_fingers, fingers_seed,l);
+
+        // Try to find a path:
+        let src_id = net.index_to_node(0).unwrap().clone();
+        let dst_id = net.index_to_node(22).unwrap().clone();
+        println!("src_id = {}", src_id);
+        println!("dst_id = {}", dst_id);
+        let path = find_path(src_id, dst_id, &net, &chord_fingers, l).unwrap();
+
+        // Make sure that all nodes in the path are connected by edges in the graph:
+        for i in 0 .. (path.len() - 1) {
+            let a = net.node_to_index(&path[i]).unwrap();
+            let b = net.node_to_index(&path[i+1]).unwrap();
+            assert!(net.igraph.contains_edge(a,b));
+        }
+
+        // Make sure that path begins with src_id and ends with dst_id:
+        assert!(path[0] == src_id);
+        assert!(path[path.len() - 1] == dst_id);
     }
 
 }

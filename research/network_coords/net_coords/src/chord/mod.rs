@@ -32,10 +32,10 @@ pub struct ChordFingers {
 }
 
 /// Create initial ChordFingers structure for node with index x_i
-fn init_node_chord_fingers(x_id: RingKey, net: &Network<RingKey>) 
+fn init_node_chord_fingers(x_i: usize, net: &Network<RingKey>) 
     -> ChordFingers {
 
-    let x_i = net.node_to_index(&x_id).unwrap();
+    let x_id = net.index_to_node(x_i).unwrap().clone();
 
     let mut cf = ChordFingers {
         left: vec![x_id],
@@ -56,6 +56,7 @@ fn init_node_chord_fingers(x_id: RingKey, net: &Network<RingKey>)
     // Initialize neighbor connectors (Depends on neighbors):
     let mut s_neighbors: Vec<usize> =
         net.igraph.neighbors(x_i).collect::<Vec<_>>();
+
 
     s_neighbors.sort();
 
@@ -266,8 +267,7 @@ pub fn converge_fingers(net: &Network<RingKey>,
 pub fn init_chord_fingers(net: &Network<RingKey>) -> Vec<ChordFingers> {
     let mut chord_fingers_res: Vec<ChordFingers> = Vec::new();
     for node_index in net.igraph.nodes() {
-        let node_id: RingKey = net.index_to_node(node_index).unwrap().clone();
-        let chord_fingers = init_node_chord_fingers(node_id, &net);
+        let chord_fingers = init_node_chord_fingers(node_index, &net);
         chord_fingers_res.push(chord_fingers);
     }
     chord_fingers_res
@@ -361,7 +361,8 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, rng: &mu
     // Insert num_nodes nodes with random keys:
     for _ in 0 .. num_nodes {
         let rand_key: Range<RingKey> = Range::new(0,max_key);
-        net.add_node(rand_key.ind_sample(rng));
+        let node_key = rand_key.ind_sample(rng);
+        net.add_node(node_key);
     }
 
     // Connect node v to about num_neighbors previous nodes:

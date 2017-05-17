@@ -258,7 +258,7 @@ fn iter_fingers(net: &Network<RingKey>,
 
 pub fn converge_fingers(net: &Network<RingKey>, 
              mut fingers: &mut Vec<ChordFingers>, fingers_seed: usize, l: usize) {
-
+    println!("iter_fingers...");
     while iter_fingers(&net, &mut fingers, fingers_seed, l) {
         println!("iter_fingers...");
     }

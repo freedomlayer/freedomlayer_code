@@ -74,7 +74,7 @@ impl<'a, Node> Iterator for ClosestNodes<'a, Node> {
 }
 
 
-impl <Node: Hash + Eq> Network <Node> {
+impl <Node: Hash + Eq + Clone> Network <Node> {
     pub fn new() -> Self {
         Network::<Node> {
             igraph: petgraph::graphmap::GraphMap::new(),
@@ -85,6 +85,7 @@ impl <Node: Hash + Eq> Network <Node> {
 
     pub fn add_node(&mut self, node: Node) -> usize {
         let node_num = self.index_nodes.len();
+        self.nodes_index.insert(node.clone(), node_num);
         self.index_nodes.push(node);
         self.igraph.add_node(node_num);
 

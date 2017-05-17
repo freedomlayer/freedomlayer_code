@@ -2,11 +2,8 @@ extern crate petgraph;
 extern crate rand;
 
 pub mod ids_chain;
-pub mod index_id;
 
-use self::petgraph::graphmap::NodeTrait;
 use network::{Network};
-use self::index_id::{IndexId};
 use self::ids_chain::{ids_chain};
 
 use self::rand::{StdRng};
@@ -38,10 +35,10 @@ pub struct ChordFingers {
 }
 
 /// Create initial ChordFingers structure for node with index x_i
-fn init_node_chord_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>, index_id: &IndexId) 
+fn init_node_chord_fingers(x_id: RingKey, net: &Network<RingKey>) 
     -> ChordFingers {
 
-    let x_id: RingKey = index_id.index_to_id(x_i).unwrap();
+    let x_i = net.node_to_index(&x_id).unwrap();
 
     let mut cf = ChordFingers {
         left: vec![x_id],
@@ -60,11 +57,13 @@ fn init_node_chord_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>, ind
     }
 
     // Initialize neighbor connectors (Depends on neighbors):
-    let mut s_neighbors: Vec<usize> = net.igraph.neighbors(x_i).collect::<Vec<_>>();
+    let mut s_neighbors: Vec<usize> =
+        net.igraph.neighbors(x_i).collect::<Vec<_>>();
+
     s_neighbors.sort();
 
     for (neighbor_vec_index, &neighbor_index) in s_neighbors.iter().enumerate() {
-        let neighbor_id: RingKey = index_id.index_to_id(neighbor_index).unwrap();
+        let neighbor_id: RingKey = net.index_to_node(neighbor_index).unwrap().clone();
         cf.neighbor_connectors.push(NeighborConnector::new());
         for (j,cur_id) in ids_chain(x_id, neighbor_id).enumerate() {
             cf.neighbor_connectors[neighbor_vec_index].push(vec![x_id]);
@@ -116,10 +115,10 @@ fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
 }
 
 /// Prepare all candidate chains for node x_i.
-fn prepare_candidates<Node: NodeTrait>(x_i: usize, net: &Network<Node>, index_id: &IndexId, 
+fn prepare_candidates(x_id: RingKey, net: &Network<RingKey>, 
                       fingers: &Vec<ChordFingers>) -> Vec<NodeChain> {
-    let x_id: RingKey = index_id.index_to_id(x_i).unwrap();
 
+    let x_i = net.node_to_index(&x_id).unwrap();
     // Collect all chains to one vector. 
     let mut candidates: Vec<NodeChain> = Vec::new();
 
@@ -128,13 +127,13 @@ fn prepare_candidates<Node: NodeTrait>(x_i: usize, net: &Network<Node>, index_id
 
     // Add trivial chains (x,nei) where nei is any neighbor of x:
     for neighbor_index in net.igraph.neighbors(x_i) {
-        candidates.push(vec![index_id.index_to_id(neighbor_index).unwrap(), x_id])
+        candidates.push(vec![net.index_to_node(neighbor_index).unwrap().clone(), x_id])
     }
 
     // Add all "proposed" chains from all neighbors:
     for neighbor_index in net.igraph.neighbors(x_i) {
         // Add trivial chain (x,nei):
-        candidates.push(vec![index_id.index_to_id(neighbor_index).unwrap(), x_id]);
+        candidates.push(vec![net.index_to_node(neighbor_index).unwrap().clone(), x_id]);
 
         // Add proposed chains:
         for &chain in extract_chains(&fingers[neighbor_index]).iter() {
@@ -171,15 +170,14 @@ fn assign_check_changed<T: Eq>(dest: &mut T, src: T) -> bool {
 /// Perform one fingers iteration for node x: 
 /// Take all chains from neighbors and update own chains to the best found chains.
 /// Return true if any assignment has changed, false otherwise (Stationary state).
-fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>, 
-             index_id: &IndexId, fingers: &mut Vec<ChordFingers>) -> bool {
+pub fn iter_fingers(x_id: RingKey, net: &Network<RingKey>, 
+             fingers: &mut Vec<ChordFingers>) -> bool {
 
     let mut has_changed: bool = false;
-
-    let x_id: RingKey = index_id.index_to_id(x_i).unwrap();
+    let x_i = net.node_to_index(&x_id).unwrap();
 
     // Get all chain candidates:
-    let candidates = prepare_candidates(x_i, &net,  &index_id, &fingers);
+    let candidates = prepare_candidates(x_id, &net, &fingers);
 
     // Update left finger:
     has_changed |= assign_check_changed(&mut fingers[x_i].left, 
@@ -194,21 +192,24 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
 
     // Update all right fingers:
     for i in 0 .. L {
-        has_changed |= assign_check_changed(&mut fingers[x_i].right_positive[i], 
-            best_right_chain((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(L as u32)));
+        has_changed |= assign_check_changed(&mut
+            fingers[x_i].right_positive[i], 
+                best_right_chain((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(L as u32)));
     }
     for i in 0 .. L {
-        has_changed |= assign_check_changed(&mut fingers[x_i].right_negative[i], 
-            best_right_chain((x_id - 2_u64.pow(i as u32)) % 2_u64.pow(L as u32)));
+        has_changed |= assign_check_changed(&mut
+            fingers[x_i].right_negative[i], 
+                best_right_chain((x_id - 2_u64.pow(i as u32)) % 2_u64.pow(L as u32)));
     }
 
     // Update neighbor connectors.
     // For determinism, we sort the neighbors before iterating.
-    let mut s_neighbors: Vec<usize> = net.igraph.neighbors(x_i).collect::<Vec<_>>();
+    let mut s_neighbors: Vec<usize> =
+        net.igraph.neighbors(x_i).collect::<Vec<_>>();
     s_neighbors.sort();
 
     for (neighbor_vec_index, &neighbor_index) in s_neighbors.iter().enumerate() {
-        let neighbor_id: RingKey = index_id.index_to_id(neighbor_index).unwrap();
+        let neighbor_id: RingKey = net.index_to_node(neighbor_index).unwrap().clone();
 
         for (j,cur_id) in ids_chain(x_id, neighbor_id).enumerate() {
             has_changed |= assign_check_changed(
@@ -243,17 +244,20 @@ fn iter_fingers<Node: NodeTrait>(x_i: usize, net: &Network<Node>,
     has_changed
 }
 
+/*
+fn init_chord_fingers(net: &Network<Node>) 
+        -> Vec<ChordFingers> {
+
+}
+*/
+
 /// Find next best chain of steps in the network to arrive the node dst_index.
-fn next_chain<Node: NodeTrait>(cur_index: usize, dst_index: usize, 
-        net: &Network<Node>, index_id: &IndexId, fingers: &Vec<ChordFingers>)
+fn next_chain(cur_id: RingKey, dst_id: RingKey, 
+        net: &Network<RingKey>, fingers: &Vec<ChordFingers>)
             -> Option<NodeChain>{
 
-    // Get ids on the ring:
-    let cur_id: RingKey = index_id.index_to_id(cur_index).unwrap();
-    let dst_id: RingKey = index_id.index_to_id(dst_index).unwrap();
-
     // Get all chains of order 1:
-    let chains1 = prepare_candidates(cur_index, &net,  &index_id, &fingers);
+    let chains1 = prepare_candidates(cur_id, &net, &fingers);
     let mut all_chains: Vec<NodeChain> = chains1.clone();
 
     // Collect all relevant chains:
@@ -261,14 +265,13 @@ fn next_chain<Node: NodeTrait>(cur_index: usize, dst_index: usize,
     // - Two iters chains: According to "Know thy neighbor" article
     for c1 in chains1.iter() {
         let vneighbor_id: RingKey = c1[0];
-        let vneighbor_index: usize = index_id.id_to_index(vneighbor_id).unwrap();
 
         // Concatenate pairs of chains.
         // Remember that a chain from id x to id y is of the form:
         // 0 1 2 3 4  <-- Vector index
         // y . . . x  <-- Value
         all_chains.extend(
-            prepare_candidates(vneighbor_index, &net, &index_id, &fingers).iter()
+            prepare_candidates(vneighbor_id, &net, &fingers).iter()
                 .map(|c| {
                     let mut clone: NodeChain = c.clone();
                     // Concatenate chains:

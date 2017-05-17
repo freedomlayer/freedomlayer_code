@@ -2,10 +2,10 @@ extern crate petgraph;
 extern crate rand;
 
 use std::collections::{HashMap, HashSet};
+use std::hash::{Hash};
 
 use self::rand::{Rng, StdRng};
 use self::rand::distributions::{IndependentSample, Range};
-use self::petgraph::graphmap::NodeTrait;
 use self::petgraph::algo::dijkstra;
 use self::petgraph::visit::EdgeRef;
 
@@ -24,7 +24,7 @@ pub struct ClosestNodes<'a, Node: 'a> {
 
 /// An iterator for closest nodes to a given
 /// node in a graph.
-impl<'a, Node: NodeTrait> Iterator for ClosestNodes<'a, Node> {
+impl<'a, Node> Iterator for ClosestNodes<'a, Node> {
     // node_index, distance from source, gateway node index
     type Item = (usize, u64, usize); 
 
@@ -74,7 +74,7 @@ impl<'a, Node: NodeTrait> Iterator for ClosestNodes<'a, Node> {
 }
 
 
-impl <Node: NodeTrait> Network <Node> {
+impl <Node: Hash + Eq> Network <Node> {
     pub fn new() -> Self {
         Network::<Node> {
             igraph: petgraph::graphmap::GraphMap::new(),

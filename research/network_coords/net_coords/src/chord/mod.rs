@@ -329,6 +329,7 @@ pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>,
         let cur_chain_wrapped = next_chain(cur_id, dst_id, &net, &fingers, l);
         match cur_chain_wrapped {
             Some(mut cur_chain) => {
+                println!("cur_chain = {:?}", cur_chain);
                 total_chain.pop(); // Avoid duplicity
                 cur_chain.reverse();
                 total_chain.extend(cur_chain);
@@ -367,12 +368,19 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
         net.add_node(node_key);
     }
 
+    // Add a straight line, to ensure connectivity.
+    // Possibly change this later to a random tree.
+    for v in 0 .. num_nodes - 1 {
+        net.igraph.add_edge(v, v + 1, 1);
+            println!("add_edge {}, {}",v,v + 1);
+    }
+
     // Connect node v to about num_neighbors previous nodes:
     // This should ensure connectivity, even if num_neighbors is small.
-    for v in 1 .. num_nodes {
+    for v in 0 .. num_nodes {
         for _ in 0 .. num_neighbors {
-            let rand_prev_node: Range<usize> = Range::new(0,v);
-            let u = rand_prev_node.ind_sample(rng);
+            let rand_node: Range<usize> = Range::new(0,num_nodes);
+            let u = rand_node.ind_sample(rng);
             if u == v  {
                 // Avoid self loops
                 continue
@@ -383,6 +391,7 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
             }
             // Add edge:
             net.igraph.add_edge(v,u,1);
+            println!("add_edge {}, {}",v,u);
         }
     }
     net
@@ -453,23 +462,29 @@ mod tests {
         let fingers_seed = 0x1338;
         converge_fingers(&net, &mut chord_fingers, fingers_seed,l);
 
-        // Try to find a path:
-        let src_id = net.index_to_node(0).unwrap().clone();
-        let dst_id = net.index_to_node(22).unwrap().clone();
-        println!("src_id = {}", src_id);
-        println!("dst_id = {}", dst_id);
-        let path = find_path(src_id, dst_id, &net, &chord_fingers, l).unwrap();
+        for index_a in 0 .. num_nodes {
+            for index_b in index_a + 1 .. num_nodes {
+                // Try to find a path:
+                let src_id = net.index_to_node(index_a).unwrap().clone();
+                let dst_id = net.index_to_node(index_b).unwrap().clone();
+                println!("src_id = {}", src_id);
+                println!("dst_id = {}", dst_id);
+                let path = find_path(src_id, dst_id, &net, &chord_fingers, l).unwrap();
 
-        // Make sure that all nodes in the path are connected by edges in the graph:
-        for i in 0 .. (path.len() - 1) {
-            let a = net.node_to_index(&path[i]).unwrap();
-            let b = net.node_to_index(&path[i+1]).unwrap();
-            assert!(net.igraph.contains_edge(a,b));
+                // Make sure that all nodes in the path are connected by edges in the graph:
+                println!("path: {:?}", path);
+                for i in 0 .. (path.len() - 1) {
+                    let a = net.node_to_index(&path[i]).unwrap();
+                    let b = net.node_to_index(&path[i+1]).unwrap();
+                    println!("a,b = {}, {}",a,b);
+                    assert!(net.igraph.contains_edge(a,b));
+                }
+
+                // Make sure that path begins with src_id and ends with dst_id:
+                assert!(path[0] == src_id);
+                assert!(path[path.len() - 1] == dst_id);
+            }
         }
-
-        // Make sure that path begins with src_id and ends with dst_id:
-        assert!(path[0] == src_id);
-        assert!(path[path.len() - 1] == dst_id);
     }
 
 }

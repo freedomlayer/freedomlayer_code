@@ -20,7 +20,9 @@ fn main() {
 
         println!("--------------------------------");
         let num_nodes: usize = ((2 as u64).pow(g)) as usize;
-        let num_neighbours: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+        // let num_neighbours: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+
+        let num_neighbours: usize = 3;
 
         println!("num_nodes = {}",num_nodes);
         println!("num_neighbours = {}",num_neighbours);

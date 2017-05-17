@@ -6,7 +6,7 @@ pub mod ids_chain;
 use network::{Network};
 use self::ids_chain::{ids_chain};
 
-use self::rand::{StdRng};
+use self::rand::{Rng, StdRng};
 use self::rand::distributions::{Weighted, WeightedChoice, 
     IndependentSample, Range};
 
@@ -16,9 +16,6 @@ type NeighborConnector = Vec<NodeChain>;
 
 // Size of keyspace is 2^L:
 const L: usize = 42;
-
-// Global seed for deterministic randomization of randomized fingers.
-const FINGERS_SEED: u64 = 0x1337;
 
 
 pub struct ChordFingers {
@@ -170,11 +167,11 @@ fn assign_check_changed<T: Eq>(dest: &mut T, src: T) -> bool {
 /// Perform one fingers iteration for node x: 
 /// Take all chains from neighbors and update own chains to the best found chains.
 /// Return true if any assignment has changed, false otherwise (Stationary state).
-pub fn iter_fingers(x_id: RingKey, net: &Network<RingKey>, 
-             fingers: &mut Vec<ChordFingers>) -> bool {
+pub fn iter_node_fingers(x_i: usize, net: &Network<RingKey>, 
+             fingers: &mut Vec<ChordFingers>, fingers_seed: usize) -> bool {
 
     let mut has_changed: bool = false;
-    let x_i = net.node_to_index(&x_id).unwrap();
+    let x_id = net.index_to_node(x_i).unwrap().clone();
 
     // Get all chain candidates:
     let candidates = prepare_candidates(x_id, &net, &fingers);
@@ -220,7 +217,7 @@ pub fn iter_fingers(x_id: RingKey, net: &Network<RingKey>,
 
     // Obtain deterministic rng to be used with the following randomized
     // fingers:
-    let seed: &[_] = &[FINGERS_SEED as usize, x_i as usize];
+    let seed: &[_] = &[fingers_seed as usize, x_i as usize];
     let mut rng: StdRng = rand::SeedableRng::<&[usize]>::from_seed(seed);
 
     // Update right randomized fingers:
@@ -244,12 +241,37 @@ pub fn iter_fingers(x_id: RingKey, net: &Network<RingKey>,
     has_changed
 }
 
-/*
-fn init_chord_fingers(net: &Network<Node>) 
-        -> Vec<ChordFingers> {
+/// Iter all nodes fingers. Return true if anything has changed,
+/// false otherwise (Stationary state)
+fn iter_fingers(net: &Network<RingKey>, 
+             mut fingers: &mut Vec<ChordFingers>, fingers_seed: usize) -> bool {
 
+    // Has anything changed in the chosen fingers:
+    let mut has_changed = false;
+    for node_index in net.igraph.nodes() {
+        has_changed |= iter_node_fingers(node_index, &net, &mut fingers, fingers_seed);
+    }
+    has_changed
 }
-*/
+
+pub fn converge_fingers(net: &Network<RingKey>, 
+             mut fingers: &mut Vec<ChordFingers>, fingers_seed: usize) {
+
+    while iter_fingers(&net, &mut fingers, fingers_seed) {
+        println!("iter_fingers...");
+    }
+}
+
+/// Create initial chord fingers for all the nodes in the network.
+pub fn init_chord_fingers(net: &Network<RingKey>) -> Vec<ChordFingers> {
+    let mut chord_fingers_res: Vec<ChordFingers> = Vec::new();
+    for node_index in net.igraph.nodes() {
+        let node_id: RingKey = net.index_to_node(node_index).unwrap().clone();
+        let chord_fingers = init_node_chord_fingers(node_id, &net);
+        chord_fingers_res.push(chord_fingers);
+    }
+    chord_fingers_res
+}
 
 /// Find next best chain of steps in the network to arrive the node dst_index.
 fn next_chain(cur_id: RingKey, dst_id: RingKey, 
@@ -294,6 +316,75 @@ fn next_chain(cur_id: RingKey, dst_id: RingKey,
     }
 }
 
+/// Find a path between src_id and dst_id
+/// Return the full path as a chain of node ids.
+pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>, 
+    fingers: &Vec<ChordFingers>) -> Option<NodeChain> {
+
+    let mut total_chain: NodeChain = NodeChain::new();
+    total_chain.push(src_id);
+    let mut cur_id = src_id;
+    while cur_id != dst_id {
+        let cur_chain_wrapped = next_chain(cur_id, dst_id, &net, &fingers);
+        match cur_chain_wrapped {
+            Some(cur_chain) => {
+                total_chain.pop(); // Avoid duplicity
+                total_chain.extend(cur_chain);
+                cur_id = total_chain[total_chain.len() - 1];
+
+            },
+            None => return None,
+        };
+        // Check if total_chain has got too long:
+        if total_chain.len() > net.igraph.node_count() {
+            return None;
+        }
+    }
+    Some(total_chain)
+}
+
+/// Generate a random graph to be used with chord.
+/// Graph nodes are of type RingKey.
+pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, rng: &mut R) 
+        -> Network<RingKey> {
+
+    // Maximum key in the ring:
+    let max_key = 2_u64.pow(L as u32);
+
+    // We can't have too many nodes with respect to the keyspace.
+    // We stay below sqrt(keyspace_size), to avoid collisions.
+    assert!(num_nodes < (max_key as f64).sqrt() as usize, "Too many nodes!");
+    assert!(num_nodes > 0, "We should have at least one node!");
+
+    let mut net = Network::<RingKey>::new();
+
+    // Insert num_nodes nodes with random keys:
+    for _ in 0 .. num_nodes {
+        let rand_key: Range<RingKey> = Range::new(0,max_key);
+        net.add_node(rand_key.ind_sample(rng));
+    }
+
+    // Connect node v to about num_neighbors previous nodes:
+    // This should ensure connectivity, even if num_neighbors is small.
+    for v in 1 .. num_nodes {
+        for _ in 0 .. num_neighbors {
+            let rand_prev_node: Range<usize> = Range::new(0,v);
+            let u = rand_prev_node.ind_sample(rng);
+            if u == v  {
+                // Avoid self loops
+                continue
+            }
+            if net.igraph.contains_edge(v,u) {
+                // Already has this edge.
+                continue
+            }
+            // Add edge:
+            net.igraph.add_edge(v,u,1);
+        }
+    }
+    net
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -335,4 +426,15 @@ mod tests {
         let m = (5,2,vec![1,1]);
         assert!(m > a);
     }
+
+    #[test]
+    fn test_random_net_chord() {
+        let seed: &[_] = &[1,2,3,4,5];
+        let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+        let num_nodes = 10;
+        let num_neighbors = 2;
+        let net = random_net_chord(num_nodes,num_neighbors,&mut rng);
+        let chord_fingers = init_chord_fingers(&net);
+    }
+
 }

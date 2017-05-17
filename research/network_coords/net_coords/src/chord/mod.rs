@@ -328,8 +328,9 @@ pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>,
     while cur_id != dst_id {
         let cur_chain_wrapped = next_chain(cur_id, dst_id, &net, &fingers, l);
         match cur_chain_wrapped {
-            Some(cur_chain) => {
+            Some(mut cur_chain) => {
                 total_chain.pop(); // Avoid duplicity
+                cur_chain.reverse();
                 total_chain.extend(cur_chain);
                 cur_id = total_chain[total_chain.len() - 1];
 

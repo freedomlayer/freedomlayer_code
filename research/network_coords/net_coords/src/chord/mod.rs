@@ -567,16 +567,12 @@ mod tests {
                 // Try to find a path:
                 let src_id = net.index_to_node(index_a).unwrap().clone();
                 let dst_id = net.index_to_node(index_b).unwrap().clone();
-                println!("src_id = {}", src_id);
-                println!("dst_id = {}", dst_id);
                 let path = find_path(src_id, dst_id, &net, &chord_fingers, l).unwrap();
 
                 // Make sure that all nodes in the path are connected by edges in the graph:
-                println!("path: {:?}", path);
                 for i in 0 .. (path.len() - 1) {
                     let a = net.node_to_index(&path[i]).unwrap();
                     let b = net.node_to_index(&path[i+1]).unwrap();
-                    println!("a,b = {}, {}",a,b);
                     assert!(net.igraph.contains_edge(a,b));
                 }
 

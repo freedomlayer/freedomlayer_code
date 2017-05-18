@@ -403,16 +403,21 @@ pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>,
         let cur_chain_wrapped = next_chain(cur_id, dst_id, &net, &route_chains, l);
         match cur_chain_wrapped {
             Some(mut cur_chain) => {
+                println!("cur_chain = {:?}", cur_chain);
                 total_chain.pop(); // Avoid duplicity
                 cur_chain.reverse();
                 total_chain.extend(cur_chain);
                 cur_id = total_chain[total_chain.len() - 1];
 
             },
-            None => return None,
+            None => {
+                println!("next chain not found!");
+                return None;
+            }
         };
         // Check if total_chain has got too long:
         if total_chain.len() > net.igraph.node_count() {
+            println!("Too long!");
             return None;
         }
     }

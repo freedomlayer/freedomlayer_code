@@ -12,6 +12,7 @@ use self::rand::distributions::{Weighted, WeightedChoice,
 
 use network::{Network};
 use self::ids_chain::{ids_chain};
+use self::chains_array::{ChainsArray};
 
 
 pub type RingKey = u64; // A key in the chord ring
@@ -162,19 +163,19 @@ fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
 /// Prepare all candidate chains for node x_i.
 /// New best chains will be chosen out of those chains.
 fn prepare_candidates(x_id: RingKey, net: &Network<RingKey>, 
-                      fingers: &Vec<ChordFingers>) -> Vec<NodeChain> {
+                      fingers: &Vec<ChordFingers>) -> ChainsArray {
 
     let x_i = net.node_to_index(&x_id).unwrap();
 
     // Collect all chains to one vector. 
-    let mut candidates: Vec<NodeChain> = Vec::new();
+    let mut candidates: ChainsArray = ChainsArray::new();
 
     // Add trivial chain (x):
-    candidates.push(vec![x_id]);
+    candidates.insert_chain(vec![x_id]);
 
     // Add trivial chains (x,nei) where nei is any neighbor of x:
     for neighbor_index in net.igraph.neighbors(x_i) {
-        candidates.push(vec![net.index_to_node(neighbor_index).unwrap().clone(), x_id])
+        candidates.insert_chain(vec![net.index_to_node(neighbor_index).unwrap().clone(), x_id])
     }
 
     // Add all "proposed" chains from all neighbors:
@@ -193,15 +194,16 @@ fn prepare_candidates(x_id: RingKey, net: &Network<RingKey>,
             add_id_to_chain(&mut cchain, x_id);
             assert!(verify_chain(&cchain, &net));
             assert!(cchain[cchain.len() - 1] == x_id);
-            candidates.push(cchain);
+            candidates.insert_chain(cchain);
         }
     }
 
     // Add all current chains:
-    candidates.extend(
-        extract_chains(&fingers[x_i]).iter().map(|&chain| chain.clone())
-    );
+    for chain in extract_chains(&fingers[x_i]) {
+        candidates.insert_chain(chain.clone());
+    }
 
+    candidates.index();
     candidates
 }
 
@@ -233,29 +235,21 @@ pub fn iter_node_fingers(x_i: usize, net: &Network<RingKey>,
     // Get all chain candidates:
     let candidates = prepare_candidates(x_id, &net, &fingers);
 
-
     // Update left finger:
     has_changed |= assign_check_changed(&mut fingers[x_i].left, 
-        candidates.iter().min_by_key(|c: &&NodeChain| 
-            (vdist(c[0], x_id,l), c.len(), csum_chain(c) )).unwrap().clone());
-
-    // Find the chain that is closest to target_id from the right.
-    // Lexicographic sorting: 
-    // We first care about closest id in keyspace. Next we want the shortest chain possible.
-    let best_right_chain = |target_id| candidates.iter().min_by_key(|c| 
-             (vdist(target_id, c[0],l), c.len(), csum_chain(c) )).unwrap().clone();
+        candidates.find_closest_left(x_id).clone());
 
     // Update all right fingers:
     for i in 0 .. l {
         has_changed |= assign_check_changed(&mut
             fingers[x_i].right_positive[i], 
-                best_right_chain((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(l as u32)));
+                candidates.find_closest_right((x_id + 2_u64.pow(i as u32)) % 2_u64.pow(l as u32)).clone());
 
     }
     for i in 0 .. l {
         has_changed |= assign_check_changed(&mut
             fingers[x_i].right_negative[i], 
-                best_right_chain((x_id.wrapping_sub(2_u64.pow(i as u32))) % 2_u64.pow(l as u32)));
+                candidates.find_closest_right((x_id.wrapping_sub(2_u64.pow(i as u32))) % 2_u64.pow(l as u32)).clone());
     }
 
     // Update neighbor connectors.
@@ -270,7 +264,7 @@ pub fn iter_node_fingers(x_i: usize, net: &Network<RingKey>,
         for (j,cur_id) in ids_chain(x_id, neighbor_id).enumerate() {
             has_changed |= assign_check_changed(
                 &mut fingers[x_i].neighbor_connectors[neighbor_vec_index][j], 
-                best_right_chain(cur_id));
+                candidates.find_closest_right(cur_id).clone());
         }
     }
 
@@ -286,7 +280,7 @@ pub fn iter_node_fingers(x_i: usize, net: &Network<RingKey>,
             Range::new(2_u64.pow(i as u32),2_u64.pow((i + 1) as u32));
         let rand_id = rand_range.ind_sample(&mut rng);
         has_changed |= assign_check_changed(&mut fingers[x_i].right_randomized[i], 
-                        best_right_chain(rand_id));
+                        candidates.find_closest_right(rand_id).clone());
     }
 
     // Update random fingers:
@@ -295,7 +289,7 @@ pub fn iter_node_fingers(x_i: usize, net: &Network<RingKey>,
         let rand_range: Range<RingKey> = Range::new(0u64,2_u64.pow(l as u32));
         let rand_id = rand_range.ind_sample(&mut rng);
         has_changed |= assign_check_changed(&mut fingers[x_i].fully_randomized[i], 
-            best_right_chain(rand_id));
+            candidates.find_closest_right(rand_id).clone());
     }
 
     // assert!(verify_fingers(x_id, &fingers[x_i], &net));
@@ -340,42 +334,56 @@ fn route_chains(net: &Network<RingKey>, fingers: &Vec<ChordFingers>, l:usize) {
 }
 */
 
+/// Get routing chains for a given node.
+/// Includes Neighbor of Neighbor chains too.
+fn get_route_chains_node(x_i: usize, net: &Network<RingKey>, 
+            fingers: &Vec<ChordFingers>, l:usize) -> ChainsArray {
+
+    let mut route_chains = ChainsArray::new();
+    // Get all chains of order 1:
+    let chains1 = extract_chains(&fingers[x_i]);
+
+    // First add all chains of order 1:
+    for &chain in &chains1 {
+        route_chains.insert_chain(chain.clone());
+    }
+
+    // Find all chains of order 2:
+
+    for chain in chains1 {
+        let neighbor_id = chain[chain.len() - 1];
+        let neighbor_index = net.node_to_index(&neighbor_id).unwrap();
+        let neighbor_chains = extract_chains(&fingers[neighbor_index]);
+        for nchain in neighbor_chains {
+            let mut concat_chain = nchain.clone();
+            concat_chain.extend(chain.iter().skip(1));
+            route_chains.insert_chain(concat_chain);
+        }
+    }
+
+    route_chains.index();
+    route_chains
+}
+
+/// Create indexed route chains ChainsArray structs for all nodes.
+fn get_route_chains(net: &Network<RingKey>, 
+                    fingers: &Vec<ChordFingers>, l:usize) -> Vec<ChainsArray> {
+
+    net.igraph.nodes()
+        .map(|node_index| get_route_chains_node(node_index, &net, &fingers, l))
+        .collect::<Vec<ChainsArray>>()
+}
+
 
 /// Find next best chain of steps in the network to arrive the node dst_index.
 fn next_chain(cur_id: RingKey, dst_id: RingKey, 
-        net: &Network<RingKey>, fingers: &Vec<ChordFingers>, l: usize)
+        net: &Network<RingKey>, route_chains: &Vec<ChainsArray>, l: usize)
             -> Option<NodeChain>{
-
-    // Get all chains of order 1:
-    let chains1 = prepare_candidates(cur_id, &net, &fingers);
-    let mut all_chains: Vec<NodeChain> = chains1.clone();
-
-    // Collect all relevant chains:
-    // - Regular one iteration chain.
-    // - Two iters chains: According to "Know thy neighbor" article
-    for c1 in chains1.iter() {
-        let vneighbor_id: RingKey = c1[0];
-
-        // Concatenate pairs of chains.
-        // Remember that a chain from id x to id y is of the form:
-        // 0 1 2 3 4  <-- Vector index
-        // y . . . x  <-- Value
-        all_chains.extend(
-            prepare_candidates(vneighbor_id, &net, &fingers).iter()
-                .map(|c| {
-                    let mut clone: NodeChain = c.clone();
-                    // Concatenate chains:
-                    clone.extend(c1.iter().skip(1).cloned().collect::<NodeChain>());
-                    clone
-                })
-                .collect::<Vec<NodeChain>>()
-        );
-    }
-
     
-    // Pick the closest chain, using csum_chain as tie breaker:
-    let best_chain: NodeChain = all_chains.iter().min_by_key(|c: &&NodeChain| 
-         ( vdist(c[0], dst_id,l), c.len(), csum_chain(c) )).unwrap().clone();
+    let cur_node_index = net.node_to_index(&cur_id).unwrap();
+
+    let best_chain: NodeChain = 
+        route_chains[cur_node_index].find_closest_left(dst_id).clone();
 
     // If chain leads to us, return None. Otherwise return the chain.
     match best_chain[0] == cur_id {
@@ -387,13 +395,13 @@ fn next_chain(cur_id: RingKey, dst_id: RingKey,
 /// Find a path between src_id and dst_id
 /// Return the full path as a chain of node ids.
 pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>, 
-    fingers: &Vec<ChordFingers>, l: usize) -> Option<NodeChain> {
+    route_chains: &Vec<ChainsArray>, l: usize) -> Option<NodeChain> {
 
     let mut total_chain: NodeChain = NodeChain::new();
     total_chain.push(src_id);
     let mut cur_id = src_id;
     while cur_id != dst_id {
-        let cur_chain_wrapped = next_chain(cur_id, dst_id, &net, &fingers, l);
+        let cur_chain_wrapped = next_chain(cur_id, dst_id, &net, &route_chains, l);
         match cur_chain_wrapped {
             Some(mut cur_chain) => {
                 total_chain.pop(); // Avoid duplicity
@@ -559,15 +567,17 @@ mod tests {
         let l: usize = 6; // Size of keyspace
         let net = random_net_chord(num_nodes,num_neighbors,l,&mut rng);
         let mut chord_fingers = init_chord_fingers(&net,l);
-        let fingers_seed = 0x1338;
+        let fingers_seed = 0x1339;
         converge_fingers(&net, &mut chord_fingers, fingers_seed,l);
+
+        let route_chains = get_route_chains(&net, &chord_fingers, l);
 
         for index_a in 0 .. num_nodes {
             for index_b in index_a + 1 .. num_nodes {
                 // Try to find a path:
                 let src_id = net.index_to_node(index_a).unwrap().clone();
                 let dst_id = net.index_to_node(index_b).unwrap().clone();
-                let path = find_path(src_id, dst_id, &net, &chord_fingers, l).unwrap();
+                let path = find_path(src_id, dst_id, &net, &route_chains, l).unwrap();
 
                 // Make sure that all nodes in the path are connected by edges in the graph:
                 for i in 0 .. (path.len() - 1) {

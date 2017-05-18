@@ -84,6 +84,7 @@ impl <Node: Hash + Eq + Clone> Network <Node> {
     }
 
     pub fn add_node(&mut self, node: Node) -> usize {
+        assert!(!self.nodes_index.contains_key(&node), "We already have this node! Aborting.");
         let node_num = self.index_nodes.len();
         self.nodes_index.insert(node.clone(), node_num);
         self.index_nodes.push(node);

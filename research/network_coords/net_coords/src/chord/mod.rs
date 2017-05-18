@@ -2,6 +2,7 @@ extern crate petgraph;
 extern crate rand;
 
 pub mod ids_chain;
+pub mod chains_array;
 
 use std::collections::{HashSet};
 
@@ -13,9 +14,9 @@ use network::{Network};
 use self::ids_chain::{ids_chain};
 
 
-type RingKey = u64; // A key in the chord ring
-type NodeChain = Vec<RingKey>;
-type NeighborConnector = Vec<NodeChain>;
+pub type RingKey = u64; // A key in the chord ring
+pub type NodeChain = Vec<RingKey>;
+pub type NeighborConnector = Vec<NodeChain>;
 
 
 pub struct ChordFingers {

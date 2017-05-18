@@ -14,7 +14,7 @@ const FINGERS_SEED: usize = 0x1337;
 #[cfg(not(test))]
 fn main() {
     let pair_iters = 100;
-    for g in 13 .. 16 {
+    for g in 9 .. 10 {
         // Keyspace size:
         let l: usize = (2 * g + 1)  as usize;
 
@@ -48,6 +48,7 @@ fn main() {
                 .into_iter().collect::<Vec<_>>();
             let src_id = net.index_to_node(node_pair[0]).unwrap().clone();
             let dst_id = net.index_to_node(node_pair[1]).unwrap().clone();
+            println!("{}, {}", node_pair[0], node_pair[1]);
 
             let path = find_path(src_id, dst_id, &net, &route_chains, l).unwrap();
             sum_length += path.len() as u64;

@@ -7,8 +7,7 @@ pub mod chains_array;
 use std::collections::{HashSet};
 
 use self::rand::{Rng, StdRng};
-use self::rand::distributions::{Weighted, WeightedChoice, 
-    IndependentSample, Range};
+use self::rand::distributions::{IndependentSample, Range};
 
 use network::{Network};
 use self::ids_chain::{ids_chain};

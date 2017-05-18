@@ -366,7 +366,7 @@ fn get_route_chains_node(x_i: usize, net: &Network<RingKey>,
 }
 
 /// Create indexed route chains ChainsArray structs for all nodes.
-fn get_route_chains(net: &Network<RingKey>, 
+pub fn get_route_chains(net: &Network<RingKey>, 
                     fingers: &Vec<ChordFingers>, l:usize) -> Vec<ChainsArray> {
 
     net.igraph.nodes()

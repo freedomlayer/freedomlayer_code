@@ -3,12 +3,15 @@ extern crate rand;
 
 pub mod ids_chain;
 
-use network::{Network};
-use self::ids_chain::{ids_chain};
+use std::collections::{HashSet};
 
 use self::rand::{Rng, StdRng};
 use self::rand::distributions::{Weighted, WeightedChoice, 
     IndependentSample, Range};
+
+use network::{Network};
+use self::ids_chain::{ids_chain};
+
 
 type RingKey = u64; // A key in the chord ring
 type NodeChain = Vec<RingKey>;
@@ -64,6 +67,9 @@ fn init_node_chord_fingers(x_i: usize, net: &Network<RingKey>, l: usize)
             cf.neighbor_connectors[neighbor_vec_index].push(vec![x_id]);
         }
     }
+
+    // assert!(verify_fingers(x_id, &cf, &net));
+
     cf
 }
 
@@ -96,6 +102,49 @@ fn extract_chains<'a> (fingers: &'a ChordFingers) ->
     res
 }
 
+/// Make sure that a given chain is made of adjacent nodes.
+fn verify_chain(chain: &NodeChain, net: &Network<RingKey>) -> bool {
+    for i in 0 .. (chain.len() - 1) {
+        let a = net.node_to_index(&chain[i]).unwrap();
+        let b = net.node_to_index(&chain[i+1]).unwrap();
+        if !net.igraph.contains_edge(a,b) {
+            return false
+        }
+    }
+    true
+}
+
+/*
+fn verify_fingers(x_id: RingKey, chord_fingers: &ChordFingers, 
+          net: &Network<RingKey>) -> bool {
+
+    let l = chord_fingers.right_positive.len();
+
+    // A function to get the top element:
+    let check_chain = |chain: &NodeChain| (chain[chain.len() - 1] == x_id) &&
+        verify_chain(chain, &net);
+
+    let mut res: bool = true;
+
+    res &= check_chain(&chord_fingers.left);
+
+    for i in 0 .. l {
+        res &= check_chain(&chord_fingers.right_positive[i]);
+        res &= check_chain(&chord_fingers.right_negative[i]);
+        res &= check_chain(&chord_fingers.right_randomized[i]);
+        res &= check_chain(&chord_fingers.fully_randomized[i]);
+    }
+
+    for nei_connector in chord_fingers.neighbor_connectors.iter() {
+        for chain in nei_connector {
+            res &= check_chain(&chain);
+        }
+    }
+    res
+
+}
+*/
+
 
 /// Add an id to chain. Eliminate cycle if created.
 fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
@@ -110,6 +159,7 @@ fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
 }
 
 /// Prepare all candidate chains for node x_i.
+/// New best chains will be chosen out of those chains.
 fn prepare_candidates(x_id: RingKey, net: &Network<RingKey>, 
                       fingers: &Vec<ChordFingers>) -> Vec<NodeChain> {
 
@@ -128,14 +178,20 @@ fn prepare_candidates(x_id: RingKey, net: &Network<RingKey>,
 
     // Add all "proposed" chains from all neighbors:
     for neighbor_index in net.igraph.neighbors(x_i) {
-        // Add trivial chain (x,nei):
-        candidates.push(vec![net.index_to_node(neighbor_index).unwrap().clone(), x_id]);
+
+        let neighbor_id = net.index_to_node(neighbor_index).unwrap().clone();
+        // assert!(verify_fingers(neighbor_id, &fingers[neighbor_index], &net));
 
         // Add proposed chains:
         for &chain in extract_chains(&fingers[neighbor_index]).iter() {
+            assert!(chain[chain.len() - 1] == neighbor_id);
+
             let mut cchain = chain.clone();
             // Add our own id to the chain, possibly eliminating cycles:
+            assert!(verify_chain(&cchain, net));
             add_id_to_chain(&mut cchain, x_id);
+            assert!(verify_chain(&cchain, &net));
+            assert!(cchain[cchain.len() - 1] == x_id);
             candidates.push(cchain);
         }
     }
@@ -225,7 +281,8 @@ pub fn iter_node_fingers(x_i: usize, net: &Network<RingKey>,
     // Update right randomized fingers:
     for i in 0 .. l {
         // Randomize a finger value in [2^i, 2^(i+1))
-        let rand_range: Range<RingKey> = Range::new(2_u64.pow(i as u32),2_u64.pow((i + 1) as u32));
+        let rand_range: Range<RingKey> = 
+            Range::new(2_u64.pow(i as u32),2_u64.pow((i + 1) as u32));
         let rand_id = rand_range.ind_sample(&mut rng);
         has_changed |= assign_check_changed(&mut fingers[x_i].right_randomized[i], 
                         best_right_chain(rand_id));
@@ -239,6 +296,8 @@ pub fn iter_node_fingers(x_i: usize, net: &Network<RingKey>,
         has_changed |= assign_check_changed(&mut fingers[x_i].fully_randomized[i], 
             best_right_chain(rand_id));
     }
+
+    // assert!(verify_fingers(x_id, &fingers[x_i], &net));
 
     has_changed
 }
@@ -273,6 +332,13 @@ pub fn init_chord_fingers(net: &Network<RingKey>, l: usize) -> Vec<ChordFingers>
     }
     chord_fingers_res
 }
+
+/*
+fn route_chains(net: &Network<RingKey>, fingers: &Vec<ChordFingers>, l:usize) {
+
+}
+*/
+
 
 /// Find next best chain of steps in the network to arrive the node dst_index.
 fn next_chain(cur_id: RingKey, dst_id: RingKey, 
@@ -329,7 +395,6 @@ pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>,
         let cur_chain_wrapped = next_chain(cur_id, dst_id, &net, &fingers, l);
         match cur_chain_wrapped {
             Some(mut cur_chain) => {
-                println!("cur_chain = {:?}", cur_chain);
                 total_chain.pop(); // Avoid duplicity
                 cur_chain.reverse();
                 total_chain.extend(cur_chain);
@@ -354,6 +419,9 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
     // Maximum key in the ring:
     let max_key = 2_u64.pow(l as u32);
 
+    // A hash set to make sure we don't have duplicate keys.
+    let mut chosen_keys: HashSet<RingKey> = HashSet::new();
+
     // We can't have too many nodes with respect to the keyspace.
     // We stay below sqrt(keyspace_size), to avoid collisions.
     assert!(num_nodes < (max_key as f64).sqrt() as usize, "Too many nodes!");
@@ -364,7 +432,11 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
     // Insert num_nodes nodes with random keys:
     for _ in 0 .. num_nodes {
         let rand_key: Range<RingKey> = Range::new(0,max_key);
-        let node_key = rand_key.ind_sample(rng);
+        let mut node_key = rand_key.ind_sample(rng);
+        while chosen_keys.contains(&node_key) {
+            node_key = rand_key.ind_sample(rng);
+        }
+        chosen_keys.insert(node_key.clone());
         net.add_node(node_key);
     }
 
@@ -372,7 +444,7 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
     // Possibly change this later to a random tree.
     for v in 0 .. num_nodes - 1 {
         net.igraph.add_edge(v, v + 1, 1);
-            println!("add_edge {}, {}",v,v + 1);
+        // println!("add_edge {}, {}",v,v + 1);
     }
 
     // Connect node v to about num_neighbors previous nodes:
@@ -391,7 +463,7 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
             }
             // Add edge:
             net.igraph.add_edge(v,u,1);
-            println!("add_edge {}, {}",v,u);
+            // println!("add_edge {}, {}",v,u);
         }
     }
     net
@@ -451,12 +523,40 @@ mod tests {
     }
 
     #[test]
+    fn test_add_id_to_chain_basic() {
+        let mut chain = vec![1,2,3,4,5];
+        add_id_to_chain(&mut chain, 3);
+        assert!(chain == vec![1,2,3]);
+
+        let mut chain = vec![1,2,3];
+        add_id_to_chain(&mut chain, 3);
+        assert!(chain == vec![1,2,3]);
+
+        let mut chain = vec![1,2,3];
+        add_id_to_chain(&mut chain, 4);
+        assert!(chain == vec![1,2,3,4]);
+
+        let mut chain = vec![1,2,3];
+        add_id_to_chain(&mut chain, 1);
+        assert!(chain == vec![1]);
+
+        let mut chain = vec![1,2];
+        add_id_to_chain(&mut chain, 1);
+        assert!(chain == vec![1]);
+
+        let mut chain = vec![1];
+        add_id_to_chain(&mut chain, 1);
+        assert!(chain == vec![1]);
+
+    }
+
+    #[test]
     fn test_chord_basic() {
         let seed: &[_] = &[1,2,3,4,9];
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
-        let num_nodes = 30;
+        let num_nodes = 5;
         let num_neighbors = 2;
-        let l: usize = 10; // Size of keyspace
+        let l: usize = 6; // Size of keyspace
         let net = random_net_chord(num_nodes,num_neighbors,l,&mut rng);
         let mut chord_fingers = init_chord_fingers(&net,l);
         let fingers_seed = 0x1338;

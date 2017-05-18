@@ -45,6 +45,8 @@ impl ChainsArray {
     /// This could be slow.
     pub fn index(&mut self) {
         assert!(!self.is_indexed, "Already indexed, aborting!");
+        assert!(self.raw_chains.len() > 0, "Chains array is empty, aborting!");
+
         self.sorted_chains_left = self.raw_chains.clone();
         self.sorted_chains_right = self.raw_chains.clone();
 

@@ -206,8 +206,8 @@ fn prepare_candidates(x_id: RingKey, net: &Network<RingKey>,
 
 
 /// Checksum the contents of a chain
-fn csum_chain(chain: &NodeChain, l: usize) -> RingKey {
-    chain.iter().fold(0, |acc, &x| acc.wrapping_add(x) % (2_u64.pow(l as u32)))
+fn csum_chain(chain: &NodeChain) -> u64 {
+    chain.iter().fold(0, |acc, &x| acc.wrapping_add(x))
 }
 
 ///
@@ -236,13 +236,13 @@ pub fn iter_node_fingers(x_i: usize, net: &Network<RingKey>,
     // Update left finger:
     has_changed |= assign_check_changed(&mut fingers[x_i].left, 
         candidates.iter().min_by_key(|c: &&NodeChain| 
-            (vdist(c[0], x_id,l), c.len(), csum_chain(c,l) )).unwrap().clone());
+            (vdist(c[0], x_id,l), c.len(), csum_chain(c) )).unwrap().clone());
 
     // Find the chain that is closest to target_id from the right.
     // Lexicographic sorting: 
     // We first care about closest id in keyspace. Next we want the shortest chain possible.
     let best_right_chain = |target_id| candidates.iter().min_by_key(|c| 
-             (vdist(target_id, c[0],l), c.len(), csum_chain(c,l) )).unwrap().clone();
+             (vdist(target_id, c[0],l), c.len(), csum_chain(c) )).unwrap().clone();
 
     // Update all right fingers:
     for i in 0 .. l {
@@ -374,7 +374,7 @@ fn next_chain(cur_id: RingKey, dst_id: RingKey,
     
     // Pick the closest chain, using csum_chain as tie breaker:
     let best_chain: NodeChain = all_chains.iter().min_by_key(|c: &&NodeChain| 
-         ( vdist(c[0], dst_id,l), c.len(), csum_chain(c,l) )).unwrap().clone();
+         ( vdist(c[0], dst_id,l), c.len(), csum_chain(c) )).unwrap().clone();
 
     // If chain leads to us, return None. Otherwise return the chain.
     match best_chain[0] == cur_id {
@@ -487,10 +487,9 @@ mod tests {
 
     #[test]
     fn test_csum_chain() {
-        let l = 42;
-        assert!(csum_chain(&vec![1,2,3,4],l) == 10);
-        assert!(csum_chain(&vec![],l) == 0);
-        assert!(csum_chain(&vec![1],l) == 1);
+        assert!(csum_chain(&vec![1,2,3,4]) == 10);
+        assert!(csum_chain(&vec![]) == 0);
+        assert!(csum_chain(&vec![1]) == 1);
     }
 
     #[test]

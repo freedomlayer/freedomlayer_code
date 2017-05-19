@@ -51,20 +51,24 @@ fn add_cyc(x: RingKey, diff: i64, l: usize) -> RingKey {
     }) % max_key
 }
 
-/*
 /// Generate all ids to maintain for chord 
-fn gen_ids(x_id: usize, net: &Network<RingKey>, l: usize, mut rng: &mut StdRng) 
+fn gen_ids(x_id: RingKey, net: &Network<RingKey>, l: usize, mut rng: &mut StdRng) 
     -> Vec<Maintained> {
 
-    let res_maintained: Vec<Mainained> = Vec::new();
+    let mut res_maintained: Vec<Maintained> = Vec::new();
 
     // Add left target node:
-    res_maintained.push(Maintained::Left(
-    
+    res_maintained.push(Maintained::Left(add_cyc(x_id,-1,l)));
 
     // Add right positives:
+    for i in 0 .. l {
+        res_maintained.push(Maintained::Right(add_cyc(x_id,2_i64.pow(i as u32),l)));
+    }
 
     // Add right negatives:
+    for i in 0 .. l {
+        res_maintained.push(Maintained::Right(add_cyc(x_id,-2_i64.pow(i as u32),l)));
+    }
     
     // Neighbor connectors: 
     
@@ -72,10 +76,11 @@ fn gen_ids(x_id: usize, net: &Network<RingKey>, l: usize, mut rng: &mut StdRng)
     
     // Fully randomized:
 
+    // Continue here.
+    assert!(false);
 
-    res_ids
+    res_maintained
 }
-*/
 
 
 /// Create initial ChordFingers structure for node with index x_i

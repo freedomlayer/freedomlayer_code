@@ -18,6 +18,11 @@ pub type RingKey = u64; // A key in the chord ring
 pub type NodeChain = Vec<RingKey>;
 pub type NeighborConnector = Vec<NodeChain>;
 
+// Maintained finger:
+enum Maintained {
+    Right(RingKey),
+    Left(RingKey),
+}
 
 pub struct ChordFingers {
     left: NodeChain, 
@@ -35,6 +40,43 @@ pub struct ChordFingers {
 // TODO: Keep ids of maintained nodes instead of all fragmented types
 // of fingers. Possibly make two types: right and left.
 // Generate ids only once, and since then use the ids blindly.
+
+/// Add cyclic (x + diff) % max_key
+fn add_cyc(x: RingKey, diff: i64, l: usize) -> RingKey {
+    let max_key = 2_u64.pow(l as u32);
+    (if diff >= 0 {
+        x.wrapping_add(diff as u64)
+    } else {
+        x.wrapping_sub((-diff) as u64)
+    }) % max_key
+}
+
+/*
+/// Generate all ids to maintain for chord 
+fn gen_ids(x_id: usize, net: &Network<RingKey>, l: usize, mut rng: &mut StdRng) 
+    -> Vec<Maintained> {
+
+    let res_maintained: Vec<Mainained> = Vec::new();
+
+    // Add left target node:
+    res_maintained.push(Maintained::Left(
+    
+
+    // Add right positives:
+
+    // Add right negatives:
+    
+    // Neighbor connectors: 
+    
+    // right randomized
+    
+    // Fully randomized:
+
+
+    res_ids
+}
+*/
+
 
 /// Create initial ChordFingers structure for node with index x_i
 fn init_node_chord_fingers(x_i: usize, net: &Network<RingKey>, l: usize) 
@@ -555,6 +597,21 @@ mod tests {
         assert!(vdist(2_u64.pow(l as u32) - 1,1,l) == 2);
         assert!(vdist(2_u64.pow(l as u32) - 1,0,l) == 1);
         assert!(vdist(1,0,l) == 2_u64.pow(l as u32) - 1);
+    }
+
+    #[test]
+    fn test_add_cyc() {
+        // Check add:
+        assert!(add_cyc(0,1,5) == 1);
+        assert!(add_cyc(1,1,5) == 2);
+        assert!(add_cyc(30,1,5) == 31);
+        assert!(add_cyc(31,1,5) == 0);
+
+        // Check sub:
+        assert!(add_cyc(2,-1,5) == 1);
+        assert!(add_cyc(1,-1,5) == 0);
+        assert!(add_cyc(0,-1,5) == 31);
+        assert!(add_cyc(31,-1,30) == 30);
     }
 
 

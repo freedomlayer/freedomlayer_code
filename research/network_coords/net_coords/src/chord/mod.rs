@@ -32,6 +32,10 @@ pub struct ChordFingers {
     fully_randomized: Vec<NodeChain>, 
 }
 
+// TODO: Keep ids of maintained nodes instead of all fragmented types
+// of fingers. Possibly make two types: right and left.
+// Generate ids only once, and since then use the ids blindly.
+
 /// Create initial ChordFingers structure for node with index x_i
 fn init_node_chord_fingers(x_i: usize, net: &Network<RingKey>, l: usize) 
     -> ChordFingers {
@@ -364,6 +368,57 @@ fn get_route_chains_node(x_i: usize, net: &Network<RingKey>,
     route_chains
 }
 
+/*
+ *
+/// Check if current fingers values are globally optimal for the node
+/// with id x_id.
+fn verify_global_optimality_node(x_id: RingKey, net: &Network<RingKey>,
+            sorted_node_keys: &Vec<RingKey>, node_fingers: &ChordFingers, l: usize) -> bool {
+
+    let get_right = |target_id| 
+        sorted_node_keys[sorted_node_keys.binary_search(target_id) % sorted_node_keys.len()];
+
+    let get_left = |target_id| 
+        sorted_node_keys[
+            (sorted_node_keys.len() - 1 + sorted_node_keys.binary_search(target_id)) 
+                % sorted_node_keys.len()];
+
+    // Checking left:
+    if node_fingers.left[0] != get_left(x_id.wrapping_sub(1) % 2_u64.pow(l as u32)) {
+        return false;
+    }
+    
+
+    // TODO: Continue here.
+    assert!(false);
+
+    true
+}
+
+/// Verify that the current finger values are globally best for all nodes.
+fn verify_global_optimality(net: &Network<RingKey>, 
+           fingers: &Vec<ChordFingers>, l: usize) -> bool {
+
+    // Get all node keys in the network:
+    node_keys = net.igraph.nodes()
+        .map(|node_index| net.index_to_node(node_index).unwrap().clone())
+        .collect::<Vec<RingKey>>();
+
+    node_keys.sort();
+
+    for node_index in net.igraph.nodes() {
+        let node_id = net.index_to_node(node_index).unwrap().clone();
+        if !verify_global_optimality_node(node_id, &net, &node_keys, 
+                                          &fingers[node_index], l) {
+            return false;
+        }
+    }
+    true
+
+}
+
+*/
+
 /// Create indexed route chains ChainsArray structs for all nodes.
 pub fn get_route_chains(net: &Network<RingKey>, 
                     fingers: &Vec<ChordFingers>, l:usize) -> Vec<ChainsArray> {
@@ -379,7 +434,12 @@ fn next_chain(cur_id: RingKey, dst_id: RingKey,
         net: &Network<RingKey>, route_chains: &Vec<ChainsArray>, l: usize)
             -> Option<NodeChain>{
     
+    println!("cur_id = {}", cur_id);
+    println!("dst_id = {}", dst_id);
+
     let cur_node_index = net.node_to_index(&cur_id).unwrap();
+    println!("cur_node_index = {}", cur_node_index);
+    println!("dst_node_index = {}", net.node_to_index(&dst_id).unwrap());
 
     let best_chain: NodeChain = 
         route_chains[cur_node_index].find_closest_left(dst_id).clone();

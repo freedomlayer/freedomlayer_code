@@ -3,6 +3,7 @@ extern crate rand;
 
 pub mod ids_chain;
 pub mod chains_array;
+pub mod node_fingers;
 
 use std::collections::{HashSet};
 
@@ -18,11 +19,7 @@ pub type RingKey = u64; // A key in the chord ring
 pub type NodeChain = Vec<RingKey>;
 pub type NeighborConnector = Vec<NodeChain>;
 
-// Maintained finger:
-enum Maintained {
-    Right(RingKey),
-    Left(RingKey),
-}
+
 
 pub struct ChordFingers {
     left: NodeChain, 
@@ -51,36 +48,6 @@ fn add_cyc(x: RingKey, diff: i64, l: usize) -> RingKey {
     }) % max_key
 }
 
-/// Generate all ids to maintain for chord 
-fn gen_ids(x_id: RingKey, net: &Network<RingKey>, l: usize, mut rng: &mut StdRng) 
-    -> Vec<Maintained> {
-
-    let mut res_maintained: Vec<Maintained> = Vec::new();
-
-    // Add left target node:
-    res_maintained.push(Maintained::Left(add_cyc(x_id,-1,l)));
-
-    // Add right positives:
-    for i in 0 .. l {
-        res_maintained.push(Maintained::Right(add_cyc(x_id,2_i64.pow(i as u32),l)));
-    }
-
-    // Add right negatives:
-    for i in 0 .. l {
-        res_maintained.push(Maintained::Right(add_cyc(x_id,-2_i64.pow(i as u32),l)));
-    }
-    
-    // Neighbor connectors: 
-    
-    // right randomized
-    
-    // Fully randomized:
-
-    // Continue here.
-    assert!(false);
-
-    res_maintained
-}
 
 
 /// Create initial ChordFingers structure for node with index x_i
@@ -258,10 +225,6 @@ fn prepare_candidates(x_id: RingKey, net: &Network<RingKey>,
 }
 
 
-/// Checksum the contents of a chain
-fn csum_chain(chain: &NodeChain) -> u64 {
-    chain.iter().fold(0, |acc, &x| acc.wrapping_add(x))
-}
 
 ///
 /// Assign value and check if value has changed.
@@ -589,10 +552,22 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
     net
 }
 
+/// Checksum the contents of a chain
+fn csum_chain(chain: &NodeChain) -> u64 {
+    chain.iter().fold(0, |acc, &x| acc.wrapping_add(x))
+}
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_csum_chain() {
+        assert!(csum_chain(&vec![1,2,3,4]) == 10);
+        assert!(csum_chain(&vec![]) == 0);
+        assert!(csum_chain(&vec![1]) == 1);
+    }
 
     #[test]
     fn test_d() {
@@ -620,12 +595,6 @@ mod tests {
     }
 
 
-    #[test]
-    fn test_csum_chain() {
-        assert!(csum_chain(&vec![1,2,3,4]) == 10);
-        assert!(csum_chain(&vec![]) == 0);
-        assert!(csum_chain(&vec![1]) == 1);
-    }
 
     #[test]
     fn test_inner_lexicographic() {

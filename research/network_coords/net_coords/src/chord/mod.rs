@@ -13,7 +13,7 @@ use self::rand::distributions::{IndependentSample, Range};
 use network::{Network};
 use self::ids_chain::{ids_chain};
 use self::chains_array::{ChainsArray};
-use self::node_fingers::{NodeFingers};
+use self::node_fingers::{NodeFingers, SemiChain};
 
 use std::collections::{VecDeque};
 
@@ -167,6 +167,10 @@ fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
     };
 }
 
+struct PendingSemiChain {
+    schain: SemiChain,
+    origin_id: RingKey,
+}
 
 pub fn converge_fingers(net: &Network<RingKey>, 
              mut fingers: &mut Vec<NodeFingers>, l: usize) {
@@ -177,25 +181,40 @@ pub fn converge_fingers(net: &Network<RingKey>,
         for neighbor_i in net.igraph.neighbors(x_i) {
             // Note that that information about the origin of the change
             // is contained as the last element of the NodeChain.
-            let mut pending_chains: VecDeque<NodeChain> = VecDeque::new();
+            let mut pending_chains: VecDeque<PendingSemiChain> = VecDeque::new();
             let neighbor_id = net.index_to_node(neighbor_i).unwrap().clone();
 
-            let chain = vec![neighbor_id, x_id];
-            if fingers[x_i].update(&chain,l) {
+            // let chain = vec![neighbor_id, x_id];
+            let schain = SemiChain {
+                next_id: neighbor_id,
+                final_id: neighbor_id,
+                length: 1,
+            };
+            if fingers[x_i].update(&schain,l) {
                 // If a change happened to x_id fingers, we queue the new chain:
-                pending_chains.push_back(chain);
+                pending_chains.push_back(PendingSemiChain {
+                    schain: schain, 
+                    origin_id: x_id
+                });
             }
 
             // Keep going as long as we have pending chains:
-            while let Some(chain) = pending_chains.pop_front() {
-                let cur_id = chain[chain.len() - 1];
+            while let Some(pending_schain) = pending_chains.pop_front() {
+                let cur_id = pending_schain.origin_id;
                 let cur_i = net.node_to_index(&cur_id).unwrap();
                 for neighbor_i in net.igraph.neighbors(cur_i) {
                     let neighbor_id = net.index_to_node(neighbor_i).unwrap().clone();
-                    let mut cchain = chain.clone();
-                    add_id_to_chain(&mut cchain, neighbor_id);
-                    if fingers[neighbor_i].update(&cchain,l) {
-                        pending_chains.push_back(cchain);
+                    let schain = SemiChain {
+                        next_id: cur_id,
+                        final_id: pending_schain.schain.final_id,
+                        length: pending_schain.schain.length + 1,
+                    };
+
+                    if fingers[neighbor_i].update(&schain,l) {
+                        pending_chains.push_back(PendingSemiChain {
+                            schain: schain,
+                            origin_id: neighbor_id,
+                        });
                     }
                 }
             }
@@ -204,6 +223,7 @@ pub fn converge_fingers(net: &Network<RingKey>,
 }
 
 
+/*
 /// Get routing chains for a given node.
 /// Includes Neighbor of Neighbor chains too.
 fn get_route_chains_node(x_i: usize, net: &Network<RingKey>, 
@@ -234,6 +254,7 @@ fn get_route_chains_node(x_i: usize, net: &Network<RingKey>,
     route_chains.index();
     route_chains
 }
+*/
 
 /*
  *
@@ -286,6 +307,7 @@ fn verify_global_optimality(net: &Network<RingKey>,
 
 */
 
+/*
 /// Create indexed route chains ChainsArray structs for all nodes.
 pub fn get_route_chains(net: &Network<RingKey>, 
                     fingers: &Vec<NodeFingers>, l:usize) -> Vec<ChainsArray> {
@@ -350,6 +372,7 @@ pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>,
     }
     Some(total_chain)
 }
+*/
 
 /// Generate a random graph to be used with chord.
 /// Graph nodes are of type RingKey.
@@ -408,6 +431,7 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
     }
     net
 }
+
 
 /// Checksum the contents of a chain
 fn csum_chain(chain: &NodeChain) -> u64 {
@@ -513,6 +537,7 @@ mod tests {
         let mut fingers = init_fingers(&net,l, &mut rng);
         converge_fingers(&net, &mut fingers,l);
 
+        /*
         let route_chains = get_route_chains(&net, &fingers, l);
 
         for index_a in 0 .. num_nodes {
@@ -534,6 +559,7 @@ mod tests {
                 assert!(path[path.len() - 1] == dst_id);
             }
         }
+        */
     }
 
 }

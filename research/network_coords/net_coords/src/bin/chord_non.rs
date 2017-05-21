@@ -4,7 +4,7 @@ extern crate ordered_float;
 
 use rand::{StdRng};
 use net_coords::chord::{random_net_chord, init_fingers, 
-    converge_fingers, find_path, get_route_chains};
+    converge_fingers};
 use net_coords::random_util::choose_k_nums;
 
 
@@ -35,6 +35,7 @@ fn main() {
         println!("Converge chord fingers...");
         converge_fingers(&net, &mut fingers, l);
 
+        /*
         let route_chains = get_route_chains(&net, &fingers, l);
 
 
@@ -53,6 +54,7 @@ fn main() {
         }
 
         println!("Average length of path: {}", (sum_length as f64) / (pair_iters as f64));
+        */
 
 
     }

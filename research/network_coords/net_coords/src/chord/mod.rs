@@ -181,10 +181,12 @@ pub fn converge_fingers(net: &Network<RingKey>,
     // First iteration: We insert all edges:
     for x_i in 0 .. net.igraph.node_count() {
         let x_id = net.index_to_node(x_i).unwrap().clone();
-        for neighbor_i in net.igraph.neighbors(x_i) {
+        for neighbor_id in fingers[x_i].all_ids() {
+            if neighbor_id == x_id {
+                continue;
+            }
             // Note that that information about the origin of the change
             // is contained as the last element of the NodeChain.
-            let neighbor_id = net.index_to_node(neighbor_i).unwrap().clone();
 
             // let chain = vec![neighbor_id, x_id];
             let schain = SemiChain {
@@ -207,8 +209,11 @@ pub fn converge_fingers(net: &Network<RingKey>,
     while let Some(pending_schain) = pending_chains.pop_front() {
         let cur_id = pending_schain.origin_id;
         let cur_i = net.node_to_index(&cur_id).unwrap();
-        for neighbor_i in net.igraph.neighbors(cur_i) {
-            let neighbor_id = net.index_to_node(neighbor_i).unwrap().clone();
+        for neighbor_id in fingers[cur_i].all_ids() {
+            if neighbor_id == cur_id {
+                continue;
+            }
+            let neighbor_i = net.node_to_index(&neighbor_id).unwrap();
             let schain = SemiChain {
                 next_id: cur_id,
                 final_id: pending_schain.schain.final_id,

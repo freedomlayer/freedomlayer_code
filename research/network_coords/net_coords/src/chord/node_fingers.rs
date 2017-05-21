@@ -3,6 +3,7 @@ extern crate itertools;
 use network::{Network};
 use chord::{RingKey, NodeChain, add_cyc, vdist};
 use std::{iter, slice};
+use std::collections::{HashSet};
 
 #[derive(Hash, Clone, Eq, PartialEq, Debug)]
 pub struct SemiChain {
@@ -171,10 +172,18 @@ impl NodeFingers {
         has_changed
     }
 
-    pub fn all_chains(&self) -> Vec<SemiChain> {
-        self.left.sorted_fingers.iter().map(|finger| finger.schain.clone())
-            .chain(self.right.sorted_fingers.iter().map(|finger| finger.schain.clone()))
-            .collect::<Vec<SemiChain>>()
+    /// Get all node ids that this node is connected to using
+    /// chains.
+    pub fn all_ids(&self) -> Vec<RingKey> {
+        let mut unique_ids: HashSet<RingKey> = HashSet::new();
+        for fing in &self.left.sorted_fingers {
+            unique_ids.insert(fing.schain.final_id);
+        }
+        for fing in &self.right.sorted_fingers {
+            unique_ids.insert(fing.schain.final_id);
+        }
+
+        unique_ids.into_iter().collect::<Vec<RingKey>>()
     }
 }
 
@@ -404,7 +413,10 @@ mod tests {
             length: 4
         };
         assert!(!nf.update(&sc,7));
-        assert!(nf.all_chains().len() > 0);
+
+        let mut all_ids = nf.all_ids();
+        all_ids.sort();
+        assert!(all_ids == vec![3,5,6]);
 
     }
 }

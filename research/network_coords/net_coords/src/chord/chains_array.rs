@@ -1,6 +1,6 @@
 
 use std::collections::{HashSet};
-use chord::{RingKey, NodeChain, csum_chain};
+use chord::{RingKey, NodeChain};
 
 /// A chains array. Used for quick searching.
 pub struct ChainsArray {
@@ -9,6 +9,12 @@ pub struct ChainsArray {
     sorted_chains_left: Vec<NodeChain>,
     sorted_chains_right: Vec<NodeChain>,
     is_indexed: bool,
+}
+
+
+/// Checksum the contents of a chain
+fn csum_chain(chain: &NodeChain) -> u64 {
+    chain.iter().fold(0, |acc, &x| acc.wrapping_add(x))
 }
 
 
@@ -84,6 +90,13 @@ impl ChainsArray {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_csum_chain() {
+        assert!(csum_chain(&vec![1,2,3,4]) == 10);
+        assert!(csum_chain(&vec![]) == 0);
+        assert!(csum_chain(&vec![1]) == 1);
+    }
 
     #[test]
     fn test_chains_array() {

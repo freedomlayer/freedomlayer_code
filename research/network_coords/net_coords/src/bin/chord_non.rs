@@ -3,18 +3,16 @@ extern crate rand;
 extern crate ordered_float;
 
 use rand::{StdRng};
-use net_coords::chord::{random_net_chord, init_chord_fingers, 
+use net_coords::chord::{random_net_chord, init_fingers, 
     converge_fingers, find_path, get_route_chains};
 use net_coords::random_util::choose_k_nums;
 
-
-const FINGERS_SEED: usize = 0x1337;
 
 
 #[cfg(not(test))]
 fn main() {
     let pair_iters = 100;
-    for g in 9 .. 10 {
+    for g in 12 .. 13 {
         // Keyspace size:
         let l: usize = (2 * g + 1)  as usize;
 
@@ -33,9 +31,9 @@ fn main() {
         println!("Creating the network...");
         let net = random_net_chord(num_nodes, num_neighbours, l, &mut rng);
         println!("Initializing chord fingers...");
-        let mut fingers = init_chord_fingers(&net, l);
+        let mut fingers = init_fingers(&net, l, &mut rng);
         println!("Converge chord fingers...");
-        converge_fingers(&net, &mut fingers, FINGERS_SEED, l);
+        converge_fingers(&net, &mut fingers, l);
 
         let route_chains = get_route_chains(&net, &fingers, l);
 

@@ -199,7 +199,6 @@ pub fn converge_fingers(net: &Network<RingKey>,
                     origin_id: x_id
                 });
             }
-
         }
     }
 

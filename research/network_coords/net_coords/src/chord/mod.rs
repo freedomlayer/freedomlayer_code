@@ -181,10 +181,8 @@ pub fn converge_fingers(net: &Network<RingKey>,
     // First iteration: We insert all edges:
     for x_i in 0 .. net.igraph.node_count() {
         let x_id = net.index_to_node(x_i).unwrap().clone();
-        for neighbor_id in fingers[x_i].all_ids() {
-            if neighbor_id == x_id {
-                continue;
-            }
+        for neighbor_i in net.igraph.neighbors(x_i) {
+            let neighbor_id = net.index_to_node(neighbor_i).unwrap().clone();
             // Note that that information about the origin of the change
             // is contained as the last element of the NodeChain.
 

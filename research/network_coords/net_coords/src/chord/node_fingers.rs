@@ -4,7 +4,7 @@ use network::{Network};
 use chord::{RingKey, NodeChain, add_cyc, vdist};
 use std::{iter, slice};
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Hash, Clone, Eq, PartialEq, Debug)]
 pub struct SemiChain {
     pub next_id: RingKey,
     pub final_id: RingKey,
@@ -12,22 +12,22 @@ pub struct SemiChain {
 }
 
 // Maintained finger:
-struct Finger {
-    target_id: RingKey,
-    schain: SemiChain,
+pub struct Finger {
+    pub target_id: RingKey,
+    pub schain: SemiChain,
 }
 
-struct SortedFingersLeft {
-    sorted_fingers: Vec<Finger>,
+pub struct SortedFingersLeft {
+    pub sorted_fingers: Vec<Finger>,
 }
 
-struct SortedFingersRight {
-    sorted_fingers: Vec<Finger>,
+pub struct SortedFingersRight {
+    pub sorted_fingers: Vec<Finger>,
 }
 
 pub struct NodeFingers {
-    left: SortedFingersLeft,
-    right: SortedFingersRight,
+    pub left: SortedFingersLeft,
+    pub right: SortedFingersRight,
 }
 
 
@@ -397,7 +397,7 @@ mod tests {
             final_id: 5,
             length: 4
         };
-        assert!(!nf.update(&sc,7));
+        assert!(nf.update(&sc,7));
         let sc = SemiChain {
             next_id: 8,
             final_id: 6,

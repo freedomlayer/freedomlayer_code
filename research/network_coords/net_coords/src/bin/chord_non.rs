@@ -4,7 +4,7 @@ extern crate ordered_float;
 
 use rand::{StdRng};
 use net_coords::chord::{random_net_chord, init_fingers, 
-    converge_fingers};
+    converge_fingers, create_route_field};
 use net_coords::random_util::choose_k_nums;
 
 
@@ -12,7 +12,7 @@ use net_coords::random_util::choose_k_nums;
 #[cfg(not(test))]
 fn main() {
     let pair_iters = 100;
-    for g in 12 .. 13 {
+    for g in 16 .. 20 {
         // Keyspace size:
         let l: usize = (2 * g + 1)  as usize;
 
@@ -34,6 +34,7 @@ fn main() {
         let mut fingers = init_fingers(&net, l, &mut rng);
         println!("Converge chord fingers...");
         converge_fingers(&net, &mut fingers, l);
+        let route_field = create_route_field(&net, &fingers, l);
 
         /*
         let route_chains = get_route_chains(&net, &fingers, l);

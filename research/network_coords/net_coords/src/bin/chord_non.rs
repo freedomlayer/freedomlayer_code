@@ -4,7 +4,7 @@ extern crate ordered_float;
 
 use rand::{StdRng};
 use net_coords::chord::{random_net_chord, init_fingers, 
-    converge_fingers, create_route_field};
+    converge_fingers, create_semi_routes, find_path};
 use net_coords::random_util::choose_k_nums;
 
 
@@ -12,7 +12,7 @@ use net_coords::random_util::choose_k_nums;
 #[cfg(not(test))]
 fn main() {
     let pair_iters = 100;
-    for g in 16 .. 21 {
+    for g in 13 .. 15 {
         // Keyspace size:
         let l: usize = (2 * g + 1)  as usize;
 
@@ -34,11 +34,7 @@ fn main() {
         let mut fingers = init_fingers(&net, l, &mut rng);
         println!("Converge chord fingers...");
         converge_fingers(&net, &mut fingers, l);
-        let route_field = create_route_field(&net, &fingers, l);
-
-        /*
-        let route_chains = get_route_chains(&net, &fingers, l);
-
+        let semi_routes = create_semi_routes(&net, &fingers);
 
         println!("Finding average length of path...");
         // Find average length of path:
@@ -48,14 +44,14 @@ fn main() {
                 .into_iter().collect::<Vec<_>>();
             let src_id = net.index_to_node(node_pair[0]).unwrap().clone();
             let dst_id = net.index_to_node(node_pair[1]).unwrap().clone();
-            println!("{}, {}", node_pair[0], node_pair[1]);
+            // println!("{}, {}", node_pair[0], node_pair[1]);
 
-            let path = find_path(src_id, dst_id, &net, &route_chains, l).unwrap();
-            sum_length += path.len() as u64;
+            let path_len = find_path(src_id, dst_id, &net, &semi_routes).unwrap();
+            sum_length += path_len as u64;
+
         }
 
         println!("Average length of path: {}", (sum_length as f64) / (pair_iters as f64));
-        */
 
 
     }

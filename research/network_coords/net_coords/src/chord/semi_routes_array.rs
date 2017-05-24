@@ -75,34 +75,34 @@ mod tests {
     #[test]
     fn test_semi_routes_array() {
         let mut semi_routes_array = SemiRoutesArray::new();
-        semi_routes_array.insert_sroute(vec![SemiChain{next_id: 1, final_id: 3, length: 4}]);
-        semi_routes_array.insert_sroute(vec![SemiChain{next_id: 1, final_id: 4, length: 4}]);
-        semi_routes_array.insert_sroute(vec![SemiChain{next_id: 1, final_id: 5, length: 4}]);
-        semi_routes_array.insert_sroute(vec![SemiChain{next_id: 1, final_id: 5, length: 5}]);
-        semi_routes_array.insert_sroute(vec![SemiChain{next_id: 1, final_id: 6, length: 5}]);
-        semi_routes_array.insert_sroute(vec![SemiChain{next_id: 1, final_id: 7, length: 4}]);
-        semi_routes_array.insert_sroute(vec![SemiChain{next_id: 1, final_id: 11, length: 4}]);
-        semi_routes_array.insert_sroute(vec![SemiChain{next_id: 1, final_id: 18, length: 4}]);
-        semi_routes_array.insert_sroute(vec![SemiChain{next_id: 1, final_id: 25, length: 4}]);
+        semi_routes_array.insert_sroute(vec![SemiChain{final_id: 3, length: 4}]);
+        semi_routes_array.insert_sroute(vec![SemiChain{final_id: 4, length: 4}]);
+        semi_routes_array.insert_sroute(vec![SemiChain{final_id: 5, length: 4}]);
+        semi_routes_array.insert_sroute(vec![SemiChain{final_id: 5, length: 5}]);
+        semi_routes_array.insert_sroute(vec![SemiChain{final_id: 6, length: 5}]);
+        semi_routes_array.insert_sroute(vec![SemiChain{final_id: 7, length: 4}]);
+        semi_routes_array.insert_sroute(vec![SemiChain{final_id: 11, length: 4}]);
+        semi_routes_array.insert_sroute(vec![SemiChain{final_id: 18, length: 4}]);
+        semi_routes_array.insert_sroute(vec![SemiChain{final_id: 25, length: 4}]);
         semi_routes_array.index();
 
         // Check exact match:
-        assert!(*semi_routes_array.find_closest_left(7) == vec![SemiChain{next_id: 1, final_id: 7, length: 4}]);
-        assert!(*semi_routes_array.find_closest_right(7) == vec![SemiChain{next_id: 1, final_id: 7, length: 4}]);
+        assert!(*semi_routes_array.find_closest_left(7) == vec![SemiChain{final_id: 7, length: 4}]);
+        assert!(*semi_routes_array.find_closest_right(7) == vec![SemiChain{final_id: 7, length: 4}]);
 
-        assert!(*semi_routes_array.find_closest_left(11) == vec![SemiChain{next_id: 1, final_id: 11, length: 4}]);
-        assert!(*semi_routes_array.find_closest_right(11) == vec![SemiChain{next_id: 1, final_id: 11, length: 4}]);
+        assert!(*semi_routes_array.find_closest_left(11) == vec![SemiChain{final_id: 11, length: 4}]);
+        assert!(*semi_routes_array.find_closest_right(11) == vec![SemiChain{final_id: 11, length: 4}]);
 
         // Check near match:
-        assert!(*semi_routes_array.find_closest_left(12) == vec![SemiChain{next_id: 1, final_id: 11, length: 4}]);
-        assert!(*semi_routes_array.find_closest_right(12) == vec![SemiChain{next_id: 1, final_id: 18, length: 4}]);
+        assert!(*semi_routes_array.find_closest_left(12) == vec![SemiChain{final_id: 11, length: 4}]);
+        assert!(*semi_routes_array.find_closest_right(12) == vec![SemiChain{final_id: 18, length: 4}]);
 
         // Check wraparound:
-        assert!(*semi_routes_array.find_closest_right(26) == vec![SemiChain{next_id: 1, final_id: 3, length: 4}]);
-        assert!(*semi_routes_array.find_closest_left(2) == vec![SemiChain{next_id: 1, final_id: 25, length: 4}]);
+        assert!(*semi_routes_array.find_closest_right(26) == vec![SemiChain{final_id: 3, length: 4}]);
+        assert!(*semi_routes_array.find_closest_left(2) == vec![SemiChain{final_id: 25, length: 4}]);
 
         // Prefer shorter chains:
-        assert!(*semi_routes_array.find_closest_right(5) == vec![SemiChain{next_id: 1, final_id: 5, length: 4}]);
-        assert!(*semi_routes_array.find_closest_left(5) == vec![SemiChain{next_id: 1, final_id: 5, length: 4}]);
+        assert!(*semi_routes_array.find_closest_right(5) == vec![SemiChain{final_id: 5, length: 4}]);
+        assert!(*semi_routes_array.find_closest_left(5) == vec![SemiChain{final_id: 5, length: 4}]);
     }
 }

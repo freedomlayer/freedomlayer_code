@@ -5,14 +5,14 @@ use chord::{RingKey, NodeChain, add_cyc, vdist};
 use std::{iter, slice};
 use std::collections::{HashSet};
 
-#[derive(Hash, Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct SemiChain {
-    pub next_id: RingKey,
     pub final_id: RingKey,
     pub length: usize,
 }
 
 // Maintained finger:
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub struct Finger {
     pub target_id: RingKey,
     pub schain: SemiChain,
@@ -52,15 +52,15 @@ fn is_ordered(a: RingKey, b: RingKey, c: RingKey, l: usize) -> bool {
 
 /// Check if proposed new chain is better for the right finger.
 fn is_right_finger_better(finger: &Finger, schain: &SemiChain, l:usize) -> bool {
-    let cur_dist = (vdist(finger.target_id, finger.schain.final_id,l), finger.schain.length, finger.schain.next_id);
-    let new_dist = (vdist(finger.target_id, schain.final_id,l), schain.length, schain.next_id);
+    let cur_dist = (vdist(finger.target_id, finger.schain.final_id,l), finger.schain.length);
+    let new_dist = (vdist(finger.target_id, schain.final_id,l), schain.length);
     new_dist < cur_dist
 }
 
 /// Check if proposed new chain is better for the left finger.
 fn is_left_finger_better(finger: &Finger, schain: &SemiChain, l:usize) -> bool {
-    let cur_dist = (vdist(finger.schain.final_id, finger.target_id, l), finger.schain.length, finger.schain.next_id);
-    let new_dist = (vdist(schain.final_id, finger.target_id, l), schain.length, schain.next_id);
+    let cur_dist = (vdist(finger.schain.final_id, finger.target_id, l), finger.schain.length);
+    let new_dist = (vdist(schain.final_id, finger.target_id, l), schain.length);
     new_dist < cur_dist
 }
 
@@ -133,7 +133,6 @@ impl NodeFingers {
                 Finger{
                     target_id: target_id, 
                     schain: SemiChain {
-                        next_id: x_id,
                         final_id: x_id,
                         length: 0,
                     }
@@ -147,7 +146,6 @@ impl NodeFingers {
                 Finger{
                     target_id: target_id, 
                     schain: SemiChain {
-                        next_id: x_id,
                         final_id: x_id,
                         length: 0,
                     }
@@ -174,16 +172,30 @@ impl NodeFingers {
 
     /// Get all node ids that this node is connected to using
     /// chains.
-    pub fn all_ids(&self) -> Vec<RingKey> {
-        let mut unique_ids: HashSet<RingKey> = HashSet::new();
+    pub fn all_schains(&self) -> Vec<SemiChain> {
+        let mut unique_schains: HashSet<SemiChain> = HashSet::new();
         for fing in &self.left.sorted_fingers {
-            unique_ids.insert(fing.schain.final_id);
+            unique_schains.insert(fing.schain.clone());
         }
         for fing in &self.right.sorted_fingers {
-            unique_ids.insert(fing.schain.final_id);
+            unique_schains.insert(fing.schain.clone());
         }
 
-        unique_ids.into_iter().collect::<Vec<RingKey>>()
+        unique_schains.into_iter().collect::<Vec<SemiChain>>()
+    }
+
+    /// Get all node ids that this node is connected to using
+    /// chains.
+    pub fn all_fingers(&self) -> Vec<Finger> {
+        let mut unique_fingers: HashSet<Finger> = HashSet::new();
+        for fing in &self.left.sorted_fingers {
+            unique_fingers.insert(fing.clone());
+        }
+        for fing in &self.right.sorted_fingers {
+            unique_fingers.insert(fing.clone());
+        }
+
+        unique_fingers.into_iter().collect::<Vec<Finger>>()
     }
 }
 
@@ -209,7 +221,6 @@ mod tests {
         sfr.sorted_fingers.push(Finger {
             target_id: 11,
             schain: SemiChain {
-                next_id: 1,
                 final_id: 14,
                 length: 5
             }
@@ -217,7 +228,6 @@ mod tests {
         sfr.sorted_fingers.push(Finger {
             target_id: 12,
             schain: SemiChain {
-                next_id: 1,
                 final_id: 14,
                 length: 5
             }
@@ -225,7 +235,6 @@ mod tests {
         sfr.sorted_fingers.push(Finger {
             target_id: 15,
             schain: SemiChain {
-                next_id: 1,
                 final_id: 17,
                 length: 4
             }
@@ -233,7 +242,6 @@ mod tests {
         sfr.sorted_fingers.push(Finger {
             target_id: 18,
             schain: SemiChain {
-                next_id: 1,
                 final_id: 14,
                 length: 5
             }
@@ -247,7 +255,6 @@ mod tests {
     fn test_sorted_right_fingers_one_changed() {
         let mut sfr = make_sorted_fingers_right();
         let sc = SemiChain {
-            next_id: 5,
             final_id: 11,
             length: 4
         };
@@ -259,7 +266,6 @@ mod tests {
     fn test_sorted_right_fingers_unchanged() {
         let mut sfr = make_sorted_fingers_right();
         let sc = SemiChain {
-            next_id: 10,
             final_id: 17,
             length: 4
         };
@@ -270,7 +276,6 @@ mod tests {
     fn test_sorted_right_fingers_change_both() {
         let mut sfr = make_sorted_fingers_right();
         let sc = SemiChain {
-            next_id: 5,
             final_id: 13,
             length: 4
         };
@@ -283,7 +288,6 @@ mod tests {
     fn test_sorted_right_fingers_change_cyclic() {
         let mut sfr = make_sorted_fingers_right();
         let sc = SemiChain {
-            next_id: 5,
             final_id: 2,
             length: 4
         };
@@ -300,7 +304,6 @@ mod tests {
         sfl.sorted_fingers.push(Finger {
             target_id: 5,
             schain: SemiChain {
-                next_id: 1,
                 final_id: 21,
                 length: 5
             }
@@ -308,7 +311,6 @@ mod tests {
         sfl.sorted_fingers.push(Finger {
             target_id: 11,
             schain: SemiChain {
-                next_id: 1,
                 final_id: 9,
                 length: 5
             }
@@ -316,7 +318,6 @@ mod tests {
         sfl.sorted_fingers.push(Finger {
             target_id: 12,
             schain: SemiChain {
-                next_id: 1,
                 final_id: 9,
                 length: 5
             }
@@ -324,7 +325,6 @@ mod tests {
         sfl.sorted_fingers.push(Finger {
             target_id: 15,
             schain: SemiChain {
-                next_id: 1,
                 final_id: 13,
                 length: 4
             }
@@ -332,7 +332,6 @@ mod tests {
         sfl.sorted_fingers.push(Finger {
             target_id: 18,
             schain: SemiChain {
-                next_id: 1,
                 final_id: 16,
                 length: 3
             }
@@ -346,7 +345,6 @@ mod tests {
     fn test_sorted_left_fingers_one_changed() {
         let mut sfr = make_sorted_fingers_left();
         let sc = SemiChain {
-            next_id: 5,
             final_id: 12,
             length: 4
         };
@@ -358,7 +356,6 @@ mod tests {
     fn test_sorted_left_fingers_unchanged() {
         let mut sfr = make_sorted_fingers_left();
         let sc = SemiChain {
-            next_id: 10,
             final_id: 8,
             length: 4
         };
@@ -369,7 +366,6 @@ mod tests {
     fn test_sorted_left_fingers_change_both() {
         let mut sfr = make_sorted_fingers_left();
         let sc = SemiChain {
-            next_id: 5,
             final_id: 10,
             length: 4
         };
@@ -382,7 +378,6 @@ mod tests {
     fn test_sorted_left_fingers_change_cyclic() {
         let mut sfr = make_sorted_fingers_left();
         let sc = SemiChain {
-            next_id: 6,
             final_id: 29,
             length: 4
         };
@@ -396,27 +391,23 @@ mod tests {
     fn test_node_fingers_basic() {
         let mut nf = NodeFingers::new(6, &vec![1,3,7,11,54], &vec![5]);
         let sc = SemiChain {
-            next_id: 8,
             final_id: 3,
             length: 4
         };
         assert!(nf.update(&sc,7));
         let sc = SemiChain {
-            next_id: 8,
             final_id: 5,
             length: 4
         };
         assert!(nf.update(&sc,7));
         let sc = SemiChain {
-            next_id: 8,
             final_id: 6,
             length: 4
         };
         assert!(!nf.update(&sc,7));
 
-        let mut all_ids = nf.all_ids();
-        all_ids.sort();
-        assert!(all_ids == vec![3,5,6]);
+        let mut all_schains = nf.all_schains();
+        assert!(all_schains.len() > 0);
 
     }
 }

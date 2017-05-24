@@ -186,7 +186,7 @@ struct PendingSemiChain {
 fn update_with(dst_id: RingKey, src_id: RingKey, chain_length: usize, net: &Network<RingKey>,
                mut fingers: &mut Vec<NodeFingers>, l: usize) -> bool {
 
-    let mut has_changed = false; // Was any finger changed?
+    let mut has_changed = false; // Has any finger changed?
 
     let dst_i = net.node_to_index(&dst_id).unwrap();
     let src_i = net.node_to_index(&src_id).unwrap();
@@ -216,8 +216,7 @@ fn iter_fingers(net: &Network<RingKey>,
         let x_id = net.index_to_node(x_i).unwrap().clone();
         // Every node sends an UpdateRequest, and gets back an UpdateResponse message.
 
-        let all_schains = fingers[x_i].all_schains();
-        for remote_schain in all_schains.iter() {
+        for remote_schain in fingers[x_i].all_schains() {
             let remote_i = net.node_to_index(&remote_schain.final_id).unwrap();
 
 

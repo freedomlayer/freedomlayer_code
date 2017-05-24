@@ -181,6 +181,29 @@ struct PendingSemiChain {
 }
 */
 
+/// Update dst_id node fingers with src_id node's fingers.
+/// Return if any finger has changed at dst_id's fingers.
+fn update_with(dst_id: RingKey, src_id: RingKey, chain_length: usize, net: &Network<RingKey>,
+               mut fingers: &mut Vec<NodeFingers>, l: usize) -> bool {
+
+    let mut has_changed = false; // Was any finger changed?
+
+    let dst_i = net.node_to_index(&dst_id).unwrap();
+    let src_i = net.node_to_index(&src_id).unwrap();
+
+    for schain in fingers[src_i].all_schains() {
+        let new_schain = SemiChain {
+            final_id: schain.final_id,
+            length: schain.length + chain_length,
+        };
+
+        has_changed |= fingers[dst_i].update(&new_schain, l);
+    }
+
+    has_changed
+
+}
+
 /// Perform one iteration of fingers for all nodes
 fn iter_fingers(net: &Network<RingKey>, 
                 mut fingers: &mut Vec<NodeFingers>, l: usize) -> bool {
@@ -190,31 +213,23 @@ fn iter_fingers(net: &Network<RingKey>,
 
     // Keep iterating until no changes happen:
     for x_i in 0 .. net.igraph.node_count() {
+        let x_id = net.index_to_node(x_i).unwrap().clone();
         // Every node sends an UpdateRequest, and gets back an UpdateResponse message.
 
         let all_schains = fingers[x_i].all_schains();
         for remote_schain in all_schains.iter() {
             let remote_i = net.node_to_index(&remote_schain.final_id).unwrap();
 
+
             // UpdateRequest:
             // Every finger of x_id will get all of x_id's fingers.
-            for schain in all_schains.iter() {
-                let new_schain = SemiChain {
-                    final_id: schain.final_id,
-                    length: remote_schain.length + schain.length,
-                };
-                has_changed |= fingers[remote_i].update(&new_schain, l);
-            }
+            has_changed |= update_with(remote_schain.final_id,x_id, remote_schain.length,
+                        &net, &mut fingers, l);
 
             // UpdateResponse:
             // x_id will get all of the fingers of his fingers
-            for schain in fingers[remote_i].all_schains() {
-                let new_schain = SemiChain {
-                    final_id: schain.final_id,
-                    length: schain.length + remote_schain.length,
-                };
-                has_changed |= fingers[x_i].update(&new_schain, l);
-            }
+            has_changed |= update_with(x_id, remote_schain.final_id, remote_schain.length,
+                        &net, &mut fingers, l);
         }
     }
 

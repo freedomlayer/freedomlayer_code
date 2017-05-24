@@ -219,16 +219,21 @@ fn iter_fingers(net: &Network<RingKey>,
         for remote_schain in fingers[x_i].all_schains() {
             let remote_i = net.node_to_index(&remote_schain.final_id).unwrap();
 
+            // TODO:
+            // - Fix borrow checker problems here (as_mut? See:
+            // https://stackoverflow.com/questions/26409316/how-do-i-extract-two-mutable-elements-from-a-vec-in-rust)
+            // - Add caching mechanism.
 
             // UpdateRequest:
             // Every finger of x_id will get all of x_id's fingers.
-            has_changed |= update_with(remote_schain.final_id,x_id, remote_schain.length,
-                        &net, &mut fingers, l);
+            has_changed |= fingers[remote_i].update_by_fingers(&fingers[x_i], 
+                       remote_schain.length, l);
 
             // UpdateResponse:
             // x_id will get all of the fingers of his fingers
-            has_changed |= update_with(x_id, remote_schain.final_id, remote_schain.length,
-                        &net, &mut fingers, l);
+            has_changed |= fingers[x_i].update_by_fingers(&fingers[remote_i],
+                        remote_schain.length, l);
+                
         }
     }
 
@@ -318,7 +323,7 @@ pub fn create_semi_routes(net: &Network<RingKey>,
 
     let mut res_vec = Vec::new();
     for x_i in 0 .. net.igraph.node_count() {
-        res_vec.push(create_semi_routes_node(x_i,&net, &fingers ));
+        res_vec.push(create_semi_routes_node(x_i,&net, &fingers));
     }
     res_vec
 }
@@ -331,7 +336,6 @@ pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>,
     // semi_path.push(cur_id);
     let mut length: usize = 0;
     while cur_id != dst_id {
-        println!("cur_id = {}", cur_id);
         let cur_semi_routes = &semi_routes[net.node_to_index(&cur_id).unwrap()];
         let semi_route = cur_semi_routes.find_closest_left(dst_id);
         let final_id = sroute_final_id(semi_route);

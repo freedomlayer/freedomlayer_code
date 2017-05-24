@@ -3,7 +3,7 @@ extern crate itertools;
 use network::{Network};
 use chord::{RingKey, NodeChain, add_cyc, vdist};
 use std::{iter, slice};
-use std::collections::{HashSet};
+use std::collections::{HashSet, HashMap};
 
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct SemiChain {
@@ -29,6 +29,8 @@ pub struct SortedFingersRight {
 pub struct NodeFingers {
     pub left: SortedFingersLeft,
     pub right: SortedFingersRight,
+    version: usize, // Current version, used for caching.
+    updated_by: HashMap<RingKey, usize>,
 }
 
 
@@ -123,7 +125,9 @@ impl NodeFingers {
 
         let mut nf = NodeFingers {
             left: SortedFingersLeft {sorted_fingers: Vec::new()},
-            right: SortedFingersRight {sorted_fingers: Vec::new()}
+            right: SortedFingersRight {sorted_fingers: Vec::new()},
+            version: 0,
+            updated_by: HashMap::new(),
         };
 
 
@@ -196,6 +200,28 @@ impl NodeFingers {
         }
 
         unique_fingers.into_iter().collect::<Vec<Finger>>()
+    }
+
+    /// Update finger's struct by all fingers in fingers_src,
+    /// assuming that there is a connecting chain between the two
+    /// of length chain_length.
+    /// Return if any finger in self has changed.
+    pub fn update_by_fingers(&mut self, fingers_src: &NodeFingers, 
+                 chain_length: usize, l:usize) -> bool {
+
+        let mut has_changed = false; // Has any finger changed?
+
+        for schain in fingers_src.all_schains() {
+            let new_schain = SemiChain {
+                final_id: schain.final_id,
+                length: schain.length + chain_length,
+            };
+
+            has_changed |= self.update(&new_schain, l);
+        }
+
+        has_changed
+
     }
 }
 

@@ -169,41 +169,6 @@ fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
     };
 }
 
-/*
-enum PendingType {
-    Request,
-    Response,
-}
-
-struct PendingSemiChain {
-    schain: SemiChain,
-    origin_id: RingKey,
-    pending_type: PendingType,
-}
-*/
-
-/// Update dst_id node fingers with src_id node's fingers.
-/// Return if any finger has changed at dst_id's fingers.
-fn update_with(dst_id: RingKey, src_id: RingKey, chain_length: usize, net: &Network<RingKey>,
-               mut fingers: &mut Vec<NodeFingers>, l: usize) -> bool {
-
-    let mut has_changed = false; // Has any finger changed?
-
-    let dst_i = net.node_to_index(&dst_id).unwrap();
-    let src_i = net.node_to_index(&src_id).unwrap();
-
-    for schain in fingers[src_i].all_schains() {
-        let new_schain = SemiChain {
-            final_id: schain.final_id,
-            length: schain.length + chain_length,
-        };
-
-        has_changed |= fingers[dst_i].update(&new_schain, l);
-    }
-
-    has_changed
-
-}
 
 
 /// Perform one iteration of fingers for all nodes

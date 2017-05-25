@@ -34,6 +34,7 @@ fn main() {
         let mut fingers = init_fingers(&net, l, &mut rng);
         println!("Converge chord fingers...");
         converge_fingers(&net, &mut fingers, l);
+        println!("Creating semi routes...");
         let semi_routes = create_semi_routes(&net, &fingers);
 
         println!("Finding average length of path...");

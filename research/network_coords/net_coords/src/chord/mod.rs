@@ -233,6 +233,7 @@ pub fn converge_fingers(net: &Network<RingKey>,
         }
     }
 
+    println!("Iter fingers...");
     while iter_fingers(&net, &mut fingers, l) {
         println!("Iter fingers...");
     }

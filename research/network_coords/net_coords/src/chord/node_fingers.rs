@@ -33,6 +33,8 @@ pub struct NodeFingers {
     updated_by: HashMap<RingKey, usize>,
 }
 
+// TODO: Add caching mechanism to fingers update.
+
 
 /*
 fn left_chain_key(chain: &NodeChain) -> (i64, usize, u64) {

@@ -14,6 +14,7 @@ use network::{Network};
 use self::ids_chain::{ids_chain};
 use self::semi_routes_array::{SemiRoutesArray, sroute_final_id};
 use self::node_fingers::{Finger, NodeFingers, SemiChain};
+use index_pair::{index_pair, Pair};
 
 
 pub type RingKey = u64; // A key in the chord ring
@@ -204,6 +205,7 @@ fn update_with(dst_id: RingKey, src_id: RingKey, chain_length: usize, net: &Netw
 
 }
 
+
 /// Perform one iteration of fingers for all nodes
 fn iter_fingers(net: &Network<RingKey>, 
                 mut fingers: &mut Vec<NodeFingers>, l: usize) -> bool {
@@ -219,19 +221,25 @@ fn iter_fingers(net: &Network<RingKey>,
         for remote_schain in fingers[x_i].all_schains() {
             let remote_i = net.node_to_index(&remote_schain.final_id).unwrap();
 
-            // TODO:
-            // - Fix borrow checker problems here (as_mut? See:
-            // https://stackoverflow.com/questions/26409316/how-do-i-extract-two-mutable-elements-from-a-vec-in-rust)
-            // - Add caching mechanism.
+            if x_i == remote_i {
+                continue;
+            }
 
+
+            // Get two mutable indices (x_i and remote_i):
+            let (m_x_i, m_remote_i) = match index_pair(&mut fingers, x_i, remote_i) {
+                Pair::Two(m_x_i,m_remote_i) => (m_x_i, m_remote_i),
+                _ => panic!("Invalid index pair: {}, {}", x_i, remote_i),
+            };
+            
             // UpdateRequest:
             // Every finger of x_id will get all of x_id's fingers.
-            has_changed |= fingers[remote_i].update_by_fingers(&fingers[x_i], 
+            has_changed |= m_remote_i.update_by_fingers(&m_x_i, 
                        remote_schain.length, l);
 
             // UpdateResponse:
             // x_id will get all of the fingers of his fingers
-            has_changed |= fingers[x_i].update_by_fingers(&fingers[remote_i],
+            has_changed |= m_x_i.update_by_fingers(&m_remote_i,
                         remote_schain.length, l);
                 
         }

@@ -4,15 +4,16 @@ extern crate ordered_float;
 
 use rand::{StdRng};
 use net_coords::chord::{random_net_chord, init_fingers, 
-    converge_fingers, create_semi_routes, find_path};
+    converge_fingers, create_semi_chains, find_path,
+    verify_global_optimality};
 use net_coords::random_util::choose_k_nums;
 
 
 
 #[cfg(not(test))]
 fn main() {
-    let pair_iters = 1000;
-    for g in 12 .. 15 {
+    let pair_iters = 100;
+    for g in 8 .. 9 {
         // Keyspace size:
         let l: usize = (2 * g + 1)  as usize;
 
@@ -34,8 +35,10 @@ fn main() {
         let mut fingers = init_fingers(&net, l, &mut rng);
         println!("Converge chord fingers...");
         converge_fingers(&net, &mut fingers, l);
+        println!("Verifying global optimality...");
+        assert!(verify_global_optimality(&net, &fingers));
         println!("Creating semi routes...");
-        let semi_routes = create_semi_routes(&net, &fingers);
+        let semi_chains = create_semi_chains(&net, &fingers);
 
         println!("Finding average length of path...");
         // Find average length of path:
@@ -45,9 +48,8 @@ fn main() {
                 .into_iter().collect::<Vec<_>>();
             let src_id = net.index_to_node(node_pair[0]).unwrap().clone();
             let dst_id = net.index_to_node(node_pair[1]).unwrap().clone();
-            // println!("{}, {}", node_pair[0], node_pair[1]);
 
-            let path_len = find_path(src_id, dst_id, &net, &semi_routes).unwrap();
+            let path_len = find_path(src_id, dst_id, &net, &semi_chains).unwrap();
             sum_length += path_len as u64;
 
         }

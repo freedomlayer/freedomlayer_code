@@ -2,7 +2,7 @@ extern crate petgraph;
 extern crate rand;
 
 pub mod ids_chain;
-pub mod semi_routes_array;
+pub mod semi_chains_array;
 pub mod node_fingers;
 
 use std::collections::{HashSet, HashMap, VecDeque};
@@ -12,7 +12,7 @@ use self::rand::distributions::{IndependentSample, Range};
 
 use network::{Network};
 use self::ids_chain::{ids_chain};
-use self::semi_routes_array::{SemiRoutesArray, sroute_final_id};
+use self::semi_chains_array::{SemiChainsArray};
 use self::node_fingers::{Finger, NodeFingers, SemiChain};
 use index_pair::{index_pair, Pair};
 
@@ -50,21 +50,24 @@ fn gen_left_target_ids(x_id: RingKey, l: usize) -> Vec<RingKey> {
 fn gen_right_target_ids<R: Rng>(x_id: RingKey, net: &Network<RingKey>, 
                                 l: usize, mut rng: &mut R) -> Vec<RingKey> {
 
-    let mut target_ids: Vec<RingKey> = Vec::new();
+    let mut target_ids_set: HashSet<RingKey> = HashSet::new();
+    // let mut target_ids: Vec<RingKey> = Vec::new();
 
     // Basic right fingers:
     for i in 0 .. l {
         let pow_val = 2_i64.pow(i as u32);
-        target_ids.push(add_cyc(x_id,pow_val,l));
-        target_ids.push(add_cyc(x_id,-pow_val,l));
+        target_ids_set.insert(add_cyc(x_id,pow_val,l));
+        target_ids_set.insert(add_cyc(x_id,-pow_val,l));
     }
 
     // Neighbor connectors:
     let x_i = net.node_to_index(&x_id).unwrap();
-    for neighbor_index in net.igraph.neighbors(x_i) {
+    let mut neighbors = net.igraph.neighbors(x_i).into_iter().collect::<Vec<_>>();
+    neighbors.sort();
+    for neighbor_index in neighbors {
         let neighbor_id: RingKey = net.index_to_node(neighbor_index).unwrap().clone();
         for cur_id in ids_chain(x_id, neighbor_id) {
-            target_ids.push(cur_id);
+            target_ids_set.insert(cur_id);
         }
     }
 
@@ -74,7 +77,7 @@ fn gen_right_target_ids<R: Rng>(x_id: RingKey, net: &Network<RingKey>,
         let rand_range: Range<RingKey> = 
             Range::new(2_u64.pow(i as u32),2_u64.pow((i + 1) as u32));
         let rand_id = rand_range.ind_sample(&mut rng);
-        target_ids.push(rand_id);
+        target_ids_set.insert(rand_id);
     }
 
     // Update random fingers:
@@ -82,10 +85,11 @@ fn gen_right_target_ids<R: Rng>(x_id: RingKey, net: &Network<RingKey>,
         // Randomize a finger value in [0, 2^l). Completely random in the ring key space.
         let rand_range: Range<RingKey> = Range::new(0u64,2_u64.pow(l as u32));
         let rand_id = rand_range.ind_sample(&mut rng);
-        target_ids.push(rand_id);
+        target_ids_set.insert(rand_id);
     }
     
-    target_ids
+    target_ids_set.into_iter().collect::<Vec<RingKey>>()
+
 }
 
 /// Initialize maintained fingers for node with index x_i.
@@ -220,11 +224,10 @@ pub fn converge_fingers(net: &Network<RingKey>,
 
     // First iteration: We insert all edges:
     for x_i in 0 .. net.igraph.node_count() {
-        for neighbor_i in net.igraph.neighbors(x_i) {
+        let mut neighbors = net.igraph.neighbors(x_i).into_iter().collect::<Vec<_>>();
+        neighbors.sort();
+        for neighbor_i in neighbors {
             let neighbor_id = net.index_to_node(neighbor_i).unwrap().clone();
-            // Note that that information about the origin of the change
-            // is contained as the last element of the NodeChain.
-
             let schain = SemiChain {
                 final_id: neighbor_id,
                 length: 1,
@@ -259,36 +262,25 @@ pub fn verify_global_optimality(net: &Network<RingKey>, fingers: &Vec<NodeFinger
 
 
 
-fn create_semi_routes_node(x_i: usize, net: &Network<RingKey>, 
-                           fingers: &Vec<NodeFingers>) -> SemiRoutesArray {
+fn create_semi_chains_node(x_i: usize, net: &Network<RingKey>, 
+                           fingers: &Vec<NodeFingers>) -> SemiChainsArray {
 
-    let mut semi_routes_array = SemiRoutesArray::new();
+    let mut schains_array = SemiChainsArray::new();
 
     for schain in fingers[x_i].all_schains() {
-        let mut semi_route: Vec<SemiChain> = Vec::new();
-        semi_route.push(schain.clone());
-        semi_routes_array.insert_sroute(semi_route.clone());
-
-        // Concat with another iteration of SemiChain 
-        // (Implementing Neighbor of Neighbor method):
-        
-        let target_i = net.node_to_index(&schain.final_id).unwrap();
-        for next_schain in fingers[target_i].all_schains() {
-            semi_route.push(next_schain);
-            semi_routes_array.insert_sroute(semi_route.clone());
-            semi_route.pop();
-        }
+        schains_array.insert_schain(schain);
     }
-    semi_routes_array.index();
-    semi_routes_array
+
+    schains_array.index();
+    schains_array
 }
 
-pub fn create_semi_routes(net: &Network<RingKey>, 
-                          fingers: &Vec<NodeFingers>) -> Vec<SemiRoutesArray> {
+pub fn create_semi_chains(net: &Network<RingKey>, 
+                          fingers: &Vec<NodeFingers>) -> Vec<SemiChainsArray> {
 
     let mut res_vec = Vec::new();
     for x_i in 0 .. net.igraph.node_count() {
-        res_vec.push(create_semi_routes_node(x_i,&net, &fingers));
+        res_vec.push(create_semi_chains_node(x_i,&net, &fingers));
     }
     res_vec
 }
@@ -296,26 +288,21 @@ pub fn create_semi_routes(net: &Network<RingKey>,
 /// Returns a length of a found path between src_id to dst_id, or 
 /// None if no path was found.
 pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>, 
-                 semi_routes: &Vec<SemiRoutesArray>) -> Option<usize> {
+                 semi_chains: &Vec<SemiChainsArray>) -> Option<usize> {
 
     // let mut semi_path: NodeChain = NodeChain::new();
     let mut cur_id = src_id;
     // semi_path.push(cur_id);
     let mut length: usize = 0;
     while cur_id != dst_id {
-        let cur_semi_routes = &semi_routes[net.node_to_index(&cur_id).unwrap()];
-        let semi_route = cur_semi_routes.find_closest_left(dst_id);
-        let final_id = sroute_final_id(semi_route);
-        if final_id == cur_id {
+        let cur_semi_chains = &semi_chains[net.node_to_index(&cur_id).unwrap()];
+        let schain = cur_semi_chains.find_closest_left(dst_id);
+        if schain.final_id == cur_id {
             return None;
         }
 
-        for schain in semi_route {
-            length += schain.length;
-            // semi_path.push(schain.final_id);
-        }
-
-        cur_id = final_id;
+        length += schain.length;
+        cur_id = schain.final_id;
     }
     Some(length)
 }
@@ -472,9 +459,8 @@ mod tests {
         let net = random_net_chord(num_nodes,num_neighbors,l,&mut rng);
         let mut fingers = init_fingers(&net,l, &mut rng);
         converge_fingers(&net, &mut fingers,l);
-        let semi_routes = create_semi_routes(&net, &fingers);
-
-        // let route_chains = get_route_chains(&net, &fingers, l);
+        assert!(verify_global_optimality(&net, &fingers));
+        let semi_chains = create_semi_chains(&net, &fingers);
 
         for index_a in 0 .. num_nodes {
             for index_b in index_a + 1 .. num_nodes {
@@ -482,7 +468,8 @@ mod tests {
                 let src_id = net.index_to_node(index_a).unwrap().clone();
                 let dst_id = net.index_to_node(index_b).unwrap().clone();
                 let path_len = find_path(src_id, dst_id, &net, 
-                                      &semi_routes).unwrap();
+                                      &semi_chains).unwrap();
+
 
                 /*
                 // Make sure that all nodes in the path are connected by edges in the graph:

@@ -242,7 +242,9 @@ impl NodeFingers {
             unique_schains.insert(fing.schain.clone());
         }
 
-        unique_schains.into_iter().collect::<Vec<SemiChain>>()
+        let mut unique_schains_vec = unique_schains.into_iter().collect::<Vec<SemiChain>>();
+        unique_schains_vec.sort_by_key(|schain| (schain.final_id, schain.length));
+        unique_schains_vec
     }
 
     /// Get all node ids that this node is connected to using
@@ -256,7 +258,10 @@ impl NodeFingers {
             unique_fingers.insert(fing.clone());
         }
 
-        unique_fingers.into_iter().collect::<Vec<Finger>>()
+        let mut unique_fingers_vec = unique_fingers.into_iter().collect::<Vec<Finger>>();
+        unique_fingers_vec.sort_by_key(|fing| 
+                   (fing.target_id, fing.schain.final_id, fing.schain.length));
+        unique_fingers_vec
     }
 
     /// Update finger's struct by all fingers in fingers_src,
@@ -298,10 +303,13 @@ impl NodeFingers {
         }
 
         // Update known version of fingers_src:
+        
+        // DEBUG: Removed optimization:
         self.updated_by.insert(fingers_src.id, fingers_src.version);
 
         has_changed
     }
+
 }
 
 

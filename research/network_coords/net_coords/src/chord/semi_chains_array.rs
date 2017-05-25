@@ -48,7 +48,7 @@ impl SemiChainsArray {
     pub fn find_closest_left(&self, target_id: RingKey) -> &SemiChain {
         assert!(self.is_indexed, "Indexing is required before find_closest_right invocation!");
 
-        let found_index = match self.schains.binary_search_by_key(&target_id, |schain| (schain.final_id)) {
+        let found_index = match self.schains.binary_search_by_key(&target_id, |schain| schain.final_id) {
             Ok(index) => index,
             Err(index) => (index + self.schains.len() - 1) % self.schains.len(),
         };

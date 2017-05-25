@@ -241,32 +241,6 @@ pub fn converge_fingers(net: &Network<RingKey>,
 }
 
 
-/// Generate a routing field: Store for every node how to get to various
-/// other nodes, by going through a neighbor.
-pub fn create_route_field(net: &Network<RingKey>, fingers: &Vec<NodeFingers>, 
-                      l: usize) -> RouteField {
-
-    let mut route_field: RouteField = Vec::new();
-    for x_i in 0 .. net.igraph.node_count() {
-        let x_id = net.index_to_node(x_i).unwrap().clone();
-        let mut route_map: HashMap<RingKey, SemiChain> = HashMap::new();
-
-        for fing in &fingers[x_i].left.sorted_fingers {
-            let should_insert = match route_map.get(&fing.schain.final_id) {
-                None => true,
-                Some(schain) => 
-                    (schain.length) < (fing.schain.length)
-            };
-            if should_insert {
-                route_map.insert(fing.schain.final_id, fing.schain.clone());
-            }
-        }
-        route_field.push(route_map);
-    }
-
-    route_field
-}
-
 
 fn create_semi_routes_node(x_i: usize, net: &Network<RingKey>, 
                            fingers: &Vec<NodeFingers>) -> SemiRoutesArray {
@@ -302,6 +276,8 @@ pub fn create_semi_routes(net: &Network<RingKey>,
     res_vec
 }
 
+/// Returns a length of a found path between src_id to dst_id, or 
+/// None if no path was found.
 pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>, 
                  semi_routes: &Vec<SemiRoutesArray>) -> Option<usize> {
 

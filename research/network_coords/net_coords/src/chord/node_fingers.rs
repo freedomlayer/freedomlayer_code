@@ -16,6 +16,7 @@ pub struct SemiChain {
 pub struct Finger {
     pub target_id: RingKey,
     pub schain: SemiChain,
+    version: usize,
 }
 
 pub struct SortedFingersLeft {
@@ -27,6 +28,7 @@ pub struct SortedFingersRight {
 }
 
 pub struct NodeFingers {
+    id: RingKey,
     pub left: SortedFingersLeft,
     pub right: SortedFingersRight,
     version: usize, // Current version, used for caching.
@@ -72,7 +74,7 @@ fn is_left_finger_better(finger: &Finger, schain: &SemiChain, l:usize) -> bool {
 impl SortedFingersRight {
     /// Add a new known chain, possibly update some fingers to use a new chain.
     /// Returns true if any chain was updated.
-    fn update(&mut self, schain: &SemiChain,l: usize) -> bool {
+    fn update(&mut self, schain: &SemiChain,l: usize, version: usize) -> bool {
         let mut has_changed: bool = false;
 
         let fingers_len = self.sorted_fingers.len();
@@ -87,6 +89,7 @@ impl SortedFingersRight {
         
         while is_right_finger_better(&self.sorted_fingers[cur_index], &schain, l) {
             self.sorted_fingers[cur_index].schain = schain.clone();
+            self.sorted_fingers[cur_index].version = version;
             has_changed = true;
             cur_index = (cur_index + fingers_len - 1) % fingers_len;
         }
@@ -98,7 +101,7 @@ impl SortedFingersRight {
 impl SortedFingersLeft {
     /// Add a new known chain, possibly update some fingers to use a new chain.
     /// Returns true if any chain was updated.
-    fn update(&mut self, schain: &SemiChain,l: usize) -> bool {
+    fn update(&mut self, schain: &SemiChain,l: usize, version: usize) -> bool {
         let mut has_changed: bool = false;
 
         let fingers_len = self.sorted_fingers.len();
@@ -113,6 +116,7 @@ impl SortedFingersLeft {
 
         while is_left_finger_better(&self.sorted_fingers[cur_index], &schain, l) {
             self.sorted_fingers[cur_index].schain = schain.clone();
+            self.sorted_fingers[cur_index].version = version;
             has_changed = true;
             cur_index = (cur_index + 1) % fingers_len;
         }
@@ -126,6 +130,7 @@ impl NodeFingers {
            target_ids_right: &Vec<RingKey>) -> NodeFingers {
 
         let mut nf = NodeFingers {
+            id: x_id,
             left: SortedFingersLeft {sorted_fingers: Vec::new()},
             right: SortedFingersRight {sorted_fingers: Vec::new()},
             version: 0,
@@ -141,8 +146,9 @@ impl NodeFingers {
                     schain: SemiChain {
                         final_id: x_id,
                         length: 0,
-                    }
-                }
+                    },
+                    version: 1,
+                },
             );
         }
 
@@ -154,7 +160,8 @@ impl NodeFingers {
                     schain: SemiChain {
                         final_id: x_id,
                         length: 0,
-                    }
+                    },
+                    version: 1,
                 }
             );
         }
@@ -163,6 +170,8 @@ impl NodeFingers {
         nf.left.sorted_fingers.sort_by_key(|finger| finger.target_id);
         nf.right.sorted_fingers.sort_by_key(|finger| finger.target_id);
 
+        nf.version += 1;
+
         nf
     }
 
@@ -170,8 +179,13 @@ impl NodeFingers {
     /// Returns true if any finger was updated.
     pub fn update(&mut self, schain: &SemiChain, l: usize) -> bool {
         let mut has_changed: bool = false;
-        has_changed |= self.left.update(&schain, l);
-        has_changed |= self.right.update(&schain, l);
+        has_changed |= self.left.update(&schain, l, self.version);
+        has_changed |= self.right.update(&schain, l, self.version);
+
+        // Version is increased only if anything has changed:
+        if has_changed {
+            self.version += 1;
+        }
 
         has_changed
     }
@@ -211,9 +225,29 @@ impl NodeFingers {
     pub fn update_by_fingers(&mut self, fingers_src: &NodeFingers, 
                  chain_length: usize, l:usize) -> bool {
 
+        // Get last_version we have of fingers_src.
+        // 0 is a reserved version, which means we know nothing of fingers_src.
+        let last_version = match self.updated_by.get(&fingers_src.id) {
+            Some(&last_version) => last_version,
+            None => 0,
+        };
+
+        // It is not possible that we know a newer version of fingers_src
+        // than fingers_src knows of.
+        assert!(last_version <= fingers_src.version);
+
+        if last_version == fingers_src.version {
+            // We are already updated about this version of fingers_src.
+            return false;
+        }
+
         let mut has_changed = false; // Has any finger changed?
 
-        for schain in fingers_src.all_schains() {
+        for Finger {schain, version, .. } in fingers_src.all_fingers() {
+            if last_version >= version {
+                // We don't consider this finger if its version is too old.
+                continue
+            }
             let new_schain = SemiChain {
                 final_id: schain.final_id,
                 length: schain.length + chain_length,
@@ -222,8 +256,10 @@ impl NodeFingers {
             has_changed |= self.update(&new_schain, l);
         }
 
-        has_changed
+        // Update known version of fingers_src:
+        self.updated_by.insert(fingers_src.id, fingers_src.version);
 
+        has_changed
     }
 }
 
@@ -251,28 +287,32 @@ mod tests {
             schain: SemiChain {
                 final_id: 14,
                 length: 5
-            }
+            },
+            version: 3,
         });
         sfr.sorted_fingers.push(Finger {
             target_id: 12,
             schain: SemiChain {
                 final_id: 14,
                 length: 5
-            }
+            },
+            version: 4,
         });
         sfr.sorted_fingers.push(Finger {
             target_id: 15,
             schain: SemiChain {
                 final_id: 17,
                 length: 4
-            }
+            },
+            version: 2,
         });
         sfr.sorted_fingers.push(Finger {
             target_id: 18,
             schain: SemiChain {
                 final_id: 14,
                 length: 5
-            }
+            },
+            version: 2,
         });
         sfr.sorted_fingers.sort_by_key(|finger| finger.target_id);
 
@@ -286,7 +326,7 @@ mod tests {
             final_id: 11,
             length: 4
         };
-        assert!(sfr.update(&sc, 7));
+        assert!(sfr.update(&sc, 7, 2));
         assert!(finger_by_target_id(&sfr.sorted_fingers, 11).unwrap().schain == sc);
     }
 
@@ -297,7 +337,7 @@ mod tests {
             final_id: 17,
             length: 4
         };
-        assert!(!sfr.update(&sc, 7));
+        assert!(!sfr.update(&sc, 7, 4));
     }
 
     #[test]
@@ -307,7 +347,7 @@ mod tests {
             final_id: 13,
             length: 4
         };
-        assert!(sfr.update(&sc, 7));
+        assert!(sfr.update(&sc, 7, 6));
         assert!(finger_by_target_id(&sfr.sorted_fingers, 11).unwrap().schain == sc);
         assert!(finger_by_target_id(&sfr.sorted_fingers, 12).unwrap().schain == sc);
     }
@@ -319,7 +359,7 @@ mod tests {
             final_id: 2,
             length: 4
         };
-        assert!(sfr.update(&sc, 7));
+        assert!(sfr.update(&sc, 7, 8));
         assert!(finger_by_target_id(&sfr.sorted_fingers, 18).unwrap().schain == sc);
     }
 
@@ -334,35 +374,40 @@ mod tests {
             schain: SemiChain {
                 final_id: 21,
                 length: 5
-            }
+            },
+            version: 1,
         });
         sfl.sorted_fingers.push(Finger {
             target_id: 11,
             schain: SemiChain {
                 final_id: 9,
                 length: 5
-            }
+            },
+            version: 0,
         });
         sfl.sorted_fingers.push(Finger {
             target_id: 12,
             schain: SemiChain {
                 final_id: 9,
                 length: 5
-            }
+            },
+            version: 2,
         });
         sfl.sorted_fingers.push(Finger {
             target_id: 15,
             schain: SemiChain {
                 final_id: 13,
                 length: 4
-            }
+            },
+            version: 2,
         });
         sfl.sorted_fingers.push(Finger {
             target_id: 18,
             schain: SemiChain {
                 final_id: 16,
                 length: 3
-            }
+            },
+            version: 6,
         });
         sfl.sorted_fingers.sort_by_key(|finger| finger.target_id);
 
@@ -376,7 +421,7 @@ mod tests {
             final_id: 12,
             length: 4
         };
-        assert!(sfr.update(&sc,7));
+        assert!(sfr.update(&sc,7, 9));
         assert!(finger_by_target_id(&sfr.sorted_fingers, 12).unwrap().schain == sc);
     }
 
@@ -387,7 +432,7 @@ mod tests {
             final_id: 8,
             length: 4
         };
-        assert!(!sfr.update(&sc, 7));
+        assert!(!sfr.update(&sc, 7, 10));
     }
 
     #[test]
@@ -397,7 +442,7 @@ mod tests {
             final_id: 10,
             length: 4
         };
-        assert!(sfr.update(&sc, 7));
+        assert!(sfr.update(&sc, 7, 11));
         assert!(finger_by_target_id(&sfr.sorted_fingers, 11).unwrap().schain == sc);
         assert!(finger_by_target_id(&sfr.sorted_fingers, 12).unwrap().schain == sc);
     }
@@ -409,7 +454,7 @@ mod tests {
             final_id: 29,
             length: 4
         };
-        assert!(sfr.update(&sc, 7));
+        assert!(sfr.update(&sc, 7, 12));
         assert!(finger_by_target_id(&sfr.sorted_fingers, 5).unwrap().schain == sc);
     }
 

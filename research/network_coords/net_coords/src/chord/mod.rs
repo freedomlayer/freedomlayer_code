@@ -240,6 +240,23 @@ pub fn converge_fingers(net: &Network<RingKey>,
 
 }
 
+/// Make sure that every finger reaches the best globally key possible
+/// (As closest as possible to its target_id).
+pub fn verify_global_optimality(net: &Network<RingKey>, fingers: &Vec<NodeFingers>) -> bool {
+    // Obtain a sorted vector of all keys in the network:
+    let mut all_keys: Vec<RingKey> = (0 .. net.igraph.node_count())
+        .map(|x_i| net.index_to_node(x_i).unwrap().clone())
+        .collect::<Vec<_>>();
+    all_keys.sort();
+
+    for x_i in 0 .. net.igraph.node_count() {
+        if !fingers[x_i].is_optimal(&all_keys) {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 
 fn create_semi_routes_node(x_i: usize, net: &Network<RingKey>, 

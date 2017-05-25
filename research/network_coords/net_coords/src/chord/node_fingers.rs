@@ -12,7 +12,7 @@ pub struct SemiChain {
 }
 
 // Maintained finger:
-#[derive(Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct Finger {
     pub target_id: RingKey,
     pub schain: SemiChain,
@@ -78,7 +78,7 @@ impl SortedFingersRight {
         let mut has_changed: bool = false;
 
         let fingers_len = self.sorted_fingers.len();
-        // Find the last index where sorted_fingers[i].target_id <= chain[0]:
+        // Find the last index where sorted_fingers[i].target_id <= schain.final_id:
         let last_index = (match self.sorted_fingers.binary_search_by_key(
             &schain.final_id, |finger| finger.target_id) {
             Ok(index) => index,
@@ -86,7 +86,6 @@ impl SortedFingersRight {
         }) % self.sorted_fingers.len();
 
         let mut cur_index: usize = last_index;
-        
         while is_right_finger_better(&self.sorted_fingers[cur_index], &schain, l) {
             self.sorted_fingers[cur_index].schain = schain.clone();
             self.sorted_fingers[cur_index].version = version;
@@ -94,6 +93,21 @@ impl SortedFingersRight {
             cur_index = (cur_index + fingers_len - 1) % fingers_len;
         }
         has_changed
+    }
+
+    /// Check if chosen semi chains tips are optimal with respect to target_id.
+    fn is_optimal(&self, sorted_keys: &Vec<RingKey>) -> bool {
+        for fing in &self.sorted_fingers {
+            let best_key = match sorted_keys.binary_search(&fing.target_id) {
+                Ok(index) => sorted_keys[index],
+                Err(index) => sorted_keys[index % sorted_keys.len()],
+            };
+
+            if fing.schain.final_id != best_key {
+                return false
+            }
+        }
+        return true;
     }
 
 }
@@ -121,6 +135,22 @@ impl SortedFingersLeft {
             cur_index = (cur_index + 1) % fingers_len;
         }
         has_changed
+    }
+
+    /// Check if chosen semi chains tips are optimal with respect to target_id.
+    fn is_optimal(&self, sorted_keys: &Vec<RingKey>) -> bool {
+        for fing in &self.sorted_fingers {
+            let best_key = match sorted_keys.binary_search(&fing.target_id) {
+                Ok(index) => sorted_keys[index],
+                Err(index) => sorted_keys[
+                    (index + sorted_keys.len() - 1) % sorted_keys.len()],
+            };
+
+            if fing.schain.final_id != best_key {
+                return false
+            }
+        }
+        return true;
     }
 }
 
@@ -188,6 +218,17 @@ impl NodeFingers {
         }
 
         has_changed
+    }
+
+    /// Check if fingers are keys global-optimal
+    pub fn is_optimal(&self, sorted_keys: &Vec<RingKey>) -> bool {
+        if !self.left.is_optimal(&sorted_keys) {
+            return false;
+        }
+        if !self.right.is_optimal(&sorted_keys) {
+            return false;
+        }
+        return true;
     }
 
     /// Get all node ids that this node is connected to using

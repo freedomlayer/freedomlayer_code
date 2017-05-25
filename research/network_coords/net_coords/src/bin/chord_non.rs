@@ -12,7 +12,7 @@ use net_coords::random_util::choose_k_nums;
 #[cfg(not(test))]
 fn main() {
     let pair_iters = 1000;
-    for g in 15 .. 20 {
+    for g in 12 .. 15 {
         // Keyspace size:
         let l: usize = (2 * g + 1)  as usize;
 

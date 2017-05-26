@@ -44,8 +44,9 @@ fn main() {
         // Find average length of path:
         let mut sum_length: u64 = 0;
         for _ in 0 .. pair_iters {
-            let node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)
+            let mut node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)
                 .into_iter().collect::<Vec<_>>();
+            node_pair.sort();
             let src_id = net.index_to_node(node_pair[0]).unwrap().clone();
             let dst_id = net.index_to_node(node_pair[1]).unwrap().clone();
 

@@ -4,6 +4,7 @@ extern crate rand;
 pub mod ids_chain;
 pub mod semi_chains_array;
 pub mod node_fingers;
+pub mod map_counter;
 
 use std::collections::{HashSet, HashMap, VecDeque};
 
@@ -174,9 +175,10 @@ fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
 }
 
 
+/*
 
 /// Perform one iteration of fingers for all nodes
-fn iter_fingers(net: &Network<RingKey>, 
+fn iter_fingers_basic(net: &Network<RingKey>, 
                 mut fingers: &mut Vec<NodeFingers>, l: usize) -> bool {
 
     // Check if any finger has changed:
@@ -219,7 +221,7 @@ fn iter_fingers(net: &Network<RingKey>,
 
 
 /// Get to converging state of fingers for all the network.
-pub fn converge_fingers(net: &Network<RingKey>, 
+pub fn converge_fingers_basic(net: &Network<RingKey>, 
              mut fingers: &mut Vec<NodeFingers>, l: usize) {
 
     // First iteration: We insert all edges:
@@ -237,8 +239,91 @@ pub fn converge_fingers(net: &Network<RingKey>,
     }
 
     println!("Iter fingers...");
-    while iter_fingers(&net, &mut fingers, l) {
+    while iter_fingers_basic(&net, &mut fingers, l) {
         println!("Iter fingers...");
+    }
+
+}
+*/
+
+struct PendingSemiChain {
+    node_id: RingKey,
+    schain: SemiChain,
+}
+
+/// Get to converging state of fingers for all the network.
+pub fn converge_fingers(net: &Network<RingKey>, 
+             mut fingers: &mut Vec<NodeFingers>, l: usize) {
+
+    let mut followers: Vec<HashMap<RingKey,usize>> = Vec::new();
+    for x_i in 0 .. net.igraph.node_count() {
+        followers.push(HashMap::new());
+    }
+    let mut pending_schains: VecDeque<PendingSemiChain> = VecDeque::new();
+
+    // Insert all neighbor based edges:
+    for x_i in 0 .. net.igraph.node_count() {
+        let x_id = net.index_to_node(x_i).unwrap().clone();
+        let mut neighbors = net.igraph.neighbors(x_i).into_iter().collect::<Vec<_>>();
+        neighbors.sort();
+        for neighbor_i in neighbors {
+            if neighbor_i == x_i {
+                continue;
+            }
+            let neighbor_id = net.index_to_node(neighbor_i).unwrap().clone();
+            pending_schains.push_back(PendingSemiChain {
+                node_id: x_id,
+                schain: SemiChain {
+                    final_id: neighbor_id,
+                    length: 1,
+                },
+            });
+        }
+    }
+
+    while let Some(pending_schain) = pending_schains.pop_front() {
+        let node_i = net.node_to_index(&pending_schain.node_id).unwrap();
+        match fingers[node_i].update(&pending_schain.schain, l) {
+            Some(removed_schains) => {
+                // Some schains have changed after the update:
+                // Remove all reported removed_ids from followers:
+                for rschain in removed_schains {
+                    let ri = net.node_to_index(&rschain.final_id).unwrap();
+                    followers[ri].remove(&pending_schain.node_id);
+                }
+                // TODO:
+                // Fix logic here!!!
+                assert!(false);
+                // We should tell all relevant nodes about the new
+                // schain.
+                // Tell all nodes we keep a semi chain to:
+                for schain_to_remote in fingers[node_i].all_schains() {
+                    pending_schains.push_back(PendingSemiChain {
+                        node_id: schain_to_remote.final_id,
+                        schain: SemiChain {
+                            final_id: pending_schain.schain.final_id,
+                            length: pending_schain.schain.length + schain_to_remote.length,
+                        },
+                    });
+                }
+                // Tell all followers:
+                // TODO: How to know length of path to a follower?
+                for follower_id in followers[node_i] {
+                    let follower_i = net.node_to_index(&follower_id).unwrap();
+                    pending_schains.push_back(PendingSemiChain {
+                        node_id: follower_id,
+                        schain: SemiChain {
+                            final_id: pending_schain.schain.final_id,
+                            length: pending_schain.schain.length + schain_to_remote.length,
+                        },
+                    });
+                }
+            },
+            None => {
+                // Nothing has changed after the update.
+            }
+        }
+
     }
 
 }

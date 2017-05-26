@@ -13,15 +13,15 @@ use net_coords::random_util::choose_k_nums;
 #[cfg(not(test))]
 fn main() {
     let pair_iters = 100;
-    for g in 8 .. 9 {
+    for g in 12 .. 16 {
         // Keyspace size:
         let l: usize = (2 * g + 1)  as usize;
 
         println!("--------------------------------");
         let num_nodes: usize = ((2 as u64).pow(g)) as usize;
-        // let num_neighbours: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+        let num_neighbours: usize = (1.5 * (num_nodes as f64).ln()) as usize;
 
-        let num_neighbours: usize = 3;
+        // let num_neighbours: usize = 3;
 
         println!("g = {}", g);
         println!("num_nodes = {}",num_nodes);
@@ -46,7 +46,7 @@ fn main() {
         for _ in 0 .. pair_iters {
             let mut node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)
                 .into_iter().collect::<Vec<_>>();
-            node_pair.sort();
+            node_pair.sort(); // Make computation deterministic
             let src_id = net.index_to_node(node_pair[0]).unwrap().clone();
             let dst_id = net.index_to_node(node_pair[1]).unwrap().clone();
 

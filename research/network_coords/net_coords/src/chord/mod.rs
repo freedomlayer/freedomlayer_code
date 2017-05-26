@@ -290,9 +290,7 @@ pub fn create_semi_chains(net: &Network<RingKey>,
 pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>, 
                  semi_chains: &Vec<SemiChainsArray>) -> Option<usize> {
 
-    // let mut semi_path: NodeChain = NodeChain::new();
     let mut cur_id = src_id;
-    // semi_path.push(cur_id);
     let mut length: usize = 0;
     while cur_id != dst_id {
         let cur_semi_chains = &semi_chains[net.node_to_index(&cur_id).unwrap()];

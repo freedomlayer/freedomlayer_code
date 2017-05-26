@@ -1,5 +1,6 @@
 
 use std::collections::{HashSet};
+use std::iter;
 use chord::{RingKey, SemiChain};
 
 /// A chains array. Used for quick searching.
@@ -52,16 +53,38 @@ impl SemiChainsArray {
             Ok(index) => index,
             Err(index) => (index + self.schains.len() - 1) % self.schains.len(),
         };
-        &self.schains[found_index % self.schains.len()]
+        let mut index = found_index;
+        let found_final_id = self.schains[found_index].final_id;
+
+        // Get the schain with the shortest length:
+        while index > 0 {
+            index -= 1;
+            if self.schains[index].final_id != found_final_id {
+                index += 1;
+                break;
+            }
+        }
+        &self.schains[index]
     }
 
     pub fn find_closest_right(&self, target_id: RingKey) -> &SemiChain {
         assert!(self.is_indexed, "Indexing is required before find_closest_left invocation!");
         let found_index = match self.schains.binary_search_by_key(&target_id, |schain| schain.final_id) {
             Ok(index) => index,
-            Err(index) => index,
+            Err(index) => index % self.schains.len(),
         };
-        &self.schains[found_index % self.schains.len()]
+        let mut index = found_index;
+        let found_final_id = self.schains[found_index].final_id;
+
+        // Get the schain with the shortest length:
+        while index > 0 {
+            index -= 1;
+            if self.schains[index].final_id != found_final_id {
+                index += 1;
+                break;
+            }
+        }
+        &self.schains[index]
     }
 
 }

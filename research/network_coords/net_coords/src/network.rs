@@ -4,7 +4,7 @@ extern crate rand;
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash};
 
-use self::rand::{Rng, StdRng};
+use self::rand::{Rng};
 use self::rand::distributions::{IndependentSample, Range};
 use self::petgraph::algo::dijkstra;
 use self::petgraph::visit::EdgeRef;
@@ -31,7 +31,7 @@ impl<'a, Node> Iterator for ClosestNodes<'a, Node> {
     fn next(&mut self) -> Option<(usize,u64, usize)> {
         let (node_index, node_dist, gateway_index) : (usize, u64, Option<usize>) = { 
             let min_elem = self.pending.iter()
-                .min_by_key(|&(index, &(dist, gateway))| (dist,index));
+                .min_by_key(|&(index, &(dist, _))| (dist,index));
 
             let (&node_index, &(node_dist, gateway_index)) = match min_elem {
                 None => return None,
@@ -202,6 +202,7 @@ pub fn random_net_weighted<R: Rng>(n: usize, num_neighbours: usize, rng: &mut R)
 #[cfg(test)]
 mod tests {
     use super::*;
+    use self::rand::{StdRng};
 
     #[test]
     fn test_random_net() {

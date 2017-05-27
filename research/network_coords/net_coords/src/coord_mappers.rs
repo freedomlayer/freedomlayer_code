@@ -6,7 +6,6 @@ extern crate itertools;
 
 use self::num::Complex;
 use std::f64;
-use std::cmp::Ordering::Less;
 use statistic::Stream;
 use self::itertools::Itertools;
 
@@ -113,6 +112,7 @@ fn dist_u64(a: u64, b: u64) -> u64 {
 /// Approximate distance between two nodes in the network using network coordinates
 pub fn approx_max_dist(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
     -> u64 {
+    let _ = landmarks;
     let u_coord = &coords[u];
     let v_coord = &coords[v];
 
@@ -126,6 +126,7 @@ pub fn approx_max_dist(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &V
 /// Approximate distance between two nodes in the network using network coordinates
 pub fn approx_avg_dist(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
     -> f64 {
+    let _ = landmarks;
     let u_coord = &coords[u];
     let v_coord = &coords[v];
 

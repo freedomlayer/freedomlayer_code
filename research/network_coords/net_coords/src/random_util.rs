@@ -1,5 +1,5 @@
 extern crate rand;
-use self::rand::{Rng, StdRng};
+use self::rand::{Rng};
 use self::rand::distributions::{IndependentSample, Range};
 
 use std::collections::HashSet;
@@ -22,6 +22,7 @@ pub fn choose_k_nums<R: Rng>(k:usize, n:usize, rng: &mut R) -> HashSet<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use self::rand::{StdRng};
 
     #[test]
     fn test_choose_k_nums() {

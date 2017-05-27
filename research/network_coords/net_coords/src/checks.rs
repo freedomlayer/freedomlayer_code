@@ -1,11 +1,6 @@
 extern crate rand;
 extern crate ordered_float;
 
-use network::{random_net, Network};
-use coords::{build_coords, choose_landmarks, is_coord_unique};
-use self::rand::{Rng, StdRng};
-use self::rand::distributions::{IndependentSample, Range};
-
 // A trait alias for the distance function:
 pub trait DistAFunc: Fn(usize,usize,&Vec<Vec<u64>>,&Vec<usize>) -> f64 {}
 impl<T: Fn(usize,usize,&Vec<Vec<u64>>,&Vec<usize>) -> f64> DistAFunc for T {}
@@ -14,6 +9,9 @@ impl<T: Fn(usize,usize,&Vec<Vec<u64>>,&Vec<usize>) -> f64> DistAFunc for T {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use network::{random_net};
+    use coords::{build_coords, choose_landmarks, is_coord_unique};
+    use self::rand::{StdRng};
 
 
     #[test]

@@ -1,8 +1,6 @@
 extern crate itertools;
 
-use network::{Network};
-use chord::{RingKey, NodeChain, add_cyc, vdist};
-use std::{iter, slice};
+use chord::{RingKey, vdist};
 use std::collections::{HashSet, HashMap};
 
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]

@@ -1,11 +1,8 @@
 extern crate num;
 
-use self::num::{Num, Zero, One, FromPrimitive, Float};
+use self::num::{FromPrimitive, Float};
 
-use std::fmt::Debug;
-use std::iter::Sum;
 use std::ops::Div;
-use std::cmp::Ordering::Less;
 
 
 pub trait Stream<N> {

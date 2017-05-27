@@ -1,6 +1,5 @@
 
 use std::collections::{HashSet};
-use std::iter;
 use chord::{RingKey, SemiChain};
 
 /// A chains array. Used for quick searching.

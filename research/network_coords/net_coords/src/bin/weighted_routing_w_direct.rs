@@ -1,3 +1,4 @@
+#![cfg(not(test))]
 extern crate net_coords;
 extern crate rand;
 extern crate ordered_float;
@@ -25,7 +26,7 @@ fn try_route_weighted_random(src_node: usize, dst_node: usize,
     // Node distance function:
     let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
     // let calc_weight = |i: usize| ((-(node_dist(i, dst_node) as f64)).exp() * 100.0) as u32;
-    let calc_weight = |i: usize| 1 as u32;
+    let calc_weight = |_: usize| 1 as u32;
 
     let mut total_distance = 0;
     let mut cur_node = src_node;
@@ -36,9 +37,9 @@ fn try_route_weighted_random(src_node: usize, dst_node: usize,
     while cur_node != dst_node {
         // println!("dst_node = {}. cur_node = {}", dst_node, cur_node);
         
-        let (mut new_cur_node, mut new_dist , mut gateway_index): (usize, u64, _) = 
+        let (mut new_cur_node, mut new_dist , _): (usize, u64, _) = 
             net.closest_nodes(cur_node).take(amount_close)
-                .min_by_key(|&(i, dist, _)| node_dist(dst_node, i)).unwrap();
+                .min_by_key(|&(i, _, _)| node_dist(dst_node, i)).unwrap();
 
         if node_dist(new_cur_node, dst_node) >= node_dist(cur_node, dst_node) {
 

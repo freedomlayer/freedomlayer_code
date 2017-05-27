@@ -1,3 +1,4 @@
+#![cfg(not(test))]
 extern crate net_coords;
 extern crate rand;
 

@@ -29,7 +29,7 @@ mod tests {
     fn test_index_pair() {
         let mut v = vec![0,1,2,3,4,5,6];
         match index_pair(&mut v, 2, 3) {
-            Pair::Two(a,b) => *a += 1,
+            Pair::Two(a,_) => *a += 1,
             _ => {},
         };
 

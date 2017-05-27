@@ -1,3 +1,5 @@
+#![cfg(not(test))]
+
 extern crate petgraph;
 extern crate rand;
 
@@ -5,15 +7,15 @@ pub mod ids_chain;
 pub mod semi_chains_array;
 pub mod node_fingers;
 
-use std::collections::{HashSet, HashMap, VecDeque};
+use std::collections::{HashSet};
 
-use self::rand::{Rng, StdRng};
+use self::rand::{Rng};
 use self::rand::distributions::{IndependentSample, Range};
 
 use network::{Network};
 use self::ids_chain::{ids_chain};
 use self::semi_chains_array::{SemiChainsArray};
-use self::node_fingers::{Finger, NodeFingers, SemiChain};
+use self::node_fingers::{NodeFingers, SemiChain};
 use index_pair::{index_pair, Pair};
 
 
@@ -21,8 +23,6 @@ pub type RingKey = u64; // A key in the chord ring
 pub type NodeChain = Vec<RingKey>;
 pub type NeighborConnector = Vec<NodeChain>;
 
-type RouteField = Vec<HashMap<RingKey,SemiChain>>;
-type SemiRoute = Vec<SemiChain>;
 
 
 /// Calculate ring distance from x to y clockwise
@@ -100,7 +100,7 @@ fn create_node_fingers<R: Rng>(x_i: usize, net: &Network<RingKey>,
     let target_ids_left = gen_left_target_ids(x_id, l);
     let target_ids_right = gen_right_target_ids(x_id, &net, l, &mut rng);
 
-    let mut nf = NodeFingers::new(x_id, &target_ids_left, &target_ids_right);
+    let nf = NodeFingers::new(x_id, &target_ids_left, &target_ids_right);
     
     nf
 }
@@ -117,6 +117,7 @@ pub fn init_fingers<R: Rng>(net: &Network<RingKey>,
 }
 
 
+/*
 /// Make sure that a given chain is made of adjacent nodes.
 fn verify_chain(chain: &NodeChain, net: &Network<RingKey>) -> bool {
     for i in 0 .. (chain.len() - 1) {
@@ -128,6 +129,7 @@ fn verify_chain(chain: &NodeChain, net: &Network<RingKey>) -> bool {
     }
     true
 }
+*/
 
 /*
 fn verify_fingers(x_id: RingKey, chord_fingers: &ChordFingers, 
@@ -161,6 +163,7 @@ fn verify_fingers(x_id: RingKey, chord_fingers: &ChordFingers,
 */
 
 
+/*
 /// Add an id to chain. Eliminate cycle if created.
 fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
     match chain.iter().position(|&x| x == id) {
@@ -172,6 +175,7 @@ fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
         }
     };
 }
+*/
 
 
 
@@ -184,7 +188,7 @@ fn iter_fingers(net: &Network<RingKey>,
 
     // Keep iterating until no changes happen:
     for x_i in 0 .. net.igraph.node_count() {
-        let x_id = net.index_to_node(x_i).unwrap().clone();
+        // let x_id = net.index_to_node(x_i).unwrap().clone();
         // Every node sends an UpdateRequest, and gets back an UpdateResponse message.
 
         for remote_schain in fingers[x_i].all_schains() {
@@ -262,7 +266,7 @@ pub fn verify_global_optimality(net: &Network<RingKey>, fingers: &Vec<NodeFinger
 
 
 
-fn create_semi_chains_node(x_i: usize, net: &Network<RingKey>, 
+fn create_semi_chains_node(x_i: usize, 
                            fingers: &Vec<NodeFingers>) -> SemiChainsArray {
 
     let mut schains_array = SemiChainsArray::new();
@@ -280,7 +284,7 @@ pub fn create_semi_chains(net: &Network<RingKey>,
 
     let mut res_vec = Vec::new();
     for x_i in 0 .. net.igraph.node_count() {
-        res_vec.push(create_semi_chains_node(x_i,&net, &fingers));
+        res_vec.push(create_semi_chains_node(x_i, &fingers));
     }
     res_vec
 }
@@ -370,6 +374,7 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
 #[cfg(test)]
 mod tests {
     use super::*;
+    use self::rand::{StdRng};
 
     #[test]
     fn test_d() {

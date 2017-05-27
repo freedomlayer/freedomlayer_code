@@ -1,11 +1,15 @@
+#![cfg(not(test))]
 extern crate net_coords;
 extern crate rand;
 
-use rand::{Rng, StdRng};
+use rand::{StdRng};
 
+/*
 use net_coords::coord_mappers::{approx_max_dist, approx_avg_dist,
     approx_pairs_dist1, approx_pairs_dist1_normalized,
     approx_pairs_dist2, approx_pairs_dist2_normalized};
+    */
+use net_coords::coord_mappers::{approx_max_dist};
 use net_coords::network::{Network, random_net};
 use net_coords::coords::{build_coords, choose_landmarks};
 
@@ -33,7 +37,7 @@ pub fn check_local_minima(net: &Network<usize>, coords: &Vec<Vec<u64>>, landmark
             }
             let found_better: bool = net.closest_nodes(src_node)
                 .take(amount_close)
-                .any(|(i, dist, _)| node_dist(i, dst_node) < node_dist(src_node, dst_node));
+                .any(|(i, _, _)| node_dist(i, dst_node) < node_dist(src_node, dst_node));
 
             if found_better {
                 num_not_minimum += 1;

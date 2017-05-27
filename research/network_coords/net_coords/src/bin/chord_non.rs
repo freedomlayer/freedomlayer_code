@@ -1,3 +1,5 @@
+#![cfg(not(test))]
+
 extern crate net_coords;
 extern crate rand;
 extern crate ordered_float;
@@ -13,7 +15,7 @@ use net_coords::random_util::choose_k_nums;
 #[cfg(not(test))]
 fn main() {
     let pair_iters = 100;
-    for g in 12 .. 16 {
+    for g in 9 .. 12 {
         // Keyspace size:
         let l: usize = (2 * g + 1)  as usize;
 

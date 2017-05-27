@@ -1,8 +1,10 @@
+#![cfg(not(test))]
+
 extern crate rand;
 
 extern crate net_coords;
 
-use net_coords::network::{Network, random_net};
+use net_coords::network::{random_net};
 use net_coords::coords::{build_coords, choose_landmarks, is_coord_unique};
 
 use rand::{StdRng};

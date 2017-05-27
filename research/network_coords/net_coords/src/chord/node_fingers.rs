@@ -70,11 +70,11 @@ impl SortedFingersRight {
 
         let mut cur_index: usize = last_index;
 
-        let removed_schain = self.sorted_fingers[cur_index].schain;
+        let removed_schain = self.sorted_fingers[cur_index].schain.clone();
 
         while is_right_finger_better(&self.sorted_fingers[cur_index], &schain, l) {
-            ids_counter.insert(schain);
-            ids_counter.remove(self.sorted_fingers[cur_index].schain);
+            ids_counter.insert(schain.clone());
+            ids_counter.remove(&self.sorted_fingers[cur_index].schain);
 
             self.sorted_fingers[cur_index].schain = schain.clone();
             has_changed = true;
@@ -123,11 +123,11 @@ impl SortedFingersLeft {
 
         let mut cur_index: usize = first_index;
 
-        let removed_schain = self.sorted_fingers[cur_index].schain;
+        let removed_schain = self.sorted_fingers[cur_index].schain.clone();
 
         while is_left_finger_better(&self.sorted_fingers[cur_index], &schain, l) {
-            ids_counter.insert(schain);
-            ids_counter.remove(self.sorted_fingers[cur_index].schain);
+            ids_counter.insert(schain.clone());
+            ids_counter.remove(&self.sorted_fingers[cur_index].schain);
 
             self.sorted_fingers[cur_index].schain = schain.clone();
             has_changed = true;
@@ -174,28 +174,32 @@ impl NodeFingers {
 
         // Insert all left fingers:
         for &target_id in target_ids_left {
+            let schain = SemiChain {
+                final_id: x_id,
+                length: 0,
+            };
             nf.left.sorted_fingers.push(
                 Finger{
                     target_id: target_id, 
-                    schain: SemiChain {
-                        final_id: x_id,
-                        length: 0,
-                    },
+                    schain: schain.clone(),
                 },
             );
+            nf.schains_count.insert(schain);
         }
 
         // Insert all right fingers:
         for &target_id in target_ids_right {
+            let schain = SemiChain {
+                final_id: x_id,
+                length: 0,
+            };
             nf.right.sorted_fingers.push(
                 Finger{
                     target_id: target_id, 
-                    schain: SemiChain {
-                        final_id: x_id,
-                        length: 0,
-                    },
+                    schain: schain.clone(),
                 }
             );
+            nf.schains_count.insert(schain);
         }
 
         // Sort all fingers:
@@ -211,7 +215,7 @@ impl NodeFingers {
     pub fn update(&mut self, schain: &SemiChain, l: usize) -> Option<Vec<SemiChain>> {
         let mut has_changed: bool = false;
 
-        let removed_schains = Vec::new();
+        let mut removed_schains = Vec::new();
 
         match self.left.update(&schain, &mut self.schains_count, l) {
             Some(removed_schain) => {
@@ -329,175 +333,154 @@ mod tests {
 
     /* Right fingers */
 
-    fn make_sorted_fingers_right() -> SortedFingersRight {
+    fn make_sorted_fingers_right() -> (SortedFingersRight, MapCounter<SemiChain>) {
         let mut sfr = SortedFingersRight {
             sorted_fingers: Vec::new(),
         };
-        sfr.sorted_fingers.push(Finger {
-            target_id: 11,
-            schain: SemiChain {
-                final_id: 14,
-                length: 5
-            },
-        });
-        sfr.sorted_fingers.push(Finger {
-            target_id: 12,
-            schain: SemiChain {
-                final_id: 14,
-                length: 5
-            },
-        });
-        sfr.sorted_fingers.push(Finger {
-            target_id: 15,
-            schain: SemiChain {
-                final_id: 17,
-                length: 4
-            },
-        });
-        sfr.sorted_fingers.push(Finger {
-            target_id: 18,
-            schain: SemiChain {
-                final_id: 14,
-                length: 5
-            },
-        });
+        let mut map_counter: MapCounter<SemiChain> = MapCounter::new();
+
+        {
+            let mut insert_finger = |final_id, length, target_id| {
+                let schain = SemiChain {
+                    final_id,
+                    length,
+                };
+                sfr.sorted_fingers.push(Finger {
+                    target_id,
+                    schain: schain.clone(),
+                });
+                map_counter.insert(schain);
+            };
+
+            insert_finger(14,5,11);
+            insert_finger(14,5,12);
+            insert_finger(17,4,15);
+            insert_finger(14,5,18);
+        }
         sfr.sorted_fingers.sort_by_key(|finger| finger.target_id);
 
-        sfr
+        (sfr, map_counter)
     }
 
     #[test]
     fn test_sorted_right_fingers_one_changed() {
-        let mut sfr = make_sorted_fingers_right();
+        let (mut sfr, mut map_counter) = make_sorted_fingers_right();
         let sc = SemiChain {
             final_id: 11,
             length: 4
         };
-        assert!(sfr.update(&sc, 7, 2));
+        assert!(!sfr.update(&sc, &mut map_counter, 7).is_none());
         assert!(finger_by_target_id(&sfr.sorted_fingers, 11).unwrap().schain == sc);
     }
 
     #[test]
     fn test_sorted_right_fingers_unchanged() {
-        let mut sfr = make_sorted_fingers_right();
+        let (mut sfr, mut map_counter) = make_sorted_fingers_right();
         let sc = SemiChain {
             final_id: 17,
             length: 4
         };
-        assert!(!sfr.update(&sc, 7, 4));
+        assert!(sfr.update(&sc, &mut map_counter, 7).is_none());
     }
 
     #[test]
     fn test_sorted_right_fingers_change_both() {
-        let mut sfr = make_sorted_fingers_right();
+        let (mut sfr, mut map_counter) = make_sorted_fingers_right();
         let sc = SemiChain {
             final_id: 13,
             length: 4
         };
-        assert!(sfr.update(&sc, 7, 6));
+        assert!(!sfr.update(&sc, &mut map_counter, 7).is_none());
         assert!(finger_by_target_id(&sfr.sorted_fingers, 11).unwrap().schain == sc);
         assert!(finger_by_target_id(&sfr.sorted_fingers, 12).unwrap().schain == sc);
     }
 
     #[test]
     fn test_sorted_right_fingers_change_cyclic() {
-        let mut sfr = make_sorted_fingers_right();
+        let (mut sfr, mut map_counter) = make_sorted_fingers_right();
         let sc = SemiChain {
             final_id: 2,
             length: 4
         };
-        assert!(sfr.update(&sc, 7, 8));
+        assert!(!sfr.update(&sc, &mut map_counter, 7).is_none());
         assert!(finger_by_target_id(&sfr.sorted_fingers, 18).unwrap().schain == sc);
     }
 
     /* Left fingers */
 
-    fn make_sorted_fingers_left() -> SortedFingersLeft {
+    fn make_sorted_fingers_left() -> (SortedFingersLeft, MapCounter<SemiChain>) {
         let mut sfl = SortedFingersLeft {
             sorted_fingers: Vec::new(),
         };
-        sfl.sorted_fingers.push(Finger {
-            target_id: 5,
-            schain: SemiChain {
-                final_id: 21,
-                length: 5
-            },
-        });
-        sfl.sorted_fingers.push(Finger {
-            target_id: 11,
-            schain: SemiChain {
-                final_id: 9,
-                length: 5
-            },
-        });
-        sfl.sorted_fingers.push(Finger {
-            target_id: 12,
-            schain: SemiChain {
-                final_id: 9,
-                length: 5
-            },
-        });
-        sfl.sorted_fingers.push(Finger {
-            target_id: 15,
-            schain: SemiChain {
-                final_id: 13,
-                length: 4
-            },
-        });
-        sfl.sorted_fingers.push(Finger {
-            target_id: 18,
-            schain: SemiChain {
-                final_id: 16,
-                length: 3
-            },
-        });
+        let mut map_counter: MapCounter<SemiChain> = MapCounter::new();
+
+        {
+            let mut insert_finger = |final_id, length, target_id| {
+                let schain = SemiChain {
+                    final_id,
+                    length,
+                };
+                sfl.sorted_fingers.push(Finger {
+                    target_id,
+                    schain: schain.clone(),
+                });
+                map_counter.insert(schain);
+            };
+
+            insert_finger(21,5,5);
+            insert_finger(9,5,11);
+            insert_finger(9,5,12);
+            insert_finger(13,4,15);
+            insert_finger(16,3,18);
+        }
+
         sfl.sorted_fingers.sort_by_key(|finger| finger.target_id);
 
-        sfl
+        (sfl, map_counter)
     }
 
     #[test]
     fn test_sorted_left_fingers_one_changed() {
-        let mut sfr = make_sorted_fingers_left();
+        let (mut sfl, mut map_counter) = make_sorted_fingers_left();
         let sc = SemiChain {
             final_id: 12,
             length: 4
         };
-        assert!(sfr.update(&sc,7, 9));
-        assert!(finger_by_target_id(&sfr.sorted_fingers, 12).unwrap().schain == sc);
+        assert!(!sfl.update(&sc, &mut map_counter, 7).is_none());
+        assert!(finger_by_target_id(&sfl.sorted_fingers, 12).unwrap().schain == sc);
     }
 
     #[test]
     fn test_sorted_left_fingers_unchanged() {
-        let mut sfr = make_sorted_fingers_left();
+        let (mut sfl, mut map_counter) = make_sorted_fingers_left();
         let sc = SemiChain {
             final_id: 8,
             length: 4
         };
-        assert!(!sfr.update(&sc, 7, 10));
+        assert!(sfl.update(&sc, &mut map_counter, 7).is_none());
     }
 
     #[test]
     fn test_sorted_left_fingers_change_both() {
-        let mut sfr = make_sorted_fingers_left();
+        let (mut sfl, mut map_counter) = make_sorted_fingers_left();
         let sc = SemiChain {
             final_id: 10,
             length: 4
         };
-        assert!(sfr.update(&sc, 7, 11));
-        assert!(finger_by_target_id(&sfr.sorted_fingers, 11).unwrap().schain == sc);
-        assert!(finger_by_target_id(&sfr.sorted_fingers, 12).unwrap().schain == sc);
+        assert!(!sfl.update(&sc, &mut map_counter, 7).is_none());
+        assert!(finger_by_target_id(&sfl.sorted_fingers, 11).unwrap().schain == sc);
+        assert!(finger_by_target_id(&sfl.sorted_fingers, 12).unwrap().schain == sc);
     }
 
     #[test]
     fn test_sorted_left_fingers_change_cyclic() {
-        let mut sfr = make_sorted_fingers_left();
+        let (mut sfl, mut map_counter) = make_sorted_fingers_left();
         let sc = SemiChain {
             final_id: 29,
             length: 4
         };
-        assert!(sfr.update(&sc, 7, 12));
-        assert!(finger_by_target_id(&sfr.sorted_fingers, 5).unwrap().schain == sc);
+        assert!(!sfl.update(&sc, &mut map_counter, 7).is_none());
+        assert!(finger_by_target_id(&sfl.sorted_fingers, 5).unwrap().schain == sc);
     }
 
     /* ***************************************************** */
@@ -509,17 +492,17 @@ mod tests {
             final_id: 3,
             length: 4
         };
-        assert!(nf.update(&sc,7));
+        assert!(!nf.update(&sc,7).is_none());
         let sc = SemiChain {
             final_id: 5,
             length: 4
         };
-        assert!(nf.update(&sc,7));
+        assert!(!nf.update(&sc,7).is_none());
         let sc = SemiChain {
             final_id: 6,
             length: 4
         };
-        assert!(!nf.update(&sc,7));
+        assert!(nf.update(&sc,7).is_none());
 
         let mut all_schains = nf.all_schains();
         assert!(all_schains.len() > 0);

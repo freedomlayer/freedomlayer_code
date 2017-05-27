@@ -283,49 +283,55 @@ pub fn converge_fingers(net: &Network<RingKey>,
 
     while let Some(pending_schain) = pending_schains.pop_front() {
         let node_i = net.node_to_index(&pending_schain.node_id).unwrap();
-        match fingers[node_i].update(&pending_schain.schain, l) {
-            Some(removed_schains) => {
-                // Some schains have changed after the update:
-                // Remove all reported removed_ids from followers:
-                for rschain in removed_schains {
-                    let ri = net.node_to_index(&rschain.final_id).unwrap();
-                    followers[ri].remove(&pending_schain.node_id);
-                }
-                // TODO:
-                // Fix logic here!!!
-                assert!(false);
-                // We should tell all relevant nodes about the new
-                // schain.
-                // Tell all nodes we keep a semi chain to:
-                for schain_to_remote in fingers[node_i].all_schains() {
-                    pending_schains.push_back(PendingSemiChain {
-                        node_id: schain_to_remote.final_id,
-                        schain: SemiChain {
-                            final_id: pending_schain.schain.final_id,
-                            length: pending_schain.schain.length + schain_to_remote.length,
-                        },
-                    });
-                }
-                // Tell all followers:
-                // TODO: How to know length of path to a follower?
-                for follower_id in followers[node_i] {
-                    let follower_i = net.node_to_index(&follower_id).unwrap();
-                    pending_schains.push_back(PendingSemiChain {
-                        node_id: follower_id,
-                        schain: SemiChain {
-                            final_id: pending_schain.schain.final_id,
-                            length: pending_schain.schain.length + schain_to_remote.length,
-                        },
-                    });
-                }
-            },
-            None => {
-                // Nothing has changed after the update.
+        if let Some(removed_schains) = fingers[node_i].update(&pending_schain.schain, l) {
+            // Some schains have changed after the update:
+            // Remove all reported removed_ids from followers:
+            for rschain in removed_schains {
+                let ri = net.node_to_index(&rschain.final_id).unwrap();
+                followers[ri].remove(&pending_schain.node_id);
+            }
+            // We now tell all relevant nodes about the new schain.
+            
+            // Tell all nodes we keep a semi chain to:
+            for schain_to_remote in fingers[node_i].all_schains() {
+                pending_schains.push_back(PendingSemiChain {
+                    node_id: schain_to_remote.final_id,
+                    schain: SemiChain {
+                        final_id: pending_schain.schain.final_id,
+                        length: pending_schain.schain.length + schain_to_remote.length,
+                    },
+                });
+            }
+            // Tell all followers:
+            for (&follower_id, &length_to_follower) in &followers[node_i] {
+                let follower_i = net.node_to_index(&follower_id).unwrap();
+                pending_schains.push_back(PendingSemiChain {
+                    node_id: follower_id,
+                    schain: SemiChain {
+                        final_id: pending_schain.schain.final_id,
+                        length: pending_schain.schain.length + length_to_follower,
+                    },
+                });
+            }
+
+            // Mark that we are following pending_schain.schain.final_id
+            let remote_i = net.node_to_index(&pending_schain.schain.final_id).unwrap();
+            followers[remote_i]
+                .insert(pending_schain.node_id, pending_schain.schain.length);
+
+            // Queue all of pending_schain.schain.final_id's chains for us to look at 
+            // at a later time.
+            for schain_from_remote in fingers[remote_i].all_schains() {
+                pending_schains.push_back(PendingSemiChain {
+                    node_id: pending_schain.node_id,
+                    schain: SemiChain {
+                        final_id: schain_from_remote.final_id,
+                        length: schain_from_remote.length + pending_schain.schain.length,
+                    },
+                });
             }
         }
-
     }
-
 }
 
 /// Make sure that every finger reaches the best globally key possible

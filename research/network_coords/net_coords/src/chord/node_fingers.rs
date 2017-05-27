@@ -296,7 +296,7 @@ mod tests {
     fn finger_by_target_id(sorted_fingers: &Vec<Finger>, target_id: RingKey) -> Option<&Finger> {
         match sorted_fingers.binary_search_by_key(&target_id, |finger| finger.target_id) {
             Ok(index) => Some(&sorted_fingers[index]),
-            Err(index) => None
+            Err(_) => None
         }
     }
 
@@ -503,7 +503,7 @@ mod tests {
         };
         assert!(!nf.update(&sc,7));
 
-        let mut all_schains = nf.all_schains();
+        let all_schains = nf.all_schains();
         assert!(all_schains.len() > 0);
 
     }

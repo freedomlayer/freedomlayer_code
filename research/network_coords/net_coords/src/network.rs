@@ -131,6 +131,31 @@ impl <Node: Hash + Eq + Clone> Network <Node> {
         }
     }
 }
+/// Create a 2d grid network k X k
+pub fn grid2_net(k: usize) -> Network<usize> {
+
+    let mut net = Network::<usize>::new();
+
+    // Insert n nodes:
+    for v in 0 .. k*k {
+        net.add_node(v);
+    }
+
+    // Add edges:
+    for x in 0 .. k-1 {
+        for y in 0 .. k {
+            net.igraph.add_edge(y + x*k, y + (x+1)*k, 1);
+        }
+    }
+
+    for x in 0 .. k {
+        for y in 0 .. k-1 {
+            net.igraph.add_edge(y + x*k, (y+1) + x*k, 1);
+        }
+    }
+
+    net
+}
 
 
 /// A random network where all edges are of weight 1.
@@ -218,6 +243,12 @@ mod tests {
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
         let net = random_net_weighted(100,5,&mut rng);
         assert!(net.igraph.node_count() == 100);
+    }
+
+    #[test]
+    fn test_grid2_net() {
+        let net = grid2_net(100);
+        assert!(net.igraph.node_count() == 100*100);
     }
 
     #[test]

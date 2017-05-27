@@ -7,5 +7,5 @@ authors = ["real"]
 itertools = "0.6.0"
 num = "0.1"
 rand = "0.3"
-petgraph = "0.4"
+petgraph = "0.4.4"
 ordered-float = "0.4.0"

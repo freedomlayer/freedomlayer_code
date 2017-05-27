@@ -33,26 +33,6 @@ pub struct NodeFingers {
     updated_by: HashMap<RingKey, usize>,
 }
 
-// TODO: Add caching mechanism to fingers update.
-
-
-/*
-fn left_chain_key(chain: &NodeChain) -> (i64, usize, u64) {
-    (-(chain[0] as i64), chain.len(), csum_chain(chain))
-}
-
-fn right_chain_key(chain: &NodeChain) -> (i64, usize, u64) {
-    (chain[0] as i64, chain.len(), csum_chain(chain))
-}
-*/
-
-/*
-/// Check if three given points on the ring are clockwise ordered
-/// In other words, check if b \in [a,c]
-fn is_ordered(a: RingKey, b: RingKey, c: RingKey, l: usize) -> bool {
-    vdist(a,b,l) + vdist(b,c,l) == vdist(a,c,l)
-}
-*/
 
 /// Check if proposed new chain is better for the right finger.
 fn is_right_finger_better(finger: &Finger, schain: &SemiChain, l:usize) -> bool {
@@ -198,8 +178,6 @@ impl NodeFingers {
         nf.left.sorted_fingers.sort_by_key(|finger| finger.target_id);
         nf.right.sorted_fingers.sort_by_key(|finger| finger.target_id);
 
-        nf.version += 1;
-
         nf
     }
 
@@ -207,12 +185,13 @@ impl NodeFingers {
     /// Returns true if any finger was updated.
     pub fn update(&mut self, schain: &SemiChain, l: usize) -> bool {
         let mut has_changed: bool = false;
+        self.version += 1;
         has_changed |= self.left.update(&schain, l, self.version);
         has_changed |= self.right.update(&schain, l, self.version);
 
         // Version is increased only if anything has changed:
-        if has_changed {
-            self.version += 1;
+        if !has_changed {
+            self.version -= 1;
         }
 
         has_changed
@@ -270,7 +249,7 @@ impl NodeFingers {
                  chain_length: usize, l:usize) -> bool {
 
         // Get last_version we have of fingers_src.
-        // 0 is a reserved version, which means we know nothing of fingers_src.
+        // 0 is a reserved version number, which means we know nothing of fingers_src.
         let last_version = match self.updated_by.get(&fingers_src.id) {
             Some(&last_version) => last_version,
             None => 0,
@@ -301,8 +280,6 @@ impl NodeFingers {
         }
 
         // Update known version of fingers_src:
-        
-        // DEBUG: Removed optimization:
         self.updated_by.insert(fingers_src.id, fingers_src.version);
 
         has_changed

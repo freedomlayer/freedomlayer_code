@@ -5,7 +5,8 @@ extern crate rand;
 extern crate ordered_float;
 
 use rand::{StdRng};
-use net_coords::chord::{random_net_chord, init_fingers, 
+use net_coords::chord::network_gen::{random_net_chord};
+use net_coords::chord::{init_fingers, 
     converge_fingers, create_semi_chains, find_path,
     verify_global_optimality};
 use net_coords::random_util::choose_k_nums;
@@ -31,7 +32,7 @@ fn main() {
 
         let seed: &[_] = &[1,2,3,4,5];
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
-        println!("Creating the network...");
+        println!("Creating random graph network...");
         let net = random_net_chord(num_nodes, num_neighbours, l, &mut rng);
         println!("Initializing chord fingers...");
         let mut fingers = init_fingers(&net, l, &mut rng);

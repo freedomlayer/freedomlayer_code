@@ -1,4 +1,3 @@
-#![cfg(not(test))]
 
 extern crate petgraph;
 extern crate rand;
@@ -6,6 +5,7 @@ extern crate rand;
 pub mod ids_chain;
 pub mod semi_chains_array;
 pub mod node_fingers;
+pub mod network_gen;
 
 use std::collections::{HashSet};
 
@@ -189,9 +189,10 @@ pub fn converge_fingers(net: &Network<RingKey>,
         }
     }
 
-    println!("Iter fingers...");
+    println!("Iterating fingers...");
+    print!(".");
     while iter_fingers(&net, &mut fingers, l) {
-        println!("Iter fingers...");
+        print!(".");
     }
 
 }
@@ -260,63 +261,6 @@ pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>,
 
 
 
-/// Generate a random graph to be used with chord.
-/// Graph nodes are of type RingKey.
-pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize, rng: &mut R) 
-        -> Network<RingKey> {
-
-    // Maximum key in the ring:
-    let max_key = 2_u64.pow(l as u32);
-
-    // A hash set to make sure we don't have duplicate keys.
-    let mut chosen_keys: HashSet<RingKey> = HashSet::new();
-
-    // We can't have too many nodes with respect to the keyspace.
-    // We stay below sqrt(keyspace_size), to avoid collisions.
-    assert!(num_nodes < (max_key as f64).sqrt() as usize, "Too many nodes!");
-    assert!(num_nodes > 0, "We should have at least one node!");
-
-    let mut net = Network::<RingKey>::new();
-
-    // Insert num_nodes nodes with random keys:
-    for _ in 0 .. num_nodes {
-        let rand_key: Range<RingKey> = Range::new(0,max_key);
-        let mut node_key = rand_key.ind_sample(rng);
-        while chosen_keys.contains(&node_key) {
-            node_key = rand_key.ind_sample(rng);
-        }
-        chosen_keys.insert(node_key.clone());
-        net.add_node(node_key);
-    }
-
-    // Add a straight line, to ensure connectivity.
-    // Possibly change this later to a random tree.
-    for v in 0 .. num_nodes - 1 {
-        net.igraph.add_edge(v, v + 1, 1);
-        // println!("add_edge {}, {}",v,v + 1);
-    }
-
-    // Connect node v to about num_neighbors previous nodes:
-    // This should ensure connectivity, even if num_neighbors is small.
-    for v in 0 .. num_nodes {
-        for _ in 0 .. num_neighbors {
-            let rand_node: Range<usize> = Range::new(0,num_nodes);
-            let u = rand_node.ind_sample(rng);
-            if u == v  {
-                // Avoid self loops
-                continue
-            }
-            if net.igraph.contains_edge(v,u) {
-                // Already has this edge.
-                continue
-            }
-            // Add edge:
-            net.igraph.add_edge(v,u,1);
-            // println!("add_edge {}, {}",v,u);
-        }
-    }
-    net
-}
 
 
 
@@ -324,6 +268,7 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
 mod tests {
     use super::*;
     use self::rand::{StdRng};
+    use self::network_gen::random_net_chord;
 
     #[test]
     fn test_d() {
@@ -373,33 +318,6 @@ mod tests {
     }
 
 
-    #[test]
-    fn test_add_id_to_chain_basic() {
-        let mut chain = vec![1,2,3,4,5];
-        add_id_to_chain(&mut chain, 3);
-        assert!(chain == vec![1,2,3]);
-
-        let mut chain = vec![1,2,3];
-        add_id_to_chain(&mut chain, 3);
-        assert!(chain == vec![1,2,3]);
-
-        let mut chain = vec![1,2,3];
-        add_id_to_chain(&mut chain, 4);
-        assert!(chain == vec![1,2,3,4]);
-
-        let mut chain = vec![1,2,3];
-        add_id_to_chain(&mut chain, 1);
-        assert!(chain == vec![1]);
-
-        let mut chain = vec![1,2];
-        add_id_to_chain(&mut chain, 1);
-        assert!(chain == vec![1]);
-
-        let mut chain = vec![1];
-        add_id_to_chain(&mut chain, 1);
-        assert!(chain == vec![1]);
-
-    }
 
     #[test]
     fn test_chord_basic() {
@@ -419,22 +337,9 @@ mod tests {
                 // Try to find a path:
                 let src_id = net.index_to_node(index_a).unwrap().clone();
                 let dst_id = net.index_to_node(index_b).unwrap().clone();
-                let path_len = find_path(src_id, dst_id, &net, 
+                let _ = find_path(src_id, dst_id, &net, 
                                       &semi_chains).unwrap();
 
-
-                /*
-                // Make sure that all nodes in the path are connected by edges in the graph:
-                for i in 0 .. (path.len() - 1) {
-                    let a = net.node_to_index(&path[i]).unwrap();
-                    let b = net.node_to_index(&path[i+1]).unwrap();
-                    assert!(net.igraph.contains_edge(a,b));
-                }
-                */
-
-                // Make sure that path begins with src_id and ends with dst_id:
-                // assert!(path[0] == src_id);
-                // assert!(path[path.len() - 1] == dst_id);
             }
         }
     }

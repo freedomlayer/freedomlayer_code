@@ -117,67 +117,6 @@ pub fn init_fingers<R: Rng>(net: &Network<RingKey>,
 }
 
 
-/*
-/// Make sure that a given chain is made of adjacent nodes.
-fn verify_chain(chain: &NodeChain, net: &Network<RingKey>) -> bool {
-    for i in 0 .. (chain.len() - 1) {
-        let a = net.node_to_index(&chain[i]).unwrap();
-        let b = net.node_to_index(&chain[i+1]).unwrap();
-        if !net.igraph.contains_edge(a,b) {
-            return false
-        }
-    }
-    true
-}
-*/
-
-/*
-fn verify_fingers(x_id: RingKey, chord_fingers: &ChordFingers, 
-          net: &Network<RingKey>) -> bool {
-
-    let l = chord_fingers.right_positive.len();
-
-    // A function to get the top element:
-    let check_chain = |chain: &NodeChain| (chain[chain.len() - 1] == x_id) &&
-        verify_chain(chain, &net);
-
-    let mut res: bool = true;
-
-    res &= check_chain(&chord_fingers.left);
-
-    for i in 0 .. l {
-        res &= check_chain(&chord_fingers.right_positive[i]);
-        res &= check_chain(&chord_fingers.right_negative[i]);
-        res &= check_chain(&chord_fingers.right_randomized[i]);
-        res &= check_chain(&chord_fingers.fully_randomized[i]);
-    }
-
-    for nei_connector in chord_fingers.neighbor_connectors.iter() {
-        for chain in nei_connector {
-            res &= check_chain(&chain);
-        }
-    }
-    res
-
-}
-*/
-
-
-/*
-/// Add an id to chain. Eliminate cycle if created.
-fn add_id_to_chain(chain: &mut NodeChain, id: RingKey) {
-    match chain.iter().position(|&x| x == id) {
-        None => {
-            chain.push(id);
-        },
-        Some(position) => {
-            chain.resize(position + 1, 0);
-        }
-    };
-}
-*/
-
-
 
 /// Perform one iteration of fingers for all nodes
 fn iter_fingers(net: &Network<RingKey>, 

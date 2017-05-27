@@ -62,11 +62,14 @@ pub fn build_coords<Node>(net: &Network<Node>, landmarks:&Vec<usize>) -> Option<
         work_coords.push(v_coords);
     }
 
+    println!("");
     let mut has_changed = true;
     while has_changed {
         has_changed = iter_coords(net, &mut work_coords);
-        println!("Iter");
+        // println!("Iter");
+        print!(".");
     }
+    println!("");
 
     let is_disconnected: bool = 
         work_coords.iter().any(|coord| 

@@ -129,7 +129,7 @@ fn main() {
         
         println!("weighted_routing...");
         check_weighted_routing(&net, &coords, &landmarks, &mut (rng.clone()), 
-                      num_neighbours.pow(3), 100);
+                      num_neighbours.pow(2), 100);
     }
 }
 

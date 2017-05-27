@@ -104,7 +104,7 @@ pub fn check_weighted_routing(net: &Network<usize>, coords: &Vec<Vec<u64>>, land
 #[cfg(not(test))]
 fn main() {
     println!("Landmarks navigation with lookahead (direct) on a 2d grid network");
-    for l in 11 .. 22 {
+    for l in 11 .. 21 {
     // let l: u32 = 15;
         println!("--------------------------------");
         let num_nodes: usize = ((2 as u64).pow(l)) as usize;

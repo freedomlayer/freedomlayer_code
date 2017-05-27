@@ -24,6 +24,16 @@ pub type NodeChain = Vec<RingKey>;
 pub type NeighborConnector = Vec<NodeChain>;
 
 
+/*
+ * TODO:
+ * - Write a function to calculate graph's average path length 
+ *   (Between two average nodes).
+ * - Check for graphs of various shapes: 
+ *      - Random graphs,
+ *      - Random graphs with constant amount of neighbors,
+ *      - Grid (2d)
+ */
+
 
 /// Calculate ring distance from x to y clockwise
 fn vdist(xk:RingKey, yk: RingKey, l: usize) -> RingKey {

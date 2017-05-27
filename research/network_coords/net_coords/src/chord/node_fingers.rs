@@ -114,7 +114,7 @@ impl SortedFingersLeft {
         let mut has_changed: bool = false;
 
         let fingers_len = self.sorted_fingers.len();
-        // Find the first index where sorted_fingers[i].target_id >= chain[0]:
+        // Find the first index where sorted_fingers[i].target_id >= schain.final_id:
         let first_index = (match self.sorted_fingers.binary_search_by_key(
             &schain.final_id, |finger| finger.target_id) {
             Ok(index) => index,

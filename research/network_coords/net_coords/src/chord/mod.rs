@@ -194,7 +194,7 @@ pub fn converge_fingers(net: &Network<RingKey>,
     while iter_fingers(&net, &mut fingers, l) {
         print!(".");
     }
-
+    println!("");
 }
 
 /// Make sure that every finger reaches the best globally key possible

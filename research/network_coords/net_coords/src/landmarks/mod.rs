@@ -50,7 +50,7 @@ pub fn find_path_landmarks<R: Rng>(src_node: usize, dst_node: usize,
         total_distance += new_dist;
         // total_distance += *net.igraph.edge_weight(cur_node, gateway_index).unwrap();
         // The path is already too long. We abort.
-        if total_distance as usize > net.igraph.node_count() {
+        if total_distance as usize > (net.igraph.node_count() as f64).sqrt() as usize {
             return None
         }
         cur_node = new_cur_node;

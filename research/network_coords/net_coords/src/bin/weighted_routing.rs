@@ -4,64 +4,12 @@ extern crate rand;
 extern crate ordered_float;
 
 use rand::{StdRng};
-use rand::distributions::{Weighted, WeightedChoice, 
-    IndependentSample};
 
-use net_coords::landmarks::coord_mappers::{approx_max_dist};
-/*, approx_avg_dist,
-    approx_pairs_dist1, approx_pairs_dist1_normalized,
-    approx_pairs_dist2, approx_pairs_dist2_normalized};
-    */
+use net_coords::landmarks::find_path_landmarks;
 use net_coords::network::{Network, random_net};
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 use net_coords::random_util::choose_k_nums;
 
-
-/// Try to find a path in the network between src_node and dst_node.
-/// Using a variation of random walk.
-/// Returns None if path was not found, or Some(path_length)
-fn try_route_weighted_random(src_node: usize, dst_node: usize, 
-         amount_close: usize, net: &Network<usize>, 
-         coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>,
-         mut rng: &mut StdRng) -> Option<u64> {
-
-    // Node distance function:
-    let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
-    let calc_weight = |i: usize| ((-(node_dist(i, dst_node) as f64)).exp() * 100.0) as u64;
-
-    let mut total_distance = 0;
-    let mut cur_node = src_node;
-
-    // println!("------------------------");
-    // println!("Routing from {} to {}",src_node, dst_node); 
-    
-    while cur_node != dst_node {
-        // println!("dst_node = {}. cur_node = {}", dst_node, cur_node);
-        
-        let (new_cur_node, _ , mut gateway_index): (usize, u64, _) = 
-            net.closest_nodes(cur_node).take(amount_close)
-                .min_by_key(|&(i, _, _)| node_dist(dst_node, i)).unwrap();
-
-        if node_dist(new_cur_node, dst_node) >= node_dist(cur_node, dst_node) {
-
-            // Pick a best local destination randomly in a "smart" way:
-            let mut items = net.closest_nodes(cur_node).take(amount_close)
-                .map(|(i, dist, gateway)| 
-                     Weighted { weight: calc_weight(i) as u32, item: (i, dist, gateway) })
-                .collect::<Vec<_>>();
-
-            // Pick the next step as the gateway of the chosen local destination:
-            let wc = WeightedChoice::new(&mut items);
-            let smp = wc.ind_sample(&mut rng);
-            gateway_index = smp.2;
-        }
-
-        total_distance += *net.igraph.edge_weight(cur_node, gateway_index).unwrap();
-        cur_node = gateway_index;
-
-    }
-    Some(total_distance)
-}
 
 ///
 /// Check the success rate of routing in the network.
@@ -79,7 +27,7 @@ pub fn check_weighted_routing(net: &Network<usize>, coords: &Vec<Vec<u64>>, land
         let node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)
             .into_iter().collect::<Vec<_>>();
 
-        let total_distance = try_route_weighted_random(node_pair[0], node_pair[1],
+        let total_distance = find_path_landmarks(node_pair[0], node_pair[1],
                             amount_close, &net, &coords, &landmarks, &mut rng);
 
         match total_distance {

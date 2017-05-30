@@ -59,3 +59,45 @@ pub fn find_path_landmarks<R: Rng>(src_node: usize, dst_node: usize,
     }
     Some(total_distance)
 }
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use random_util::choose_k_nums;
+    use landmarks::coords::{build_coords, choose_landmarks};
+    use network::{random_net};
+    use self::rand::{StdRng};
+
+
+    #[test]
+    fn test_find_path_landmarks() {
+        let l = 5;
+        let num_nodes: usize = ((2 as u64).pow(l)) as usize;
+        let num_neighbours: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+        let num_landmarks: usize = (((l*l) as u32)) as usize;
+        let amount_close = num_neighbours.pow(2);
+
+        let seed: &[_] = &[1,2,3,4,5];
+        let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+        // Creating the network:
+        let net = random_net(num_nodes,num_neighbours,&mut rng);
+        let landmarks = choose_landmarks(&net,num_landmarks, &mut rng);
+        // Iterating through coordinates:
+        let coords = build_coords(&net, &landmarks);
+
+        // Make sure that the graph is connected:
+        assert!(!coords.is_none());
+
+        let coords = coords.unwrap();
+
+        // Get a random node pair:
+        let node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)
+                .into_iter().collect::<Vec<_>>();
+
+        // Try to route from one of the nodes in the pair to the other:
+        let _ = find_path_landmarks(node_pair[0], node_pair[1],
+                            amount_close, &net, &coords, &landmarks, &mut rng).unwrap();
+    }
+}

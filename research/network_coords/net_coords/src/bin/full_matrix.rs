@@ -124,8 +124,8 @@ struct RoutePrecompute<'a, Node: 'a> {
 fn main() {
     let chord_num_iters = 1000;
     let landmarks_num_iters = 100;
-    println!("      Network       |          chord         |    landmarks nei^2     |     landmarks nei^3     ");
-    println!("--------------------+------------------------+------------------------+------------------------+");
+    println!("      Network        |          chord         |    landmarks nei^2     |     landmarks nei^3     ");
+    println!("---------------------+------------------------+------------------------+------------------------+");
 
     for g in 6 .. 21 { // Iterate over size of network.
         let l = 2 * g + 1;

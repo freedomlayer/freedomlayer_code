@@ -110,3 +110,16 @@ Iterating through coordinates
 
 .....
 weighted_routing...
+success_ratio = 1
+mean_route_length = 404.76
+--------------------------------
+l = 20
+num_nodes = 1048576
+num_neighbours = 20
+num_landmarks = 400
+Creating the network...
+Iterating through coordinates
+
+.....
+weighted_routing...
+

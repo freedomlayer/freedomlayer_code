@@ -37,15 +37,6 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
         net.add_node(node_key);
     }
 
-    // Add a straight line, to ensure connectivity.
-    // Possibly change this later to a random tree.
-    for v in 0 .. num_nodes - 1 {
-        net.igraph.add_edge(v, v + 1, 1);
-        // println!("add_edge {}, {}",v,v + 1);
-    }
-
-    // Connect node v to about num_neighbors previous nodes:
-    // This should ensure connectivity, even if num_neighbors is small.
     for v in 0 .. num_nodes {
         for _ in 0 .. num_neighbors {
             let rand_node: Range<usize> = Range::new(0,num_nodes);
@@ -123,6 +114,36 @@ pub fn random_grid2_net_chord<R: Rng>(k: usize, l:usize, rng: &mut R) -> Network
     net
 }
 
+/// Add a random graph of a two dimensional grid.
+pub fn random_net_and_grid2_chord<R: Rng>(k: usize, num_neighbors: usize, l: usize, mut rng: &mut R) 
+        -> Network<RingKey> {
+    
+    // First create a random chord 2d grid:
+    let mut net = random_grid2_net_chord(k,l, &mut rng);
+    let num_nodes = k*k;
+    assert!(num_nodes == net.igraph.node_count());
+
+    // Next we add the random edges between the nodes in the 2d grid:
+    for v in 0 .. num_nodes {
+        for _ in 0 .. num_neighbors {
+            let rand_node: Range<usize> = Range::new(0,num_nodes);
+            let u = rand_node.ind_sample(rng);
+            if u == v  {
+                // Avoid self loops
+                continue
+            }
+            if net.igraph.contains_edge(v,u) {
+                // Already has this edge.
+                continue
+            }
+            // Add edge:
+            net.igraph.add_edge(v,u,1);
+        }
+    }
+    net
+
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -146,5 +167,15 @@ mod tests {
         let k = 5; // 5 X 5 grid
         let l: usize = 6; // Size of keyspace
         random_grid2_net_chord(k,l,&mut rng);
+    }
+
+    #[test]
+    fn test_random_net_and_grid2_chord() {
+        let seed: &[_] = &[1,2,3,4,9];
+        let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+        let num_neighbors = 2;
+        let k = 5; // 5 X 5 grid
+        let l: usize = 6; // Size of keyspace
+        random_net_and_grid2_chord(k,num_neighbors, l, &mut rng);
     }
 }

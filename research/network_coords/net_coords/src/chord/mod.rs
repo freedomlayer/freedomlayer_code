@@ -189,12 +189,12 @@ pub fn converge_fingers(net: &Network<RingKey>,
         }
     }
 
-    println!("Iterating fingers...");
-    print!(".");
+    // println!("Iterating fingers...");
+    // print!(".");
     while iter_fingers(&net, &mut fingers, l) {
-        print!(".");
+        // print!(".");
     }
-    println!("");
+    // println!("");
 }
 
 /// Make sure that every finger reaches the best globally key possible

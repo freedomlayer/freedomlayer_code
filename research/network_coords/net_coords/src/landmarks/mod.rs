@@ -7,14 +7,17 @@ use self::rand::{Rng};
 use self::rand::distributions::{Weighted, WeightedChoice, 
     IndependentSample};
 
+use std::hash::Hash;
+
 use network::{Network};
 use landmarks::coord_mappers::{approx_max_dist};
+
 
 /// Try to find a path in the network between src_node and dst_node.
 /// Using a variation of random walk.
 /// Returns None if path was not found, or Some(path_length)
-pub fn find_path_landmarks<R: Rng>(src_node: usize, dst_node: usize, 
-         amount_close: usize, net: &Network<usize>, 
+pub fn find_path_landmarks<R: Rng, Node: Hash + Eq + Clone>(src_node: usize, dst_node: usize, 
+         amount_close: usize, net: &Network<Node>, 
          coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>,
          mut rng: &mut R) -> Option<u64> {
 

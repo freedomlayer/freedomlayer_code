@@ -23,6 +23,7 @@ use net_coords::chord;
 use net_coords::chord::{init_fingers, 
     converge_fingers, create_semi_chains,
     verify_global_optimality};
+use net_coords::chord::semi_chains_array::SemiChainsArray;
 
 use net_coords::chord::{RingKey};
 // use net_coords::chord::semi_chains_array::SemiChainsArray;
@@ -119,6 +120,57 @@ struct RoutePrecompute<'a, Node: 'a> {
 
 */
 
+fn run_routing_by_type<R: Rng>(routing_type: usize, net: &Network<RingKey>,
+        chord_num_iters: usize, landmarks_num_iters: usize,
+        coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>,
+        semi_chains: &Vec<SemiChainsArray>, avg_degree: usize,
+        mut node_pair_rng: &mut R, mut routing_rng: &mut R) -> RoutingStats {
+
+    // A function to pick a random node pair from the network,
+    // based on a given rng:
+    let mut rand_node_pair = |mut rng: &mut R| {
+        let mut node_pair = choose_k_nums(2,net.igraph.node_count(),
+                &mut rng).into_iter().collect::<Vec<usize>>();
+        // Sort for determinism:
+        node_pair.sort();
+        node_pair
+    };
+    match routing_type {
+        0 => { /* chord routing */
+            let mut find_path = |src_i: usize, dst_i: usize| {
+                let src_id = net.index_to_node(src_i).unwrap().clone();
+                let dst_id = net.index_to_node(dst_i).unwrap().clone();
+                chord::find_path(src_id, dst_id, &net, &semi_chains)
+                    .map(|x| x as u64)
+            };
+
+            get_routing_stats(&mut rand_node_pair, &mut find_path,
+                                  &mut node_pair_rng, chord_num_iters)
+        },
+        1 => { /* landmarks routing nei^2 */
+            let mut find_path = |src_i: usize, dst_i: usize| {
+                let amount_close = avg_degree.pow(2);
+                find_path_landmarks(src_i, dst_i,
+                        amount_close, &net, &coords, &landmarks, &mut routing_rng)
+            };
+
+            get_routing_stats(&mut rand_node_pair, &mut find_path,
+                                  &mut node_pair_rng, landmarks_num_iters)
+        },
+        2 => { /* landmarks routing nei^3 */
+            let mut find_path = |src_i: usize, dst_i: usize| {
+                let amount_close = avg_degree.pow(3);
+                find_path_landmarks(src_i, dst_i,
+                        amount_close, &net, &coords, &landmarks, &mut routing_rng)
+            };
+
+            get_routing_stats(&mut rand_node_pair, &mut find_path,
+                              &mut node_pair_rng, landmarks_num_iters)
+        },
+        _ => unreachable!(),
+    }
+}
+
 
 #[cfg(not(test))]
 fn main() {
@@ -161,16 +213,15 @@ fn main() {
                 print!("ni={:1} |",net_iter);
 
                 // Prepare rand_node_pair:
-                let node_pair_rng_seed: &[_] = &[1,2,3,4,5,9,g,net_type,net_iter];
-                let mut node_pair_rng: StdRng = rand::SeedableRng::from_seed(
+                let node_pair_rng_seed: &[_] = &[1,g,net_type,net_iter];
+                let base_node_pair_rng: StdRng = rand::SeedableRng::from_seed(
                     node_pair_rng_seed);
-                let mut rand_node_pair = |mut rng: &mut StdRng| {
-                    let mut node_pair = choose_k_nums(2,net.igraph.node_count(),
-                            &mut rng).into_iter().collect::<Vec<usize>>();
-                    // Sort for determinism:
-                    node_pair.sort();
-                    node_pair
-                };
+
+                // Prepare routing rng:
+                let routing_rng_seed: &[_] = &[2,g,net_type,net_iter];
+                let base_routing_rng: StdRng = rand::SeedableRng::from_seed(
+                    routing_rng_seed);
+
                 // Generate helper structures for chord routing:
                 let mut fingers = init_fingers(&net,l, &mut network_rng);
                 converge_fingers(&net, &mut fingers,l);
@@ -199,55 +250,21 @@ fn main() {
                             continue
                     }
 
-                    /* Chord routing  */
-                    let routing_stats = match routing_type {
-                        0 => { /* chord routing */
-                            let mut find_path = |src_i: usize, dst_i: usize| {
-                                let src_id = net.index_to_node(src_i).unwrap().clone();
-                                let dst_id = net.index_to_node(dst_i).unwrap().clone();
-                                chord::find_path(src_id, dst_id, &net, &semi_chains)
-                                    .map(|x| x as u64)
-                            };
+                    // Duplicate the random state, so that each routing attempt will
+                    // have the same random to begin with.
+                    let mut node_pair_rng = base_node_pair_rng.clone();
+                    let mut routing_rng = base_routing_rng.clone();
 
-                            get_routing_stats(&mut rand_node_pair, &mut find_path,
-                                                  &mut node_pair_rng, chord_num_iters)
-                        },
-                        1 => { /* landmarks routing nei^2 */
-                            let mut find_path = |src_i: usize, dst_i: usize| {
-                                let random_walk_rng_seed: &[_] = &[6,8,3,4,5,g,net_type,net_iter];
-                                let mut random_walk_rng: StdRng = rand::SeedableRng::from_seed(
-                                    random_walk_rng_seed);
-                                let amount_close = avg_degree.pow(2);
-                                find_path_landmarks(src_i, dst_i,
-                                        amount_close, &net, &coords, &landmarks, &mut random_walk_rng)
-                            };
-
-                            node_pair_rng = rand::SeedableRng::from_seed(node_pair_rng_seed);
-                            get_routing_stats(&mut rand_node_pair, &mut find_path,
-                                                  &mut node_pair_rng, landmarks_num_iters)
-                        },
-                        2 => { /* landmarks routing nei^3 */
-                            let mut find_path = |src_i: usize, dst_i: usize| {
-                                let random_walk_rng_seed: &[_] = &[6,8,3,4,5,g,net_type,net_iter];
-                                let mut random_walk_rng: StdRng = rand::SeedableRng::from_seed(
-                                    random_walk_rng_seed);
-                                let amount_close = avg_degree.pow(3);
-                                find_path_landmarks(src_i, dst_i,
-                                        amount_close, &net, &coords, &landmarks, &mut random_walk_rng)
-                            };
-
-                            node_pair_rng = rand::SeedableRng::from_seed(node_pair_rng_seed);
-                            get_routing_stats(&mut rand_node_pair, &mut find_path,
-                                              &mut node_pair_rng, landmarks_num_iters)
-                        },
-                        _ => unreachable!(),
-                    };
+                    let routing_stats = run_routing_by_type(routing_type,
+                        &net, chord_num_iters, landmarks_num_iters,
+                        &coords, &landmarks, &semi_chains, avg_degree,
+                        &mut node_pair_rng, &mut routing_rng);
 
                     // Update last max route_length:
                     last_max_route_lengths[net_type][routing_type] = 
                         routing_stats.max_route_length;
-                    
 
+                    // Print routing statistics:
                     print!("{:9.2}, {:6}, {:02.2} |", 
                            routing_stats.mean_route_length,
                            routing_stats.max_route_length,

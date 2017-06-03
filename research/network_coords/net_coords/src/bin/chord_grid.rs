@@ -5,7 +5,7 @@ extern crate rand;
 extern crate ordered_float;
 
 use rand::{StdRng};
-use net_coords::chord::network_gen::{random_grid2_net_chord};
+use net_coords::network_gen::{random_grid2_net_chord};
 use net_coords::chord::{init_fingers, 
     converge_fingers, create_semi_chains, find_path,
     verify_global_optimality};

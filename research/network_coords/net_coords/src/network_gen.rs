@@ -144,6 +144,38 @@ pub fn random_net_and_grid2_chord<R: Rng>(k: usize, num_neighbors: usize, l: usi
 
 }
 
+/// Generate a network according to given type.
+/// g -- amount of nodes (logarithmic).
+/// l -- maximum key space for chord based networks (logarithmic)
+pub fn gen_network<R:Rng>(net_type: usize, g: usize,l: usize, mut rng: &mut R) -> Network<RingKey> {
+    assert!(l >= 2*g, "Key collisions are too likely!");
+    match net_type {
+        0 => {
+            // Random network.
+            let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
+            let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+            random_net_chord(num_nodes, num_neighbors, l, &mut rng)
+        }
+        1 => {
+            // 2d grid with random chord ids
+            let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
+            let l: usize = (2 * g + 1)  as usize;
+            let k = (num_nodes as f64).sqrt() as usize;
+            random_grid2_net_chord(k, l, &mut rng)
+        }
+        2 => {
+            // 2d grid combined with random network
+            let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
+            let l: usize = (2 * g + 1)  as usize;
+            let k = (num_nodes as f64).sqrt() as usize;
+            let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+            random_net_and_grid2_chord(k, num_neighbors, l, &mut rng)
+        }
+        _ => unreachable!()
+
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

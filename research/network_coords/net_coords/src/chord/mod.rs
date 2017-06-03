@@ -5,7 +5,6 @@ extern crate rand;
 pub mod ids_chain;
 pub mod semi_chains_array;
 pub mod node_fingers;
-pub mod network_gen;
 
 use std::collections::{HashSet};
 
@@ -259,16 +258,11 @@ pub fn find_path(src_id: RingKey, dst_id: RingKey, net: &Network<RingKey>,
     Some(length)
 }
 
-
-
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use self::rand::{StdRng};
-    use self::network_gen::random_net_chord;
+    use network_gen::random_net_chord;
 
     #[test]
     fn test_d() {

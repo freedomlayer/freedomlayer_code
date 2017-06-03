@@ -16,8 +16,7 @@ use net_coords::network::{Network};
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 use net_coords::random_util::choose_k_nums;
 
-use net_coords::chord::network_gen::{random_net_chord, 
-    random_net_and_grid2_chord, random_grid2_net_chord};
+use net_coords::network_gen::{gen_network};
 
 use net_coords::chord;
 use net_coords::chord::{init_fingers, 
@@ -75,39 +74,6 @@ fn get_routing_stats<R: Rng>(rand_node_pair: &mut FnMut(&mut R) -> Vec<usize>,
         success_ratio,
     }
 
-}
-
-
-/// Generate a network according to given type.
-/// g -- amount of nodes (logarithmic).
-/// l -- maximum key space for chord based networks (logarithmic)
-fn gen_network<R:Rng>(net_type: usize, g: usize,l: usize, mut rng: &mut R) -> Network<RingKey> {
-    assert!(l >= 2*g, "Key collisions are too likely!");
-    match net_type {
-        0 => {
-            // Random network.
-            let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
-            let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
-            random_net_chord(num_nodes, num_neighbors, l, &mut rng)
-        }
-        1 => {
-            // 2d grid with random chord ids
-            let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
-            let l: usize = (2 * g + 1)  as usize;
-            let k = (num_nodes as f64).sqrt() as usize;
-            random_grid2_net_chord(k, l, &mut rng)
-        }
-        2 => {
-            // 2d grid combined with random network
-            let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
-            let l: usize = (2 * g + 1)  as usize;
-            let k = (num_nodes as f64).sqrt() as usize;
-            let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
-            random_net_and_grid2_chord(k, num_neighbors, l, &mut rng)
-        }
-        _ => unreachable!()
-
-    }
 }
 
 /*

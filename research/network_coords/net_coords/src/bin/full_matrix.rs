@@ -186,7 +186,7 @@ fn main() {
     // max_route_length should not pass this value (Which is too slow for routing).
     // If it does, next time we are not going to try to route with the same net_type
     // and routing_type
-    let allowed_max_route_length = 500000;
+    let allowed_max_route_length = 50000;
 
     println!("      Network        |          chord         |    landmarks nei^2     |     landmarks nei^3     ");
     println!("---------------------+------------------------+------------------------+------------------------+");

@@ -171,22 +171,12 @@ fn main() {
                 }
                 // print!("nt={:1}; ",net_type);
                 /* Generate network */
-                let seed: &[_] = &[1,2,3,4,5,g,net_type,net_iter];
+                let seed: &[_] = &[1,g,net_type,net_iter];
                 let mut network_rng: StdRng = rand::SeedableRng::from_seed(seed);
                 let net = gen_network(net_type, g, l, &mut network_rng);
                 let avg_degree = ((((2*net.igraph.edge_count()) as f64) / 
                     (net.igraph.node_count() as f64)) + 1.0) as usize;
                 print!("ni={:1} |",net_iter);
-
-                // Prepare rand_node_pair:
-                let node_pair_rng_seed: &[_] = &[1,g,net_type,net_iter];
-                let base_node_pair_rng: StdRng = rand::SeedableRng::from_seed(
-                    node_pair_rng_seed);
-
-                // Prepare routing rng:
-                let routing_rng_seed: &[_] = &[2,g,net_type,net_iter];
-                let base_routing_rng: StdRng = rand::SeedableRng::from_seed(
-                    routing_rng_seed);
 
                 // Generate helper structures for chord routing:
                 let mut fingers = init_fingers(&net,l, &mut network_rng);
@@ -207,6 +197,16 @@ fn main() {
                     Some(coords) => coords,
                     None => unreachable!(),
                 };
+
+                // Prepare rand_node_pair:
+                let node_pair_rng_seed: &[_] = &[2,g,net_type,net_iter];
+                let base_node_pair_rng: StdRng = rand::SeedableRng::from_seed(
+                    node_pair_rng_seed);
+
+                // Prepare routing rng:
+                let routing_rng_seed: &[_] = &[3,g,net_type,net_iter];
+                let base_routing_rng: StdRng = rand::SeedableRng::from_seed(
+                    routing_rng_seed);
 
                 for routing_type in 0 .. routing_types { // Routing type
 

@@ -87,13 +87,13 @@ mod tests {
         // Creating the network:
         let net = random_net(num_nodes,num_neighbours,&mut rng);
         let landmarks = choose_landmarks(&net,num_landmarks, &mut rng);
+
         // Iterating through coordinates:
-        let coords = build_coords(&net, &landmarks);
-
         // Make sure that the graph is connected:
-        assert!(!coords.is_none());
-
-        let coords = coords.unwrap();
+        let coords = match build_coords(&net, &landmarks) {
+            Some(coords) => coords,
+            None => unreachable!(),
+        };
 
         // Get a random node pair:
         let node_pair: Vec<usize> = choose_k_nums(2,net.igraph.node_count(),&mut rng)

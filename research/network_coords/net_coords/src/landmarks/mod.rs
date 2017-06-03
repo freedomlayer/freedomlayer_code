@@ -69,10 +69,9 @@ pub fn find_path_landmarks<R: Rng, Node: Hash + Eq + Clone>(src_node: usize, dst
 mod tests {
     use super::*;
     use random_util::choose_k_nums;
-    use landmarks::coords::{build_coords, choose_landmarks};
+    use landmarks::coords::{build_coords, choose_landmarks, randomize_coord};
     use network::{random_net};
     use self::rand::{StdRng};
-
 
     #[test]
     fn test_find_path_landmarks() {
@@ -102,5 +101,29 @@ mod tests {
         // Try to route from one of the nodes in the pair to the other:
         let _ = find_path_landmarks(node_pair[0], node_pair[1],
                             amount_close, &net, &coords, &landmarks, &mut rng).unwrap();
+    }
+
+    #[test]
+    fn test_randomize_coord() {
+        let l = 5;
+        let num_nodes: usize = ((2 as u64).pow(l)) as usize;
+        let num_neighbours: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+        let num_landmarks: usize = (((l*l) as u32)) as usize;
+
+        let seed: &[_] = &[1,2,3,4,5];
+        let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+        // Creating the network:
+        let net = random_net(num_nodes,num_neighbours,&mut rng);
+        let landmarks = choose_landmarks(&net,num_landmarks, &mut rng);
+        // Iterating through coordinates:
+        // Make sure that the graph is connected:
+        let coords = match build_coords(&net, &landmarks) {
+            Some(coords) => coords,
+            None => unreachable!(),
+        };
+
+        // Generate a random coordinate:
+        let rand_coord = randomize_coord(&landmarks, &coords, &mut rng);
+        assert!(rand_coord.len() == coords[0].len());
     }
 }

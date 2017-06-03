@@ -7,6 +7,8 @@ use self::rand::Rng;
 use network::{Network};
 use random_util::choose_k_nums;
 
+use self::rand::distributions::{IndependentSample, Range};
+
 
 pub fn choose_landmarks<R: Rng, Node> 
     (net: &Network<Node>, num_landmarks: usize, rng: &mut R) 
@@ -114,6 +116,40 @@ pub fn print_some_coords(&self,amount: u32) {
     }
 }
 */
+
+
+/// Generate a random coordinate
+fn randomize_coord<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+                    mut rng: &mut R) -> Vec<u64> {
+    // Generate random 32 bit integer coefficients:
+    let rand_range: Range<u64> = 
+        Range::new(0, 2_u64.pow(32_u32));
+
+    let int_coeffs: Vec<u64> = (0 .. landmarks.len())
+        .map(|_| rand_range.ind_sample(&mut rng))
+        .collect::<Vec<u64>>();
+
+    // Normalize coefficients (To have sum = 1)
+    let coeffs_sum: f64 = (int_coeffs.iter().sum::<u64>()) as f64;
+    let coeffs = int_coeffs.iter()
+        .map(|&x| (x as f64) / coeffs_sum)
+        .collect::<Vec<f64>>();
+
+    // Calculate linear combination of landmarks coordinates
+    // according to coefficients:
+    let mut comb_coord = vec![0.0; landmarks.len()];
+    for i in 0 .. landmarks.len() {
+        let landmark_coeff = coeffs[i];
+        for (j, &x) in coords[landmarks[i]].iter().enumerate() {
+            comb_coord[j] += landmark_coeff * (x as f64);
+        }
+    }
+
+    // Return integral values for the coordinate:
+    comb_coord.iter()
+        .map(|&x| x.round() as u64)
+        .collect::<Vec<u64>>()
+}
 
 
 

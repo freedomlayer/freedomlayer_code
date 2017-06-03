@@ -145,6 +145,7 @@ fn main() {
     let net_types = 3;
     let net_iters = 3;
     let routing_types = 3;
+    let experiment_seed = 0x1337;
     // Keep the last max route length for combinations of [net_type][routing_type]
     let mut last_max_route_lengths: Vec<Vec<u64>> =
         (0 .. net_types).map(|_| (0 .. routing_types).map(|_| 0).collect::<Vec<_>>())
@@ -171,7 +172,7 @@ fn main() {
                 }
                 // print!("nt={:1}; ",net_type);
                 /* Generate network */
-                let seed: &[_] = &[1,g,net_type,net_iter];
+                let seed: &[_] = &[experiment_seed,1,g,net_type,net_iter];
                 let mut network_rng: StdRng = rand::SeedableRng::from_seed(seed);
                 let net = gen_network(net_type, g, l, &mut network_rng);
                 let avg_degree = ((((2*net.igraph.edge_count()) as f64) / 
@@ -199,12 +200,12 @@ fn main() {
                 };
 
                 // Prepare rand_node_pair:
-                let node_pair_rng_seed: &[_] = &[2,g,net_type,net_iter];
+                let node_pair_rng_seed: &[_] = &[experiment_seed,2,g,net_type,net_iter];
                 let base_node_pair_rng: StdRng = rand::SeedableRng::from_seed(
                     node_pair_rng_seed);
 
                 // Prepare routing rng:
-                let routing_rng_seed: &[_] = &[3,g,net_type,net_iter];
+                let routing_rng_seed: &[_] = &[experiment_seed,3,g,net_type,net_iter];
                 let base_routing_rng: StdRng = rand::SeedableRng::from_seed(
                     routing_rng_seed);
 

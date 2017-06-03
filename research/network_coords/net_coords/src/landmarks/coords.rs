@@ -123,14 +123,27 @@ pub fn randomize_coord<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
                     mut rng: &mut R) -> Vec<u64> {
 
     // Generate random 16 bit integer coefficients:
+    /*
     let rand_range: Range<u64> = 
         Range::new(0, 2_u64.pow(16_u32));
+    */
 
+    /*
     let int_coeffs: Vec<u64> = (0 .. landmarks.len())
         .map(|_| rand_range.ind_sample(&mut rng))
         .collect::<Vec<u64>>();
+    */
 
-    let coeffs_sum: u64 = int_coeffs.iter().sum::<u64>();
+    let mut int_coeffs: Vec<u64> = vec![0; landmarks.len()];
+    let rand_range = Range::new(0,2);
+    let mut coeffs_sum: u64 = 0;
+    while coeffs_sum == 0 {
+        for i in 0 .. landmarks.len() {
+            int_coeffs[i] = rand_range.ind_sample(&mut rng);
+        }
+
+        coeffs_sum = int_coeffs.iter().sum::<u64>();
+    }
 
     // Calculate linear combination of landmarks coordinates
     // according to coefficients:

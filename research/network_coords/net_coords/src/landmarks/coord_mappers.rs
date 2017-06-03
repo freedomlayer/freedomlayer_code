@@ -109,18 +109,20 @@ fn dist_u64(a: u64, b: u64) -> u64 {
     b - a
 }
 
+pub fn max_dist(a: &Vec<u64>, b: &Vec<u64>) -> u64 {
+    assert!(a.len() == b.len(), "Coordinates have different amount of entries! aborting.");
+    a.iter()
+        .zip(b)
+        .map(|(&u,&v): (&u64, &u64)| dist_u64(u,v))
+        .max().unwrap()
+}
+
+
 /// Approximate distance between two nodes in the network using network coordinates
 pub fn approx_max_dist(u: usize, v: usize, coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>) 
     -> u64 {
     let _ = landmarks;
-    let u_coord = &coords[u];
-    let v_coord = &coords[v];
-
-
-    u_coord.iter()
-        .zip(v_coord)
-        .map(|(&u,&v): (&u64, &u64)| dist_u64(u,v))
-        .max().unwrap()
+    max_dist(&coords[u], &coords[v])
 }
 
 /// Approximate distance between two nodes in the network using network coordinates

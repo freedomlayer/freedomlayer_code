@@ -213,7 +213,7 @@ fn main() {
 
                     if last_max_route_lengths[net_type][routing_type] >
                         allowed_max_route_length {
-                            print!("**********************|");
+                            print!("************************|");
                             continue
                     }
 

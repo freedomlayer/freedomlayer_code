@@ -22,10 +22,8 @@ use net_coords::chord;
 use net_coords::chord::{init_fingers, 
     converge_fingers, create_semi_chains,
     verify_global_optimality};
-use net_coords::chord::semi_chains_array::SemiChainsArray;
 
 use net_coords::chord::{RingKey};
-// use net_coords::chord::semi_chains_array::SemiChainsArray;
 
 
 
@@ -86,11 +84,14 @@ struct RoutePrecompute<'a, Node: 'a> {
 
 */
 
-fn run_routing_by_type<R: Rng>(routing_type: usize, net: &Network<RingKey>,
-        chord_num_iters: usize, landmarks_num_iters: usize,
-        coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>,
-        semi_chains: &Vec<SemiChainsArray>, avg_degree: usize,
+fn run_routing_by_type<R: Rng>(routing_type: usize, 
+       net: &Network<RingKey>, l: usize, 
         mut node_pair_rng: &mut R, mut routing_rng: &mut R) -> RoutingStats {
+
+    let chord_num_iters = 1000;
+    let landmarks_num_iters = 100;
+    let avg_degree = ((((2*net.igraph.edge_count()) as f64) / 
+        (net.igraph.node_count() as f64)) + 1.0) as usize;
 
     // A function to pick a random node pair from the network,
     // based on a given rng:
@@ -103,6 +104,12 @@ fn run_routing_by_type<R: Rng>(routing_type: usize, net: &Network<RingKey>,
     };
     match routing_type {
         0 => { /* chord routing */
+            // Generate helper structures for chord routing:
+            let mut fingers = init_fingers(&net,l, &mut routing_rng);
+            converge_fingers(&net, &mut fingers,l);
+            assert!(verify_global_optimality(&net, &fingers));
+            let semi_chains = create_semi_chains(&net, &fingers);
+
             let mut find_path = |src_i: usize, dst_i: usize| {
                 let src_id = net.index_to_node(src_i).unwrap().clone();
                 let dst_id = net.index_to_node(dst_i).unwrap().clone();
@@ -114,6 +121,20 @@ fn run_routing_by_type<R: Rng>(routing_type: usize, net: &Network<RingKey>,
                                   &mut node_pair_rng, chord_num_iters)
         },
         1 => { /* landmarks routing nei^2 */
+            // Generate helper structures for landmarks routing:
+
+            // Calculate landmarks and coordinates for landmarks routing:
+            // Amount of landmarks can not be above half of the node count:
+            let mut num_landmarks: usize = (((l*l) as u32)) as usize;
+            if num_landmarks as f64 > (net.igraph.node_count() as f64) / 2.0 {
+                num_landmarks = net.igraph.node_count() / 2;
+            }
+            let landmarks = choose_landmarks(&net, num_landmarks, &mut routing_rng);
+            let coords = match build_coords(&net, &landmarks) {
+                Some(coords) => coords,
+                None => unreachable!(),
+            };
+
             let mut find_path = |src_i: usize, dst_i: usize| {
                 let amount_close = avg_degree.pow(2);
                 find_path_landmarks(src_i, dst_i,
@@ -124,6 +145,20 @@ fn run_routing_by_type<R: Rng>(routing_type: usize, net: &Network<RingKey>,
                                   &mut node_pair_rng, landmarks_num_iters)
         },
         2 => { /* landmarks routing nei^3 */
+            // Generate helper structures for landmarks routing:
+
+            // Calculate landmarks and coordinates for landmarks routing:
+            // Amount of landmarks can not be above half of the node count:
+            let mut num_landmarks: usize = (((l*l) as u32)) as usize;
+            if num_landmarks as f64 > (net.igraph.node_count() as f64) / 2.0 {
+                num_landmarks = net.igraph.node_count() / 2;
+            }
+            let landmarks = choose_landmarks(&net, num_landmarks, &mut routing_rng);
+            let coords = match build_coords(&net, &landmarks) {
+                Some(coords) => coords,
+                None => unreachable!(),
+            };
+
             let mut find_path = |src_i: usize, dst_i: usize| {
                 let amount_close = avg_degree.pow(3);
                 find_path_landmarks(src_i, dst_i,
@@ -140,8 +175,6 @@ fn run_routing_by_type<R: Rng>(routing_type: usize, net: &Network<RingKey>,
 
 #[cfg(not(test))]
 fn main() {
-    let chord_num_iters = 1000;
-    let landmarks_num_iters = 100;
     let net_types = 3;
     let net_iters = 3;
     let routing_types = 3;
@@ -153,14 +186,13 @@ fn main() {
     // max_route_length should not pass this value (Which is too slow for routing).
     // If it does, next time we are not going to try to route with the same net_type
     // and routing_type
-    let allowed_max_route_length = 50000;
+    let allowed_max_route_length = 10000;
 
     println!("      Network        |          chord         |    landmarks nei^2     |     landmarks nei^3     ");
     println!("---------------------+------------------------+------------------------+------------------------+");
 
     for g in 6 .. 21 { // Iterate over size of network.
         let l = 2 * g + 1;
-
         for net_type in 0 .. net_types { // Iterate over type of network
             for net_iter in 0 .. net_iters { // Three iterations for each type of network
                 print!("g={:2}; ",g);
@@ -170,34 +202,12 @@ fn main() {
                     2 => print!("rand+2d ; "),
                     _ => unreachable!(),
                 }
-                // print!("nt={:1}; ",net_type);
+                print!("ni={:1} |",net_iter);
+
                 /* Generate network */
                 let seed: &[_] = &[experiment_seed,1,g,net_type,net_iter];
                 let mut network_rng: StdRng = rand::SeedableRng::from_seed(seed);
                 let net = gen_network(net_type, g, l, &mut network_rng);
-                let avg_degree = ((((2*net.igraph.edge_count()) as f64) / 
-                    (net.igraph.node_count() as f64)) + 1.0) as usize;
-                print!("ni={:1} |",net_iter);
-
-                // Generate helper structures for chord routing:
-                let mut fingers = init_fingers(&net,l, &mut network_rng);
-                converge_fingers(&net, &mut fingers,l);
-                assert!(verify_global_optimality(&net, &fingers));
-                let semi_chains = create_semi_chains(&net, &fingers);
-
-                // Generate helper structures for landmarks routing:
-
-                // Calculate landmarks and coordinates for landmarks routing:
-                // Amount of landmarks can not be above half of the node count:
-                let mut num_landmarks: usize = (((l*l) as u32)) as usize;
-                if num_landmarks as f64 > (net.igraph.node_count() as f64) / 2.0 {
-                    num_landmarks = net.igraph.node_count() / 2;
-                }
-                let landmarks = choose_landmarks(&net, num_landmarks, &mut network_rng);
-                let coords = match build_coords(&net, &landmarks) {
-                    Some(coords) => coords,
-                    None => unreachable!(),
-                };
 
                 // Prepare rand_node_pair:
                 let node_pair_rng_seed: &[_] = &[experiment_seed,2,g,net_type,net_iter];
@@ -223,9 +233,7 @@ fn main() {
                     let mut routing_rng = base_routing_rng.clone();
 
                     let routing_stats = run_routing_by_type(routing_type,
-                        &net, chord_num_iters, landmarks_num_iters,
-                        &coords, &landmarks, &semi_chains, avg_degree,
-                        &mut node_pair_rng, &mut routing_rng);
+                        &net, l, &mut node_pair_rng, &mut routing_rng);
 
                     // Update last max route_length:
                     last_max_route_lengths[net_type][routing_type] = 

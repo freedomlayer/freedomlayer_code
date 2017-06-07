@@ -85,7 +85,7 @@ struct RoutePrecompute<'a, Node: 'a> {
 */
 
 fn run_routing_by_type<R: Rng>(routing_type: usize, 
-       net: &Network<RingKey>, l: usize, 
+       net: &Network<RingKey>, g: usize, l: usize,
         mut node_pair_rng: &mut R, mut routing_rng: &mut R) -> RoutingStats {
 
     let chord_num_iters = 1000;
@@ -125,7 +125,7 @@ fn run_routing_by_type<R: Rng>(routing_type: usize,
 
             // Calculate landmarks and coordinates for landmarks routing:
             // Amount of landmarks can not be above half of the node count:
-            let mut num_landmarks: usize = (((l*l) as u32)) as usize;
+            let mut num_landmarks: usize = (((g*g) as u32)) as usize;
             if num_landmarks as f64 > (net.igraph.node_count() as f64) / 2.0 {
                 num_landmarks = net.igraph.node_count() / 2;
             }
@@ -149,7 +149,7 @@ fn run_routing_by_type<R: Rng>(routing_type: usize,
 
             // Calculate landmarks and coordinates for landmarks routing:
             // Amount of landmarks can not be above half of the node count:
-            let mut num_landmarks: usize = (((l*l) as u32)) as usize;
+            let mut num_landmarks: usize = (((g*g) as u32)) as usize;
             if num_landmarks as f64 > (net.igraph.node_count() as f64) / 2.0 {
                 num_landmarks = net.igraph.node_count() / 2;
             }
@@ -233,7 +233,7 @@ fn main() {
                     let mut routing_rng = base_routing_rng.clone();
 
                     let routing_stats = run_routing_by_type(routing_type,
-                        &net, l, &mut node_pair_rng, &mut routing_rng);
+                        &net, g, l, &mut node_pair_rng, &mut routing_rng);
 
                     // Update last max route_length:
                     last_max_route_lengths[net_type][routing_type] = 

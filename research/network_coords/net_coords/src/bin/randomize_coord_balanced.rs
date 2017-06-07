@@ -21,7 +21,7 @@ fn main() {
     let net_types = 3;
     let net_iters = 3;
     // We generate num_nodes * iter_mult random coordinates:
-    let iter_mult = 3;
+    let iter_mult = 1;
 
     println!("iter_mult = {}", iter_mult);
     println!();
@@ -65,8 +65,19 @@ fn main() {
                     let (closest_node_index, _) = coords.iter().enumerate()
                         .min_by_key(|&(i,coord)| (max_dist(&rcoord, &coord),i)).unwrap();
 
+
+
                     // println!("rcoord = {:?}", rcoord);
-                    // println!("closest_node_index = {}", closest_node_index);
+                    /*
+                    println!("----------------------------------------------------");
+                    println!("closest_node_index = {}", closest_node_index);
+                    println!("coord:");
+                    println!("{:?}", coords[closest_node_index]);
+
+                    println!("rcoord:");
+                    println!("{:?}",rcoord);
+                    */
+
                     node_repeats[closest_node_index] += 1;
                 }
 

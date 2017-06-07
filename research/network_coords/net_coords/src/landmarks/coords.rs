@@ -118,8 +118,9 @@ pub fn print_some_coords(&self,amount: u32) {
 */
 
 
+/*
 /// Generate a random coordinate
-pub fn randomize_coord<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+pub fn randomize_coord2<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
                     mut rng: &mut R) -> Vec<u64> {
 
     // Generate random 16 bit integer coefficients:
@@ -160,6 +161,97 @@ pub fn randomize_coord<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
         .collect::<Vec<u64>>()
 
 }
+
+*/
+
+/*
+/// Generate a random coordinate
+/// This one was very good with the 2d network, but not very good with the
+/// random network.
+pub fn randomize_coord3<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+                    mut rng: &mut R) -> Vec<u64> {
+
+    let rand_landmark: Range<usize> = 
+        Range::new(0, landmarks.len());
+
+    (0 .. landmarks.len())
+        .map(|_| coords[landmarks[rand_landmark.ind_sample(&mut rng)]][rand_landmark.ind_sample(&mut rng)])
+        .collect::<Vec<u64>>()
+}
+*/
+
+/// Generate a random coordinate
+/// Works pretty well with everything, until g = 12
+pub fn randomize_coord<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+                    mut rng: &mut R) -> Vec<u64> {
+
+    // Generate random 16 bit integer coefficients:
+    let interval_size: u64 = 2_u64.pow(20_u32);
+    let interval_range: Range<u64> = Range::new(0, interval_size + 1);
+
+    let mut cuts: Vec<u64> = Vec::new();
+    cuts.push(0);
+    for _ in 0 .. (landmarks.len() - 1) {
+        cuts.push(interval_range.ind_sample(&mut rng));
+    }
+    cuts.push(interval_size);
+    cuts.sort();
+
+    let int_coeffs = (0 .. cuts.len() - 1)
+        .map(|i| cuts[i+1] - cuts[i])
+        .collect::<Vec<u64>>();
+
+    // Some verifications for the int_coeffs:
+    for &c in &int_coeffs {
+        assert!(c <= interval_size);
+    }
+    assert!(int_coeffs.iter().sum::<u64>() == interval_size);
+
+
+    // println!("int_coeffs:");
+    // println!("{:?}", int_coeffs);
+
+    // Calculate linear combination of landmarks coordinates
+    // according to coefficients:
+    let adder = 1;
+    let mut total_sum = 0;
+    let mut comb_coord = vec![0_u64; landmarks.len()];
+    for i in 0 .. landmarks.len() {
+        let mult = int_coeffs[i] + adder;
+        for (j, &x) in coords[landmarks[i]].iter().enumerate() {
+            comb_coord[j] += mult * x;
+        }
+        total_sum += mult;
+    }
+
+    // Return normalized values for the coordinate:
+    // comb_coord
+    comb_coord.iter()
+        .map(|&x| (x / total_sum))
+        .collect::<Vec<u64>>()
+}
+
+/*
+/// Generate a random coordinate
+pub fn randomize_coord<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+                    mut rng: &mut R) -> Vec<u64> {
+
+    let landmarks_range: Range<usize> = Range::new(0, landmarks.len());
+
+    // Pick a few chosen landmarks:
+    let mut chosenl: Vec<usize> = Vec::new();
+    for _ in 0 .. 2 {
+        chosenl.push(landmarks[landmarks_range.ind_sample(&mut rng)]);
+    }
+    let chosen_range: Range<usize> = Range::new(0, chosenl.len());
+
+    // Combine coordinates from chosen landmarks:
+    (0 .. landmarks.len())
+        .map(|_| coords[chosenl[chosen_range.ind_sample(&mut rng)]][landmarks_range.ind_sample(&mut rng)])
+        .collect::<Vec<u64>>()
+
+}
+*/
 
 
 

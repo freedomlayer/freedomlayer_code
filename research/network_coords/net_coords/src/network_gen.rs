@@ -57,6 +57,59 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
     net
 }
 
+/// Generate a weighted random graph to be used with chord.
+/// Graph nodes are of type RingKey.
+/// Edges lengths are uniform in [min_edge_len, max_edge_len)
+pub fn random_net_weighted_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, 
+        min_edge_len: u64, max_edge_len: u64, l: usize, rng: &mut R) 
+        -> Network<RingKey> {
+
+    // Maximum key in the ring:
+    let max_key = 2_u64.pow(l as u32);
+
+
+    // We can't have too many nodes with respect to the keyspace.
+    // We stay below sqrt(keyspace_size), to avoid collisions.
+    assert!(num_nodes < (max_key as f64).sqrt() as usize, "Too many nodes!");
+    assert!(num_nodes > 0, "We should have at least one node!");
+
+    let mut net = Network::<RingKey>::new();
+
+    // A hash set to make sure we don't have duplicate keys.
+    let mut chosen_keys: HashSet<RingKey> = HashSet::new();
+
+    // Insert num_nodes nodes with random keys:
+    for _ in 0 .. num_nodes {
+        let rand_key: Range<RingKey> = Range::new(0,max_key);
+        let mut node_key = rand_key.ind_sample(rng);
+        while chosen_keys.contains(&node_key) {
+            node_key = rand_key.ind_sample(rng);
+        }
+        chosen_keys.insert(node_key.clone());
+        net.add_node(node_key);
+    }
+
+    let edge_length_range: Range<u64> = Range::new(min_edge_len,max_edge_len);
+    for v in 0 .. num_nodes {
+        for _ in 0 .. num_neighbors {
+            let rand_node: Range<usize> = Range::new(0,num_nodes);
+            let u = rand_node.ind_sample(rng);
+            if u == v  {
+                // Avoid self loops
+                continue
+            }
+            if net.igraph.contains_edge(v,u) {
+                // Already has this edge.
+                continue
+            }
+            // Add edge:
+            net.igraph.add_edge(v,u,edge_length_range.ind_sample(rng));
+            // println!("add_edge {}, {}",v,u);
+        }
+    }
+    net
+}
+
 /// Generate a two dimensional grid k X k network where nodes have random keys from the keyspace.
 /// n -- approximation of amount of nodes.
 pub fn random_grid2_net_chord<R: Rng>(k: usize, l:usize, rng: &mut R) -> Network<RingKey> {
@@ -141,7 +194,6 @@ pub fn random_net_and_grid2_chord<R: Rng>(k: usize, num_neighbors: usize, l: usi
         }
     }
     net
-
 }
 
 /// Generate a network according to given type.
@@ -171,6 +223,12 @@ pub fn gen_network<R:Rng>(net_type: usize, g: usize,l: usize, mut rng: &mut R) -
             let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
             random_net_and_grid2_chord(k, num_neighbors, l, &mut rng)
         }
+        3 => {
+            // Random weighted network.
+            let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
+            let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+            random_net_weighted_chord(num_nodes, num_neighbors, 100, 104, l, &mut rng)
+        }
         _ => unreachable!()
 
     }
@@ -190,6 +248,16 @@ mod tests {
         let num_neighbors = 2;
         let l: usize = 6; // Size of keyspace
         random_net_chord(num_nodes,num_neighbors,l,&mut rng);
+    }
+
+    #[test]
+    fn test_random_net_weighted_chord() {
+        let seed: &[_] = &[1,2,3,4,9];
+        let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+        let num_nodes = 5;
+        let num_neighbors = 2;
+        let l: usize = 6; // Size of keyspace
+        random_net_weighted_chord(num_nodes,num_neighbors,100,104,l,&mut rng);
     }
 
     #[test]

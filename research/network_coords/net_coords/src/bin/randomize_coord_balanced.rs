@@ -19,7 +19,7 @@ use self::rand::distributions::{IndependentSample, Range};
 
 #[cfg(not(test))]
 fn main() {
-    let net_types = 4;
+    let net_types = 3;
     let net_iters = 3;
     // We generate num_nodes * iter_mult random coordinates:
     let iter_mult = 1;
@@ -37,14 +37,13 @@ fn main() {
                     0 => print!("rand    ; "),
                     1 => print!("2d      ; "),
                     2 => print!("rand+2d ; "),
-                    3 => print!("rand_wei; "),
                     _ => unreachable!(),
                 }
                 // print!("nt={:1}; ",net_type);
                 /* Generate network */
                 let seed: &[_] = &[1,g,net_type,net_iter];
                 let mut network_rng: StdRng = rand::SeedableRng::from_seed(seed);
-                let net = gen_network(net_type, g, l, &mut network_rng);
+                let net = gen_network(net_type, g, l, 100, 200, &mut network_rng);
                 print!("ni={:1} |",net_iter);
 
                 // Generate helper structures for landmarks routing:

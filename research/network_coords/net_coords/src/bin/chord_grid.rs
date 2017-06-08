@@ -5,7 +5,7 @@ extern crate rand;
 extern crate ordered_float;
 
 use rand::{StdRng};
-use net_coords::network_gen::{random_grid2_net_chord};
+use net_coords::network_gen::{random_weighted_net_grid2_chord};
 use net_coords::chord::{init_fingers, 
     converge_fingers, create_semi_chains, find_path,
     verify_global_optimality};
@@ -35,7 +35,7 @@ fn main() {
         // Network is of size k X k :
         let k = (num_nodes as f64).sqrt() as usize;
         println!("k = {}",k);
-        let net = random_grid2_net_chord(k, l, &mut rng);
+        let net = random_weighted_net_grid2_chord(1, 2, k, l, &mut rng);
         println!("Initializing chord fingers...");
         let mut fingers = init_fingers(&net, l, &mut rng);
         println!("Converge chord fingers...");

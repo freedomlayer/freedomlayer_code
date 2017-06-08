@@ -207,7 +207,7 @@ fn main() {
                 /* Generate network */
                 let seed: &[_] = &[experiment_seed,1,g,net_type,net_iter];
                 let mut network_rng: StdRng = rand::SeedableRng::from_seed(seed);
-                let net = gen_network(net_type, g, l, &mut network_rng);
+                let net = gen_network(net_type, g, l, 1, 2, &mut network_rng);
 
                 // Prepare rand_node_pair:
                 let node_pair_rng_seed: &[_] = &[experiment_seed,2,g,net_type,net_iter];

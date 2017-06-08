@@ -31,13 +31,13 @@ pub fn find_path_landmarks<R: Rng, Node: Hash + Eq + Clone>(src_node: usize, dst
     
     while cur_node != dst_node {
         let (mut new_cur_node, mut new_dist , _): (usize, u64, _) = 
-            net.closest_nodes(cur_node).take(amount_close)
+            net.closest_nodes_structure(cur_node).take(amount_close)
                 .min_by_key(|&(i, _, _)| node_dist(dst_node, i)).unwrap();
 
         if node_dist(new_cur_node, dst_node) >= node_dist(cur_node, dst_node) {
 
             // Pick a best local destination randomly in a "smart" way:
-            let mut items = net.closest_nodes(cur_node).take(amount_close)
+            let mut items = net.closest_nodes_structure(cur_node).take(amount_close)
                 .map(|(i, dist, gateway)| 
                      Weighted { weight: calc_weight(i), item: (i, dist, gateway) })
                 .collect::<Vec<_>>();

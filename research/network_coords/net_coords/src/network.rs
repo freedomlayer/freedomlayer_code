@@ -73,6 +73,66 @@ impl<'a, Node> Iterator for ClosestNodes<'a, Node> {
     }
 }
 
+pub struct ClosestNodesStructure<'a, Node: 'a> {
+    net: &'a Network<Node>,
+    pending: HashMap<usize, (u64, Option<usize>)>,
+    done: HashSet<usize>,
+}
+
+/// An iterator for closest nodes to a given
+/// node in a graph.
+impl<'a, Node> Iterator for ClosestNodesStructure<'a, Node> {
+    // node_index, distance from source, gateway node index
+    type Item = (usize, u64, usize); 
+
+    fn next(&mut self) -> Option<(usize,u64, usize)> {
+        let (node_index, node_dist, gateway_index) : (usize, u64, Option<usize>) = { 
+            let min_elem = self.pending.iter()
+                .min_by_key(|&(index, &(dist, _))| (dist,index));
+
+            let (&node_index, &(node_dist, gateway_index)) = match min_elem {
+                None => return None,
+                Some(x) => x,
+            };
+
+            (node_index, node_dist, gateway_index)
+        };
+
+        self.pending.remove(&node_index);
+
+        for (_, nei_index, weight) in self.net.igraph.edges(node_index) {
+
+            let nei_gateway = match gateway_index {
+                Some(index) => index,
+                None => nei_index,
+            };
+
+            // Always assuming weight = 1
+            // Possibly change this later.
+            let _ = weight;
+            let new_dist = node_dist + 1;
+            if self.done.contains(&nei_index) {
+                continue;
+            }
+            if !self.pending.contains_key(&nei_index) {
+                self.pending.insert(nei_index, (new_dist, Some(nei_gateway)));
+                continue;
+            }
+            if self.pending[&nei_index].0 > new_dist {
+                self.pending.insert(nei_index, (new_dist, Some(nei_gateway)));
+                continue;
+            }
+        }
+
+        self.done.insert(node_index);
+
+        match gateway_index {
+            Some(gindex) => Some((node_index, node_dist, gindex)),
+            None => self.next(),
+        }
+    }
+}
+
 
 impl <Node: Hash + Eq + Clone> Network <Node> {
     pub fn new() -> Self {
@@ -125,6 +185,16 @@ impl <Node: Hash + Eq + Clone> Network <Node> {
     /// Get an Iterator for the closest nodes to node <index>
     pub fn closest_nodes<'a>(&'a self, index: usize) -> ClosestNodes<'a, Node> {
         ClosestNodes {
+            net: &self,
+            pending: [(index, (0, None)),].iter().cloned().collect(),
+            done: HashSet::new(),
+        }
+    }
+
+    /// Get an Iterator for the closest nodes to node <index>.
+    /// Ignore weights. Assume all edges are of length 1.
+    pub fn closest_nodes_structure<'a>(&'a self, index: usize) -> ClosestNodesStructure<'a, Node> {
+        ClosestNodesStructure {
             net: &self,
             pending: [(index, (0, None)),].iter().cloned().collect(),
             done: HashSet::new(),

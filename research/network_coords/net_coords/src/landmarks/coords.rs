@@ -179,6 +179,9 @@ pub fn randomize_coord<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
     for _ in 0 .. landmarks.len() {
         let mut cur_value = 0;
         for _ in 0 .. interval_size {
+            // TODO: Check if having:
+            // cur_value += coords[landmarks[rand_landmark.ind_sample(&mut rng)]][i];
+            // is better.
             cur_value += coords[landmarks[rand_landmark.ind_sample(&mut rng)]][rand_landmark.ind_sample(&mut rng)];
         }
         coord.push(cur_value);

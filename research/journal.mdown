@@ -1,0 +1,24 @@
+# Freedom Layer research journal
+
+## 8.6.2017
+
+TODO for next time:
+
+- Find out more about randomizing distances:
+    - Which is better:
+        - 100 .. 200
+        - 1100 .. 1200
+        - For routing, and for generation of random coordinate.
+
+    - Create a test that checks various ranges of randomizing distances
+      against various networks and various routing methods.
+
+- Find best strategy for generation of random coordinate.
+    - Create a test that checks various ranges of randomizing distances against
+      various strategies for random coordinate generation.
+
+- Create a test as follows:
+    - Pick two random nodes, and a random coordinate.
+    - The first node tries to route to that coordinate.
+    - The other node tries to route to that coordinate too.
+    - Check how often the two nodes arrive at the exact same node.

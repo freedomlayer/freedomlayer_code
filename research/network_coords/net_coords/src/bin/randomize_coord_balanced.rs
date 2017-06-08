@@ -27,7 +27,7 @@ fn main() {
     println!("iter_mult = {}", iter_mult);
     println!();
 
-    for g in 6 .. 15 { // Iterate over size of network.
+    for g in 6 .. 20 { // Iterate over size of network.
         let l = 2 * g + 1;
 
         for net_type in 0 .. net_types { // Iterate over type of network

@@ -60,7 +60,7 @@ pub fn random_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, l: usize
 /// Generate a weighted random graph to be used with chord.
 /// Graph nodes are of type RingKey.
 /// Edges lengths are uniform in [min_edge_len, max_edge_len)
-pub fn random_net_weighted_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, 
+pub fn random_weighted_net_chord<R: Rng>(num_nodes: usize, num_neighbors: usize, 
         min_edge_len: u64, max_edge_len: u64, l: usize, rng: &mut R) 
         -> Network<RingKey> {
 
@@ -112,8 +112,8 @@ pub fn random_net_weighted_chord<R: Rng>(num_nodes: usize, num_neighbors: usize,
 
 /// Generate a two dimensional grid k X k network where nodes have random keys from the keyspace.
 /// n -- approximation of amount of nodes.
-pub fn random_net_grid2_chord<R: Rng>(k: usize, l:usize, rng: &mut R) -> Network<RingKey> {
-
+pub fn random_weighted_net_grid2_chord<R: Rng>(min_edge_len: u64, max_edge_len: u64, 
+                                               k: usize, l:usize, rng: &mut R) -> Network<RingKey> {
     let mut net = Network::<RingKey>::new();
     let mut coord_to_index: HashMap<(usize, usize),usize>  = HashMap::new();
     // let mut key_to_coord: HashMap<RingKey, (usize, usize)>  = HashMap::new();
@@ -147,12 +147,14 @@ pub fn random_net_grid2_chord<R: Rng>(k: usize, l:usize, rng: &mut R) -> Network
         }
     }
 
+    let edge_length_range: Range<u64> = Range::new(min_edge_len,max_edge_len);
+
     // Add all grid edges:
     for x in 0 .. k-1 {
         for y in 0 .. k {
             let &a_i = coord_to_index.get(&(x,y)).unwrap();
             let &b_i = coord_to_index.get(&(x+1,y)).unwrap();
-            net.igraph.add_edge(a_i, b_i, 1);
+            net.igraph.add_edge(a_i, b_i, edge_length_range.ind_sample(rng));
         }
     }
 
@@ -160,7 +162,7 @@ pub fn random_net_grid2_chord<R: Rng>(k: usize, l:usize, rng: &mut R) -> Network
         for y in 0 .. k-1 {
             let &a_i = coord_to_index.get(&(x,y)).unwrap();
             let &b_i = coord_to_index.get(&(x,y+1)).unwrap();
-            net.igraph.add_edge(a_i, b_i, 1);
+            net.igraph.add_edge(a_i, b_i, edge_length_range.ind_sample(rng));
         }
     }
 
@@ -168,13 +170,16 @@ pub fn random_net_grid2_chord<R: Rng>(k: usize, l:usize, rng: &mut R) -> Network
 }
 
 /// Add a random graph of a two dimensional grid.
-pub fn random_net_and_grid2_chord<R: Rng>(k: usize, num_neighbors: usize, l: usize, mut rng: &mut R) 
+pub fn random_weighted_net_and_grid2_chord<R: Rng>(k: usize, num_neighbors: usize,
+        min_edge_len: u64, max_edge_len: u64, l: usize, mut rng: &mut R) 
         -> Network<RingKey> {
     
     // First create a random chord 2d grid:
-    let mut net = random_net_grid2_chord(k,l, &mut rng);
+    let mut net = random_weighted_net_grid2_chord(min_edge_len,max_edge_len,k,l, &mut rng);
     let num_nodes = k*k;
     assert!(num_nodes == net.igraph.node_count());
+
+    let edge_length_range: Range<u64> = Range::new(min_edge_len,max_edge_len);
 
     // Next we add the random edges between the nodes in the 2d grid:
     for v in 0 .. num_nodes {
@@ -190,7 +195,7 @@ pub fn random_net_and_grid2_chord<R: Rng>(k: usize, num_neighbors: usize, l: usi
                 continue
             }
             // Add edge:
-            net.igraph.add_edge(v,u,1);
+            net.igraph.add_edge(v,u,edge_length_range.ind_sample(rng));
         }
     }
     net
@@ -199,21 +204,22 @@ pub fn random_net_and_grid2_chord<R: Rng>(k: usize, num_neighbors: usize, l: usi
 /// Generate a network according to given type.
 /// g -- amount of nodes (logarithmic).
 /// l -- maximum key space for chord based networks (logarithmic)
-pub fn gen_network<R:Rng>(net_type: usize, g: usize,l: usize, mut rng: &mut R) -> Network<RingKey> {
+pub fn gen_network<R:Rng>(net_type: usize, g: usize,l: usize, 
+        min_weighted_len: u64, max_weighted_len: u64, mut rng: &mut R) -> Network<RingKey> {
     assert!(l >= 2*g, "Key collisions are too likely!");
     match net_type {
         0 => {
             // Random network.
             let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
             let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
-            random_net_chord(num_nodes, num_neighbors, l, &mut rng)
+            random_weighted_net_chord(num_nodes, num_neighbors, min_weighted_len, max_weighted_len,  l, &mut rng)
         }
         1 => {
             // 2d grid with random chord ids
             let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
             let l: usize = (2 * g + 1)  as usize;
             let k = (num_nodes as f64).sqrt() as usize;
-            random_net_grid2_chord(k, l, &mut rng)
+            random_weighted_net_grid2_chord(min_weighted_len, max_weighted_len, k, l, &mut rng)
         }
         2 => {
             // 2d grid combined with random network
@@ -221,13 +227,7 @@ pub fn gen_network<R:Rng>(net_type: usize, g: usize,l: usize, mut rng: &mut R) -
             let l: usize = (2 * g + 1)  as usize;
             let k = (num_nodes as f64).sqrt() as usize;
             let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
-            random_net_and_grid2_chord(k, num_neighbors, l, &mut rng)
-        }
-        3 => {
-            // Random weighted network.
-            let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
-            let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
-            random_net_weighted_chord(num_nodes, num_neighbors, 100, 104, l, &mut rng)
+            random_weighted_net_and_grid2_chord(k, num_neighbors, min_weighted_len, max_weighted_len, l, &mut rng)
         }
         _ => unreachable!()
 
@@ -251,31 +251,31 @@ mod tests {
     }
 
     #[test]
-    fn test_random_net_weighted_chord() {
+    fn test_random_weighted_net_chord() {
         let seed: &[_] = &[1,2,3,4,9];
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
         let num_nodes = 5;
         let num_neighbors = 2;
         let l: usize = 6; // Size of keyspace
-        random_net_weighted_chord(num_nodes,num_neighbors,100,104,l,&mut rng);
+        random_weighted_net_chord(num_nodes,num_neighbors,100,104,l,&mut rng);
     }
 
     #[test]
-    fn test_random_grid2_net_chord() {
+    fn test_weighted_net_grid2_chord() {
         let seed: &[_] = &[1,2,3,4,9];
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
         let k = 5; // 5 X 5 grid
         let l: usize = 6; // Size of keyspace
-        random_net_grid2_chord(k,l,&mut rng);
+        random_weighted_net_grid2_chord(1, 2, k,l,&mut rng);
     }
 
     #[test]
-    fn test_random_net_and_grid2_chord() {
+    fn test_random_weighted_net_and_grid2_chord() {
         let seed: &[_] = &[1,2,3,4,9];
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
         let num_neighbors = 2;
         let k = 5; // 5 X 5 grid
         let l: usize = 6; // Size of keyspace
-        random_net_and_grid2_chord(k,num_neighbors, l, &mut rng);
+        random_weighted_net_and_grid2_chord(k,num_neighbors, 1, 2, l, &mut rng);
     }
 }

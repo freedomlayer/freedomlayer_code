@@ -1,0 +1,99 @@
+iter_mult = 1
+
+g= 6; rand    ; ni=0 |max_nr =    4| average_min_indices = 1.015625
+g= 6; rand    ; ni=1 |max_nr =    5| average_min_indices = 1.03125
+g= 6; rand    ; ni=2 |max_nr =    5| average_min_indices = 1.078125
+g= 6; 2d      ; ni=0 |max_nr =    7| average_min_indices = 1
+g= 6; 2d      ; ni=1 |max_nr =    8| average_min_indices = 1.015625
+g= 6; 2d      ; ni=2 |max_nr =    6| average_min_indices = 1.015625
+g= 6; rand+2d ; ni=0 |max_nr =    5| average_min_indices = 1.046875
+g= 6; rand+2d ; ni=1 |max_nr =    4| average_min_indices = 1.03125
+g= 6; rand+2d ; ni=2 |max_nr =    5| average_min_indices = 1.09375
+
+g= 7; rand    ; ni=0 |max_nr =    7| average_min_indices = 1.078125
+g= 7; rand    ; ni=1 |max_nr =    9| average_min_indices = 1.0546875
+g= 7; rand    ; ni=2 |max_nr =    7| average_min_indices = 1.03125
+g= 7; 2d      ; ni=0 |max_nr =    6| average_min_indices = 1.024793388429752
+g= 7; 2d      ; ni=1 |max_nr =    5| average_min_indices = 1
+g= 7; 2d      ; ni=2 |max_nr =    5| average_min_indices = 1.024793388429752
+g= 7; rand+2d ; ni=0 |max_nr =   11| average_min_indices = 1.0909090909090908
+g= 7; rand+2d ; ni=1 |max_nr =    7| average_min_indices = 1.0413223140495869
+g= 7; rand+2d ; ni=2 |max_nr =    8| average_min_indices = 1.0495867768595042
+
+g= 8; rand    ; ni=0 |max_nr =    9| average_min_indices = 1.0546875
+g= 8; rand    ; ni=1 |max_nr =    7| average_min_indices = 1.05859375
+g= 8; rand    ; ni=2 |max_nr =    9| average_min_indices = 1.03125
+g= 8; 2d      ; ni=0 |max_nr =    7| average_min_indices = 1.01171875
+g= 8; 2d      ; ni=1 |max_nr =    6| average_min_indices = 1.01171875
+g= 8; 2d      ; ni=2 |max_nr =    6| average_min_indices = 1.02734375
+g= 8; rand+2d ; ni=0 |max_nr =    8| average_min_indices = 1.06640625
+g= 8; rand+2d ; ni=1 |max_nr =    8| average_min_indices = 1.09375
+g= 8; rand+2d ; ni=2 |max_nr =    5| average_min_indices = 1.0546875
+
+g= 9; rand    ; ni=0 |max_nr =   12| average_min_indices = 1.060546875
+g= 9; rand    ; ni=1 |max_nr =   19| average_min_indices = 1.060546875
+g= 9; rand    ; ni=2 |max_nr =   11| average_min_indices = 1.08984375
+g= 9; 2d      ; ni=0 |max_nr =    7| average_min_indices = 1.0082644628099173
+g= 9; 2d      ; ni=1 |max_nr =    7| average_min_indices = 1.0165289256198347
+g= 9; 2d      ; ni=2 |max_nr =    8| average_min_indices = 1.0165289256198347
+g= 9; rand+2d ; ni=0 |max_nr =   12| average_min_indices = 1.0661157024793388
+g= 9; rand+2d ; ni=1 |max_nr =   10| average_min_indices = 1.0557851239669422
+g= 9; rand+2d ; ni=2 |max_nr =   11| average_min_indices = 1.0475206611570247
+
+g=10; rand    ; ni=0 |max_nr =   20| average_min_indices = 1.0595703125
+g=10; rand    ; ni=1 |max_nr =   20| average_min_indices = 1.0634765625
+g=10; rand    ; ni=2 |max_nr =   16| average_min_indices = 1.0791015625
+g=10; 2d      ; ni=0 |max_nr =    9| average_min_indices = 1.0166015625
+g=10; 2d      ; ni=1 |max_nr =    8| average_min_indices = 1.0107421875
+g=10; 2d      ; ni=2 |max_nr =    8| average_min_indices = 1.0185546875
+g=10; rand+2d ; ni=0 |max_nr =   26| average_min_indices = 1.078125
+g=10; rand+2d ; ni=1 |max_nr =   12| average_min_indices = 1.0927734375
+g=10; rand+2d ; ni=2 |max_nr =   14| average_min_indices = 1.0830078125
+
+g=11; rand    ; ni=0 |max_nr =   15| average_min_indices = 1.07080078125
+g=11; rand    ; ni=1 |max_nr =   21| average_min_indices = 1.06201171875
+g=11; rand    ; ni=2 |max_nr =   17| average_min_indices = 1.068359375
+g=11; 2d      ; ni=0 |max_nr =   11| average_min_indices = 1.011358024691358
+g=11; 2d      ; ni=1 |max_nr =    9| average_min_indices = 1.0143209876543209
+g=11; 2d      ; ni=2 |max_nr =    9| average_min_indices = 1.019753086419753
+g=11; rand+2d ; ni=0 |max_nr =   17| average_min_indices = 1.0755555555555556
+g=11; rand+2d ; ni=1 |max_nr =   27| average_min_indices = 1.08
+g=11; rand+2d ; ni=2 |max_nr =   31| average_min_indices = 1.085432098765432
+
+g=12; rand    ; ni=0 |max_nr =   22| average_min_indices = 1.0810546875
+g=12; rand    ; ni=1 |max_nr =   18| average_min_indices = 1.06787109375
+g=12; rand    ; ni=2 |max_nr =   36| average_min_indices = 1.0751953125
+g=12; 2d      ; ni=0 |max_nr =   11| average_min_indices = 1.014892578125
+g=12; 2d      ; ni=1 |max_nr =   18| average_min_indices = 1.01708984375
+g=12; 2d      ; ni=2 |max_nr =   12| average_min_indices = 1.016357421875
+g=12; rand+2d ; ni=0 |max_nr =   24| average_min_indices = 1.07373046875
+g=12; rand+2d ; ni=1 |max_nr =   23| average_min_indices = 1.077880859375
+g=12; rand+2d ; ni=2 |max_nr =   24| average_min_indices = 1.07958984375
+
+g=13; rand    ; ni=0 |max_nr =   21| average_min_indices = 1.0875244140625
+g=13; rand    ; ni=1 |max_nr =   15| average_min_indices = 1.0848388671875
+g=13; rand    ; ni=2 |max_nr =   25| average_min_indices = 1.0869140625
+g=13; 2d      ; ni=0 |max_nr =   12| average_min_indices = 1.0185185185185186
+g=13; 2d      ; ni=1 |max_nr =   13| average_min_indices = 1.0164197530864199
+g=13; 2d      ; ni=2 |max_nr =   13| average_min_indices = 1.0171604938271606
+g=13; rand+2d ; ni=0 |max_nr =   25| average_min_indices = 1.0877777777777777
+g=13; rand+2d ; ni=1 |max_nr =   18| average_min_indices = 1.0839506172839506
+g=13; rand+2d ; ni=2 |max_nr =   25| average_min_indices = 1.088148148148148
+
+g=14; rand    ; ni=0 |max_nr =   24| average_min_indices = 1.09307861328125
+g=14; rand    ; ni=1 |max_nr =   34| average_min_indices = 1.09539794921875
+g=14; rand    ; ni=2 |max_nr =   31| average_min_indices = 1.0928955078125
+g=14; 2d      ; ni=0 |max_nr =   16| average_min_indices = 1.0174560546875
+g=14; 2d      ; ni=1 |max_nr =   20| average_min_indices = 1.01751708984375
+g=14; 2d      ; ni=2 |max_nr =   21| average_min_indices = 1.0184326171875
+g=14; rand+2d ; ni=0 |max_nr =   21| average_min_indices = 1.09326171875
+g=14; rand+2d ; ni=1 |max_nr =   17| average_min_indices = 1.09808349609375
+g=14; rand+2d ; ni=2 |max_nr =   22| average_min_indices = 1.09521484375
+
+g=15; rand    ; ni=0 |max_nr =   41| average_min_indices = 1.0927734375
+g=15; rand    ; ni=1 |max_nr =   33| average_min_indices = 1.095947265625
+g=15; rand    ; ni=2 |max_nr =   58| average_min_indices = 1.091949462890625
+g=15; 2d      ; ni=0 |max_nr =   31| average_min_indices = 1.0191996581300937
+g=15; 2d      ; ni=1 |max_nr =   33| average_min_indices = 1.0201153810933732
+g=15; 2d      ; ni=2 |max_nr =   24| average_min_indices = 1.018741796648454
+g=15; rand+2d ; ni=0 |max_nr =   33| average_min_indices = 1.0992033210219467

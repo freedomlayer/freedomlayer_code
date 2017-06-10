@@ -24,6 +24,7 @@ fn main() {
     // We generate num_nodes * iter_mult random coordinates:
     let num_pairs = 100;
     let max_visits = 5;
+    let num_rand_coords = 3;
 
     println!("Find ratio of matches for approximate finding of a random coordinate");
     println!("from two different sources.");
@@ -68,11 +69,15 @@ fn main() {
                     (net.igraph.node_count() as f64)) + 1.0) as usize;
                 let amount_close = avg_degree.pow(2);
 
-                let mut pair_rng: StdRng = rand::SeedableRng::from_seed(&[2,g, net_type, net_iter] as &[_]);
-                let mut coord_rng: StdRng = rand::SeedableRng::from_seed(&[3,g, net_type, net_iter] as &[_]);
-                let mut route_rng: StdRng = rand::SeedableRng::from_seed(&[4,g, net_type, net_iter] as &[_]);
+                let mut pair_rng: StdRng = 
+                    rand::SeedableRng::from_seed(&[2,g, net_type, net_iter] as &[_]);
+                let mut coord_rng: StdRng = 
+                    rand::SeedableRng::from_seed(&[3,g, net_type, net_iter] as &[_]);
+                let mut route_rng: StdRng = 
+                    rand::SeedableRng::from_seed(&[4,g, net_type, net_iter] as &[_]);
 
                 let mut sum_path_len = 0;
+                let mut num_found = 0;
 
                 for _ in 0 .. num_pairs {
                     // Randomize a pair of nodes.
@@ -80,26 +85,33 @@ fn main() {
                             &mut pair_rng).into_iter().collect::<Vec<usize>>();
                     // Sort for determinism:
                     node_pair.sort();
-                    // Randomize a coordinate (randomize_coord)
-                    let rcoord = randomize_coord(&landmarks, &coords, &mut coord_rng);
+                    for _ in 0 .. num_rand_coords {
+                        // Randomize a coordinate (randomize_coord)
+                        let rcoord = randomize_coord(&landmarks, &coords, &mut coord_rng);
 
-                    let (found_node_i, _) =  
-                        find_path_landmarks_by_coord(node_pair[0], &rcoord,
-                                   amount_close, max_visits, &net, 
-                                   &coords, &landmarks, &mut route_rng);
+                        let (found_node_i, _) =  
+                            find_path_landmarks_by_coord(node_pair[0], &rcoord,
+                                       amount_close, max_visits, &net, 
+                                       &coords, &landmarks, &mut route_rng);
 
-                    sum_path_len += 
-                        find_path_landmarks_approx(node_pair[1], found_node_i, &rcoord,
-                                   amount_close, &net, 
-                                   &coords, &landmarks, &mut route_rng);
+                        let opt_path_len = 
+                            find_path_landmarks_approx(node_pair[1], found_node_i, &rcoord,
+                                       (g as u64).pow(3), amount_close, &net, 
+                                       &coords, &landmarks, &mut route_rng);
 
+                        if let Some(path_len) = opt_path_len {
+                            sum_path_len += path_len;
+                            num_found += 1;
+                            break;
+                        }
+                    }
                 }
 
+
                 let avg_path_len = (sum_path_len as f64) / (num_pairs as f64);
-
-                // println!("-----------------------");
-
                 print!("| avg_path_len = {:4}",avg_path_len);
+                let found_ratio = (num_found as f64) / (num_pairs as f64);
+                print!("| found_ratio = {:4}",found_ratio);
 
 
                 println!();

@@ -47,7 +47,7 @@ fn main() {
                 /* Generate network */
                 let seed: &[_] = &[1,g,net_type,net_iter];
                 let mut network_rng: StdRng = rand::SeedableRng::from_seed(seed);
-                let net = gen_network(net_type, g, l, 1000, 2000 , &mut network_rng);
+                let net = gen_network(net_type, g, l, 10000, 20000 , &mut network_rng);
                 print!("ni={:1} |",net_iter);
 
                 // Generate helper structures for landmarks routing:
@@ -84,27 +84,40 @@ fn main() {
                             &mut pair_rng).into_iter().collect::<Vec<usize>>();
                     // Sort for determinism:
                     node_pair.sort();
+
+                    // Randomize a coordinate (randomize_coord)
+                    let rcoord = randomize_coord(&landmarks, &coords, &mut coord_rng);
+
+                    let (found_node_i, _) =  
+                        find_path_landmarks_by_coord(node_pair[0], &rcoord,
+                                   amount_close, max_visits, &net, 
+                                   &coords, &landmarks, &mut route_rng);
+
                     let mut found = false;
                     let mut num_attempts = 0;
                     while !found {
                         num_attempts += 1;
-                        // Randomize a coordinate (randomize_coord)
-                        let rcoord = randomize_coord(&landmarks, &coords, &mut coord_rng);
-
-                        let (found_node_i, _) =  
-                            find_path_landmarks_by_coord(node_pair[0], &rcoord,
+                        // First go to a random place in the network:
+                        let my_rcoord = randomize_coord(&landmarks, &coords, &mut coord_rng);
+                        let (my_node_i, first_part_len) = 
+                            find_path_landmarks_by_coord(node_pair[1], &my_rcoord,
                                        amount_close, max_visits, &net, 
                                        &coords, &landmarks, &mut route_rng);
-
+                        // Starting from the random place in the network, try to find
+                        // the wanted coordinate:
                         let opt_path_len = 
-                            find_path_landmarks_approx(node_pair[1], found_node_i, &rcoord,
+                            find_path_landmarks_approx(my_node_i, found_node_i, &rcoord,
                                        (g as u64).pow(3), amount_close, &net, 
                                        &coords, &landmarks, &mut route_rng);
 
                         if let Some(path_len) = opt_path_len {
-                            sum_path_len += path_len;
+                            sum_path_len += path_len + first_part_len;
                             num_paths_found += 1;
                             found = true;
+                        } else {
+                            // println!();
+                            // println!("rcoord = {:?}", rcoord);
+                            // println!();
                         }
                     }
                     sum_num_attempts += num_attempts;

@@ -76,8 +76,10 @@ fn main() {
                 let mut route_rng: StdRng = 
                     rand::SeedableRng::from_seed(&[4,g, net_type, net_iter] as &[_]);
 
-                let mut sum_path_len = 0;
                 let mut num_found = 0;
+                let mut num_paths_found = 0;
+                let mut sum_path_len = 0;
+                let mut sum_local_num_found: f64 = 0.0;
 
                 for _ in 0 .. num_pairs {
                     // Randomize a pair of nodes.
@@ -85,6 +87,7 @@ fn main() {
                             &mut pair_rng).into_iter().collect::<Vec<usize>>();
                     // Sort for determinism:
                     node_pair.sort();
+                    let mut local_num_found = 0;
                     for _ in 0 .. num_rand_coords {
                         // Randomize a coordinate (randomize_coord)
                         let rcoord = randomize_coord(&landmarks, &coords, &mut coord_rng);
@@ -101,17 +104,23 @@ fn main() {
 
                         if let Some(path_len) = opt_path_len {
                             sum_path_len += path_len;
-                            num_found += 1;
-                            break;
+                            num_paths_found += 1;
+                            local_num_found += 1;
                         }
+                    }
+                    sum_local_num_found += local_num_found as f64 / num_rand_coords as f64;
+                    if local_num_found > 0 {
+                        num_found += 1;
                     }
                 }
 
 
-                let avg_path_len = (sum_path_len as f64) / (num_pairs as f64);
-                print!("| avg_path_len = {:6}",avg_path_len);
+                let avg_path_len = (sum_path_len as f64) / (num_paths_found as f64);
+                print!("avg_path_len = {:6.3} |",avg_path_len);
+                let avg_local_num_found = (sum_local_num_found as f64) / (num_pairs as f64);
+                print!("avg_local_num_found = {:4.3} |",avg_local_num_found);
                 let found_ratio = (num_found as f64) / (num_pairs as f64);
-                print!("| found_ratio = {:6}",found_ratio);
+                print!("found_ratio = {:4.3} |",found_ratio);
 
 
                 println!();

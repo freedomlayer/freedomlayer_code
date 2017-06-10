@@ -23,7 +23,7 @@ fn main() {
     let net_iters = 3;
     // We generate num_nodes * iter_mult random coordinates:
     let num_pairs = 100;
-    let max_visits = 5;
+    let max_visits = 3;
 
     println!("Find ratio of matches for approximate finding of a random coordinate");
     println!("from two different sources.");
@@ -34,8 +34,6 @@ fn main() {
 
     for g in 6 .. 20 { // Iterate over size of network.
         let l = 2 * g + 1;
-        let num_rand_coords = g/2;
-
         for net_type in 0 .. net_types { // Iterate over type of network
             for net_iter in 0 .. net_iters { // Three iterations for each type of network
                 print!("g={:2}; ",g);
@@ -76,10 +74,9 @@ fn main() {
                 let mut route_rng: StdRng = 
                     rand::SeedableRng::from_seed(&[4,g, net_type, net_iter] as &[_]);
 
-                let mut num_found = 0;
                 let mut num_paths_found = 0;
                 let mut sum_path_len = 0;
-                let mut sum_local_num_found: f64 = 0.0;
+                let mut sum_num_attempts = 0;
 
                 for _ in 0 .. num_pairs {
                     // Randomize a pair of nodes.
@@ -87,8 +84,10 @@ fn main() {
                             &mut pair_rng).into_iter().collect::<Vec<usize>>();
                     // Sort for determinism:
                     node_pair.sort();
-                    let mut local_num_found = 0;
-                    for _ in 0 .. num_rand_coords {
+                    let mut found = false;
+                    let mut num_attempts = 0;
+                    while !found {
+                        num_attempts += 1;
                         // Randomize a coordinate (randomize_coord)
                         let rcoord = randomize_coord(&landmarks, &coords, &mut coord_rng);
 
@@ -105,22 +104,17 @@ fn main() {
                         if let Some(path_len) = opt_path_len {
                             sum_path_len += path_len;
                             num_paths_found += 1;
-                            local_num_found += 1;
+                            found = true;
                         }
                     }
-                    sum_local_num_found += local_num_found as f64 / num_rand_coords as f64;
-                    if local_num_found > 0 {
-                        num_found += 1;
-                    }
+                    sum_num_attempts += num_attempts;
                 }
 
 
                 let avg_path_len = (sum_path_len as f64) / (num_paths_found as f64);
                 print!("avg_path_len = {:6.3} |",avg_path_len);
-                let avg_local_num_found = (sum_local_num_found as f64) / (num_pairs as f64);
-                print!("avg_local_num_found = {:4.3} |",avg_local_num_found);
-                let found_ratio = (num_found as f64) / (num_pairs as f64);
-                print!("found_ratio = {:4.3} |",found_ratio);
+                let avg_num_attempts = (sum_num_attempts as f64) / (num_pairs as f64);
+                print!("avg_num_attempts = {:4.3} |",avg_num_attempts);
 
 
                 println!();

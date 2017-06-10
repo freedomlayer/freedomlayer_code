@@ -117,10 +117,9 @@ pub fn print_some_coords(&self,amount: u32) {
 }
 */
 
-
 /*
 /// Generate a random coordinate
-pub fn randomize_coord2<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+pub fn randomize_coord<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
                     mut rng: &mut R) -> Vec<u64> {
 
     // Generate random 16 bit integer coefficients:
@@ -161,8 +160,8 @@ pub fn randomize_coord2<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
         .collect::<Vec<u64>>()
 
 }
-
 */
+
 
 
 /// Generate a random coordinate

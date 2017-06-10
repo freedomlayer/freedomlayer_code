@@ -98,3 +98,7 @@ g=15; 2d      ; ni=1 |max_nr =   33| average_min_indices = 1.0201153810933732
 g=15; 2d      ; ni=2 |max_nr =   24| average_min_indices = 1.018741796648454
 g=15; rand+2d ; ni=0 |max_nr =   33| average_min_indices = 1.0992033210219467
 g=15; rand+2d ; ni=1 |max_nr =   48| average_min_indices = 1.1002411403803303
+g=15; rand+2d ; ni=2 |max_nr =   41| average_min_indices = 1.1012484356399377
+
+g=16; rand    ; ni=0 |max_nr =   94| average_min_indices = 1.094146728515625
+g=16; rand    ; ni=1 |max_nr =   50| average_min_indices = 1.0967559814453125

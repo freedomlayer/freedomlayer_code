@@ -24,7 +24,6 @@ fn main() {
     // We generate num_nodes * iter_mult random coordinates:
     let num_pairs = 100;
     let max_visits = 5;
-    let num_rand_coords = 3;
 
     println!("Find ratio of matches for approximate finding of a random coordinate");
     println!("from two different sources.");
@@ -35,6 +34,7 @@ fn main() {
 
     for g in 6 .. 20 { // Iterate over size of network.
         let l = 2 * g + 1;
+        let num_rand_coords = g/2;
 
         for net_type in 0 .. net_types { // Iterate over type of network
             for net_iter in 0 .. net_iters { // Three iterations for each type of network

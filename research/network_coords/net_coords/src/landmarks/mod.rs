@@ -5,7 +5,7 @@ extern crate rand;
 
 use self::rand::{Rng};
 use self::rand::distributions::{Weighted, WeightedChoice, 
-    IndependentSample, Range};
+    IndependentSample};
 
 use std::hash::Hash;
 
@@ -132,8 +132,8 @@ pub fn find_path_landmarks_approx<R: Rng, Node: Hash + Eq + Clone>(src_node: usi
     // Node distance function:
     let node_dist = |x| max_dist(&coords[x], &approx_dst_coord);
     // let calc_weight = |i: usize| ((-(node_dist(i, dst_node) as f64)).exp() * 100.0) as u32;
-    // let calc_weight = |_: usize| 1 as u32;
-    let rand_steps = (net.igraph.node_count() as f64).log(2.0) as usize;
+    let calc_weight = |_: usize| 1 as u32;
+    // let rand_steps = (net.igraph.node_count() as f64).log(2.0) as usize;
 
     let mut total_distance: u64 = 0;
     let mut cur_node = src_node;
@@ -144,6 +144,7 @@ pub fn find_path_landmarks_approx<R: Rng, Node: Hash + Eq + Clone>(src_node: usi
                 .min_by_key(|&(i, _, _)| node_dist(i)).unwrap();
 
         if node_dist(new_cur_node) >= node_dist(cur_node) {
+            /*
             // Do some random walk:
             new_cur_node = cur_node;
             new_dist = 0;
@@ -153,8 +154,8 @@ pub fn find_path_landmarks_approx<R: Rng, Node: Hash + Eq + Clone>(src_node: usi
                 new_cur_node = neighbors[neighbor_range.ind_sample(&mut rng)];
                 new_dist += 1;
             }
+            */
 
-            /*
 
             // Pick a best local destination randomly in a "smart" way:
             let mut items = net.closest_nodes_structure(cur_node).take(amount_close*2)

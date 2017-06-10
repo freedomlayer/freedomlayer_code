@@ -109,9 +109,9 @@ fn main() {
 
 
                 let avg_path_len = (sum_path_len as f64) / (num_pairs as f64);
-                print!("| avg_path_len = {:4}",avg_path_len);
+                print!("| avg_path_len = {:6}",avg_path_len);
                 let found_ratio = (num_found as f64) / (num_pairs as f64);
-                print!("| found_ratio = {:4}",found_ratio);
+                print!("| found_ratio = {:6}",found_ratio);
 
 
                 println!();

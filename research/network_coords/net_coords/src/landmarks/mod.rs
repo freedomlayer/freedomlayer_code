@@ -95,7 +95,7 @@ pub fn find_path_landmarks_by_coord<R: Rng, Node: Hash + Eq + Clone>(src_node: u
             visits[cur_node] += 1;
 
             // Pick a best local destination randomly in a "smart" way:
-            let mut items = net.closest_nodes_structure(cur_node).take(amount_close)
+            let mut items = net.closest_nodes_structure(cur_node).take(4*amount_close)
                 .map(|(i, dist, gateway)| 
                      Weighted { weight: calc_weight(i), item: (i, dist, gateway) })
                 .collect::<Vec<_>>();
@@ -159,7 +159,7 @@ pub fn find_path_landmarks_approx<R: Rng, Node: Hash + Eq + Clone>(
 
 
             // Pick a best local destination randomly in a "smart" way:
-            let mut items = net.closest_nodes_structure(cur_node).take(amount_close*2)
+            let mut items = net.closest_nodes_structure(cur_node).take(4*amount_close)
                 .map(|(i, dist, gateway)| 
                      Weighted { weight: calc_weight(i), item: (i, dist, gateway) })
                 .collect::<Vec<_>>();

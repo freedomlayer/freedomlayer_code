@@ -6,7 +6,7 @@ extern crate ordered_float;
 use rand::{StdRng};
 // use std::hash::Hash;
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
-use net_coords::landmarks::randomize_coord::{/*randomize_coord_landmarks_coords,*/ randomize_coord_rw};
+use net_coords::landmarks::randomize_coord::{/*randomize_coord_landmarks_coords,*/ randomize_coord_rw_sparse};
 use net_coords::landmarks::coord_mappers::{max_dist};
 use net_coords::network_gen::{gen_network};
 use self::rand::distributions::{IndependentSample, Range};
@@ -49,7 +49,7 @@ fn main() {
                 // Generate helper structures for landmarks routing:
                 // Calculate landmarks and coordinates for landmarks routing:
                 // Amount of landmarks can not be above half of the node count:
-                let mut num_landmarks: usize = (((l*l) as u32)) as usize;
+                let mut num_landmarks: usize = (((g*g) as u32)) as usize;
                 // let mut num_landmarks: usize = 10; // DEBUG
                 if num_landmarks as f64 > (net.igraph.node_count() as f64) / 2.0 {
                     num_landmarks = net.igraph.node_count() / 2;
@@ -72,7 +72,7 @@ fn main() {
                 let mut sum_min_indices = 0;
                 for _ in 0 .. net.igraph.node_count() * iter_mult {
                     // let rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut network_rng);
-                    let rcoord = randomize_coord_rw(&landmarks, &coords, &mut network_rng);
+                    let rcoord = randomize_coord_rw_sparse(&landmarks, &coords, &mut network_rng);
                     let min_value = coords.iter().enumerate()
                         .map(|(_,coord)| max_dist(&rcoord,&inflate_coord(&coord)))
                         .min().unwrap();

@@ -180,7 +180,6 @@ fn get_entry_legal_range(cur_coord: &Vec<u64>, i: usize, landmarks: &Vec<usize>,
     (lower_bound, upper_bound)
 }
 
-/*
 /// Get possible random walk range (min_val, max_val) for entry i in a given coordinate.
 /// Inside this range, all the triangle inequalities are valid and some additional conditions are
 /// satisfied.
@@ -206,7 +205,6 @@ fn get_entry_rw_range(cur_coord: &Vec<u64>, i: usize, landmarks: &Vec<usize>,
 
     (lower_bound, upper_bound)
 }
-*/
 
 /// Check if a coordinate satisfies all triangle inequalities
 fn is_legal_coord(cur_coord: &Vec<u64>, landmarks: &Vec<usize>, 
@@ -214,6 +212,23 @@ fn is_legal_coord(cur_coord: &Vec<u64>, landmarks: &Vec<usize>,
 
     for i in 0 .. landmarks.len() {
         let (low, high) = get_entry_legal_range(&cur_coord, i, &landmarks, &coords);
+        let val = cur_coord[i];
+        if val < low {
+            return false;
+        }
+        if val > high {
+            return false;
+        }
+    }
+    true
+}
+
+/// Check if a coordinate satisfies all triangle inequalities and an additional constraint.
+fn is_rw_coord(cur_coord: &Vec<u64>, landmarks: &Vec<usize>, 
+                  coords: &Vec<Vec<u64>>) -> bool {
+
+    for i in 0 .. landmarks.len() {
+        let (low, high) = get_entry_rw_range(&cur_coord, i, &landmarks, &coords);
         let val = cur_coord[i];
         if val < low {
             return false;
@@ -234,13 +249,16 @@ pub fn randomize_coord_rw<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>
     assert!(is_legal_coord(&cur_coord, &landmarks, &coords));
     // let entry_range: Range<usize> = Range::new(0, landmarks.len());
 
-    let diff_range: Range<i64> = Range::new(-100,101);
+    let diff_range: Range<i64> = Range::new(-10,11);
 
 
+    // let mut num_attempts = 0;
     let mut good_iters = 0;
     // Iterations of random walk:
+    // println!("num_landmarks = {}", landmarks.len());
     while good_iters < landmarks.len().pow(2) {
     // for _ in 0 .. landmarks.len().pow(2) {
+        // num_attempts += 1;
 
         let new_coord = (0 .. landmarks.len())
             .map(|i| {
@@ -253,7 +271,7 @@ pub fn randomize_coord_rw<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>
             })
             .collect::<Vec<u64>>();
 
-        if is_legal_coord(&new_coord, &landmarks, &coords) {
+        if is_rw_coord(&new_coord, &landmarks, &coords) {
             cur_coord = new_coord;
             good_iters += 1;
         }
@@ -274,6 +292,11 @@ pub fn randomize_coord_rw<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>
         cur_coord[i] = value_range.ind_sample(&mut rng);
         */
     }
+
+    /*
+    println!();
+    println!("ratio = {}", good_iters as f64 / num_attempts as f64);
+    */
 
     cur_coord
 }

@@ -102,7 +102,7 @@ pub fn coord_to_ring(coord: &Vec<u64>) -> f64 {
 /////////////////////////////////////////////////////////////////////
 
 
-fn dist_u64(a: u64, b: u64) -> u64 {
+pub fn dist_u64(a: u64, b: u64) -> u64 {
     if a > b {
         return a - b
     }

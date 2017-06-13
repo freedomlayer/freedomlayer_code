@@ -2,6 +2,7 @@ extern crate rand;
 
 use self::rand::distributions::{IndependentSample, Range};
 use landmarks::coord_mappers::dist_u64;
+use random_util::choose_k_nums;
 use self::rand::Rng;
 
 /// Generate a random coordinate
@@ -167,6 +168,8 @@ fn get_entry_legal_range(cur_coord: &Vec<u64>, i: usize, landmarks: &Vec<usize>,
     // A function to calculate distance between landmark i and landmark j:
     let dl = |i: usize, j: usize| coords[landmarks[i]][j];
 
+    // TODO: Here we should skip the ith iteration:
+
     let lower_bound: u64 = (0 .. landmarks.len())
         .map(|j| dist_u64(cur_coord[j],dl(i,j)))
         .max()
@@ -180,24 +183,34 @@ fn get_entry_legal_range(cur_coord: &Vec<u64>, i: usize, landmarks: &Vec<usize>,
     (lower_bound, upper_bound)
 }
 
-/// Get possible random walk range (min_val, max_val) for entry i in a given coordinate.
-/// Inside this range, all the triangle inequalities are valid and some additional conditions are
-/// satisfied.
-fn get_entry_rw_range(cur_coord: &Vec<u64>, i: usize, landmarks: &Vec<usize>, 
-                   coords: &Vec<Vec<u64>>) -> (u64, u64) {
-
+/// Returns upper artificial contraints for all coordinates.
+/// We put this constraint so that random walk will not escape to infinity.
+fn calc_upper_constraints(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>) -> Vec<u64> {
     // A function to calculate distance between landmark i and landmark j:
     let dl = |i: usize, j: usize| coords[landmarks[i]][j];
 
-    let (lower_bound, mut upper_bound) = get_entry_legal_range(&cur_coord, i, &landmarks, &coords);
+    (0 .. landmarks.len())
+        .map(|i| (0 .. landmarks.len())
+            .map(|j| 2*dl(i,j))
+            .max()
+            .unwrap())
+        .collect::<Vec<u64>>()
+}
+
+
+/// Get possible random walk range (min_val, max_val) for entry i in a given coordinate.
+/// Inside this range, all the triangle inequalities are valid and some additional conditions are
+/// satisfied.
+fn get_entry_rw_range(cur_coord: &Vec<u64>, i: usize, upper_constraints: &Vec<u64>, 
+                      landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>) -> (u64, u64) {
+
+    let (lower_bound, mut upper_bound) = 
+        get_entry_legal_range(&cur_coord, i, &landmarks, &coords);
 
     // The largest distance seen from landmark i.
     // We have this constraint so that we don't diverge
     // to inifinitely large numbers.
-    let upper_constraint = (0 .. landmarks.len())
-        .map(|j| 2*dl(i,j))
-        .max()
-        .unwrap();
+    let upper_constraint = upper_constraints[i];
 
     if upper_constraint < upper_bound {
         upper_bound = upper_constraint;
@@ -224,11 +237,11 @@ fn is_legal_coord(cur_coord: &Vec<u64>, landmarks: &Vec<usize>,
 }
 
 /// Check if a coordinate satisfies all triangle inequalities and an additional constraint.
-fn is_rw_coord(cur_coord: &Vec<u64>, landmarks: &Vec<usize>, 
+fn is_rw_coord(cur_coord: &Vec<u64>, upper_constraints: &Vec<u64>, landmarks: &Vec<usize>, 
                   coords: &Vec<Vec<u64>>) -> bool {
 
     for i in 0 .. landmarks.len() {
-        let (low, high) = get_entry_rw_range(&cur_coord, i, &landmarks, &coords);
+        let (low, high) = get_entry_rw_range(cur_coord, i, upper_constraints, landmarks, coords);
         let val = cur_coord[i];
         if val < low {
             return false;
@@ -236,6 +249,32 @@ fn is_rw_coord(cur_coord: &Vec<u64>, landmarks: &Vec<usize>,
         if val > high {
             return false;
         }
+    }
+    true
+}
+
+/// Check if a coordinate satisfies all triangle inequalities and an additional constraint.
+fn is_rw_coord_by_changed(cur_coord: &Vec<u64>, changed_indices: &Vec<usize>, 
+                  upper_constraints: &Vec<u64>, landmarks: &Vec<usize>, 
+                  coords: &Vec<Vec<u64>>) -> bool {
+
+    // A function to calculate distance between landmark i and landmark j:
+    let dl = |i: usize, j: usize| coords[landmarks[i]][j];
+
+    for &i in changed_indices {
+        if cur_coord[i] > upper_constraints[i] {
+            return false;
+        }
+        for j in 0 .. landmarks.len() {
+            let dl_val = dl(i,j);
+            if cur_coord[i] + cur_coord[j] < dl_val {
+                return false;
+            }
+            if dist_u64(cur_coord[i], cur_coord[j]) > dl_val {
+                return false;
+            }
+        }
+
     }
     true
 }
@@ -248,17 +287,21 @@ pub fn randomize_coord_rw<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>
     let mut cur_coord = average_landmarks(&landmarks, &coords);
     assert!(is_legal_coord(&cur_coord, &landmarks, &coords));
     // let entry_range: Range<usize> = Range::new(0, landmarks.len());
+    
+    let upper_constraints = calc_upper_constraints(landmarks, coords);
 
-    let diff_range: Range<i64> = Range::new(-10,11);
-
+    let mut diff_size: u64 = 1;
 
     // let mut num_attempts = 0;
     let mut good_iters = 0;
     // Iterations of random walk:
     // println!("num_landmarks = {}", landmarks.len());
     while good_iters < landmarks.len().pow(2) {
-    // for _ in 0 .. landmarks.len().pow(2) {
         // num_attempts += 1;
+        
+        let diff_inflate = diff_size * 10;
+        let diff_range: Range<i64> = 
+            Range::new(-(diff_inflate as i64),(diff_inflate as i64) + 1);
 
         let new_coord = (0 .. landmarks.len())
             .map(|i| {
@@ -271,16 +314,109 @@ pub fn randomize_coord_rw<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>
             })
             .collect::<Vec<u64>>();
 
-        if is_rw_coord(&new_coord, &landmarks, &coords) {
+        // println!("Performing if...");
+        if is_rw_coord(&new_coord, &upper_constraints, landmarks, coords) {
             cur_coord = new_coord;
             good_iters += 1;
+            diff_size = (((diff_size + 1) as f64) * 1.5) as u64;
+            // print!("+");
+        } else {
+            diff_size = (diff_size / 2) + 1; 
+            // print!("-");
+        }
+        // println!("diff_size = {}", diff_size);
+
+        // println!("If done.");
+
+    }
+
+    /*
+    println!();
+    println!("ratio = {}", good_iters as f64 / num_attempts as f64);
+    */
+
+    cur_coord
+}
+
+/// Generate a random coordinate using a random walk
+pub fn randomize_coord_rw_sparse<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+                    mut rng: &mut R) -> Vec<u64> {
+
+    let mut cur_coord = average_landmarks(&landmarks, &coords);
+    let upper_constraints = calc_upper_constraints(landmarks, coords);
+
+    assert!(is_rw_coord(&cur_coord, &upper_constraints, landmarks, coords));
+    // let entry_range: Range<usize> = Range::new(0, landmarks.len());
+    
+
+    let mut diff_size: u64 = 1;
+
+    // let mut num_attempts = 0;
+    let mut good_iters = 0;
+    // Iterations of random walk:
+    // println!("num_landmarks = {}", landmarks.len());
+    while good_iters < landmarks.len().pow(3) {
+        // num_attempts += 1;
+        
+        let diff_inflate = diff_size * 1000;
+        let diff_range: Range<i64> = Range::new(-(diff_inflate as i64),(diff_inflate as i64) + 1);
+        let mut chosen_landmarks = choose_k_nums(1,landmarks.len(), &mut rng)
+            .into_iter()
+            .collect::<Vec<usize>>();
+        // Sort for determinism:
+        chosen_landmarks.sort();
+
+        let mut new_coord = cur_coord.clone();
+        for &i in &chosen_landmarks {
+            let mut diff = diff_range.ind_sample(&mut rng);
+            while (new_coord[i] as i64) + diff < 0 {
+                diff = diff_range.ind_sample(&mut rng);
+            }
+            new_coord[i] = ((new_coord[i] as i64) + diff) as u64;
         }
 
-        /*
+        // println!("Performing if...");
+        if is_rw_coord_by_changed(&new_coord, &chosen_landmarks, 
+                                  &upper_constraints, 
+                                  landmarks, coords) {
+            cur_coord = new_coord;
+            good_iters += 1;
+            diff_size = ((diff_size + 1) * 3) / 2;
+            // print!("+");
+        } else {
+            diff_size = (diff_size / 2) + 1; 
+            // print!("-");
+        }
+        // println!("diff_size = {}", diff_size);
+
+        // println!("If done.");
+
+    }
+
+    /*
+    println!();
+    println!("ratio = {}", good_iters as f64 / num_attempts as f64);
+    */
+
+    cur_coord
+}
+
+/// Generate a random coordinate using a random walk
+pub fn randomize_coord_rw_directional<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+                    mut rng: &mut R) -> Vec<u64> {
+
+    let mut cur_coord = average_landmarks(&landmarks, &coords);
+    let upper_constraints = calc_upper_constraints(landmarks, coords);
+    assert!(is_rw_coord(&cur_coord, &upper_constraints, landmarks, coords));
+    let entry_range: Range<usize> = Range::new(0, landmarks.len());
+
+    let mut good_iters = 0;
+    while good_iters < landmarks.len().pow(2) * 4 {
         let i = entry_range.ind_sample(&mut rng);
 
         // Get range of valid values for entry number i:
-        let (low, high) = get_entry_rw_range(&cur_coord, i, &landmarks, &coords);
+        let (low, high) = get_entry_rw_range(&cur_coord, i, 
+                                             &upper_constraints, landmarks, coords);
 
         if low < high {
             good_iters += 1;
@@ -290,7 +426,6 @@ pub fn randomize_coord_rw<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>
         // Set the new random value to the entry:
         let value_range: Range<u64> = Range::new(low, high + 1);
         cur_coord[i] = value_range.ind_sample(&mut rng);
-        */
     }
 
     /*

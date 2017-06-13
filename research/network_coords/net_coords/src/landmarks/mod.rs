@@ -1,4 +1,5 @@
 pub mod coords;
+pub mod randomize_coord;
 pub mod coord_mappers;
 
 extern crate rand;

@@ -5,8 +5,8 @@ extern crate ordered_float;
 
 use rand::{StdRng};
 // use std::hash::Hash;
-use net_coords::landmarks::coords::{build_coords, choose_landmarks,
-    randomize_coord};
+use net_coords::landmarks::coords::{build_coords, choose_landmarks};
+use net_coords::landmarks::randomize_coord::{randomize_coord_landmarks_coords};
 use net_coords::landmarks::{find_path_landmarks_approx, find_path_landmarks_by_coord};
 use net_coords::network_gen::{gen_network};
 use net_coords::random_util::choose_k_nums;
@@ -86,7 +86,7 @@ fn main() {
                     node_pair.sort();
 
                     // Randomize a coordinate (randomize_coord)
-                    let rcoord = randomize_coord(&landmarks, &coords, &mut coord_rng);
+                    let rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
 
                     let (found_node_i, _) =  
                         find_path_landmarks_by_coord(node_pair[0], &rcoord,
@@ -98,7 +98,7 @@ fn main() {
                     while !found {
                         num_attempts += 1;
                         // First go to a random place in the network:
-                        let my_rcoord = randomize_coord(&landmarks, &coords, &mut coord_rng);
+                        let my_rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
                         let (my_node_i, first_part_len) = 
                             find_path_landmarks_by_coord(node_pair[1], &my_rcoord,
                                        amount_close, max_visits, &net, 

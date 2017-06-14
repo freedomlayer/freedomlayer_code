@@ -415,7 +415,7 @@ pub fn randomize_coord_rw_directional<R: Rng>(upper_constraints: &Vec<u64>,
 
     let mut good_iters = 0;
     while good_iters < landmarks.len().pow(2) * 4 {
-        let i = entry_range.ind_sample(&mut rng);
+        let i = entry_range.ind_sample(rng);
 
         // Get range of valid values for entry number i:
         let (low, high) = get_entry_rw_range(&cur_coord, i, 
@@ -428,7 +428,7 @@ pub fn randomize_coord_rw_directional<R: Rng>(upper_constraints: &Vec<u64>,
 
         // Set the new random value to the entry:
         let value_range: Range<u64> = Range::new(low, high + 1);
-        cur_coord[i] = value_range.ind_sample(&mut rng);
+        cur_coord[i] = value_range.ind_sample(rng);
     }
 
     /*

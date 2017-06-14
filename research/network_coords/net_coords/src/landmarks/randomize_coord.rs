@@ -171,11 +171,13 @@ fn get_entry_legal_range(cur_coord: &Vec<u64>, i: usize, landmarks: &Vec<usize>,
     // TODO: Here we should skip the ith iteration:
 
     let lower_bound: u64 = (0 .. landmarks.len())
+        .filter(|&j| j != i)
         .map(|j| dist_u64(cur_coord[j],dl(i,j)))
         .max()
         .unwrap();
 
     let upper_bound: u64 = (0 .. landmarks.len())
+        .filter(|&j| j != i)
         .map(|j| cur_coord[j] + dl(i,j))
         .min()
         .unwrap();

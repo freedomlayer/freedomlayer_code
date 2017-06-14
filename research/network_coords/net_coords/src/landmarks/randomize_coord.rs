@@ -193,7 +193,7 @@ pub fn calc_upper_constraints(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>) ->
 
     (0 .. landmarks.len())
         .map(|i| (0 .. landmarks.len())
-            .map(|j| dl(i,j))
+            .map(|j| 8*dl(i,j))
             .max()
             .unwrap())
         .collect::<Vec<u64>>()

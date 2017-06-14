@@ -9,7 +9,7 @@ use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 // use net_coords::landmarks::randomize_coord::randomize_coord_rw;
 // use net_coords::landmarks::randomize_coord::randomize_coord_rw_sparse;
 use net_coords::landmarks::randomize_coord::randomize_coord_rw_directional;
-use net_coords::landmarks::randomize_coord::{calc_upper_constraints, is_rw_coord};
+use net_coords::landmarks::randomize_coord::{calc_upper_constraints /*, is_rw_coord */};
 use net_coords::network_gen::{gen_network};
 
 

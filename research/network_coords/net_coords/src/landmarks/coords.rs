@@ -11,8 +11,11 @@ use random_util::choose_k_nums;
 pub fn choose_landmarks<R: Rng, Node> 
     (net: &Network<Node>, num_landmarks: usize, rng: &mut R) 
     -> Vec<usize> {
-    choose_k_nums(num_landmarks, net.igraph.node_count(), rng)
-        .into_iter().collect()
+    let mut landmarks = choose_k_nums(num_landmarks, net.igraph.node_count(), rng)
+        .into_iter().collect::<Vec<usize>>();
+    // Sort the landmarks for determinism:
+    landmarks.sort();
+    landmarks
 }
 
 

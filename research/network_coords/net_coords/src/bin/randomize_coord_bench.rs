@@ -9,7 +9,7 @@ use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 // use net_coords::landmarks::randomize_coord::randomize_coord_rw;
 // use net_coords::landmarks::randomize_coord::randomize_coord_rw_sparse;
 use net_coords::landmarks::randomize_coord::randomize_coord_rw_directional;
-use net_coords::landmarks::randomize_coord::calc_upper_constraints;
+use net_coords::landmarks::randomize_coord::{calc_upper_constraints, is_rw_coord};
 use net_coords::network_gen::{gen_network};
 
 
@@ -19,7 +19,7 @@ fn main() {
     
     let g = 9;
     let l = 2 * g + 1;
-    let net_type = 0;
+    let net_type = 1;
     print!("g={:2}; ",g);
     match net_type {
         0 => print!("rand    ; "),
@@ -45,6 +45,7 @@ fn main() {
     println!();
     println!("Choosing landmarks...");
     let landmarks = choose_landmarks(&net, num_landmarks, &mut network_rng);
+    println!("landmarks = {:?}", landmarks);
     println!("Building coordinates...");
     let coords = match build_coords(&net, &landmarks) {
         Some(coords) => coords,
@@ -53,11 +54,15 @@ fn main() {
     let upper_constraints = calc_upper_constraints(&landmarks, &coords);
 
     // Randomize a coordinate:
-    for i in 0 .. 1 {
-        let _ = randomize_coord_rw_directional(&upper_constraints, 
+    for _ in 0 .. 1 {
+        let rcoord = randomize_coord_rw_directional(&upper_constraints, 
                                                &landmarks, &coords, &mut network_rng);
-        println!("i = {}",i);
+        println!("rcoord = {:?}", rcoord);
+        // println!("i = {}",i);
     }
+    assert!(is_rw_coord(&coords[0], &upper_constraints, &landmarks, &coords));
+    println!("coords[0]");
+    println!("{:?}",coords[0]);
 
     println!();
 }

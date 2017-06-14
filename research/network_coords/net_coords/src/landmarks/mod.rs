@@ -96,7 +96,7 @@ pub fn find_path_landmarks_by_coord<R: Rng, Node: Hash + Eq + Clone>(src_node: u
             visits[cur_node] += 1;
 
             // Pick a best local destination randomly in a "smart" way:
-            let mut items = net.closest_nodes_structure(cur_node).take(4*amount_close)
+            let mut items = net.closest_nodes_structure(cur_node).take(amount_close)
                 .map(|(i, dist, gateway)| 
                      Weighted { weight: calc_weight(i), item: (i, dist, gateway) })
                 .collect::<Vec<_>>();
@@ -160,7 +160,7 @@ pub fn find_path_landmarks_approx<R: Rng, Node: Hash + Eq + Clone>(
 
 
             // Pick a best local destination randomly in a "smart" way:
-            let mut items = net.closest_nodes_structure(cur_node).take(4*amount_close)
+            let mut items = net.closest_nodes_structure(cur_node).take(amount_close)
                 .map(|(i, dist, gateway)| 
                      Weighted { weight: calc_weight(i), item: (i, dist, gateway) })
                 .collect::<Vec<_>>();
@@ -193,7 +193,9 @@ pub fn find_path_landmarks_approx<R: Rng, Node: Hash + Eq + Clone>(
 mod tests {
     use super::*;
     use random_util::choose_k_nums;
-    use landmarks::coords::{build_coords, choose_landmarks, randomize_coord};
+    use landmarks::coords::{build_coords, choose_landmarks};
+    use landmarks::randomize_coord::{randomize_coord_rw_directional, calc_upper_constraints};
+    use network_gen::random_weighted_net_chord;
     use network::{random_net};
     use self::rand::{StdRng};
 
@@ -288,16 +290,16 @@ mod tests {
     }
 
     #[test]
-    fn test_randomize_coord() {
-        let l = 5;
-        let num_nodes: usize = ((2 as u64).pow(l)) as usize;
-        let num_neighbours: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+    fn test_randomize_coord_rw_directional() {
+        let l: usize = 6;
+        let num_nodes: usize = ((2 as u64).pow(l as u32)) as usize;
+        let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
         let num_landmarks: usize = (((l*l) as u32)) as usize;
 
         let seed: &[_] = &[1,2,3,4,5];
         let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
         // Creating the network:
-        let net = random_net(num_nodes,num_neighbours,&mut rng);
+        let net = random_weighted_net_chord(num_nodes,num_neighbors,1000,2000,2*l + 1,&mut rng);
         let landmarks = choose_landmarks(&net,num_landmarks, &mut rng);
         // Iterating through coordinates:
         // Make sure that the graph is connected:
@@ -306,8 +308,10 @@ mod tests {
             None => unreachable!(),
         };
 
+        let upper_constraints = calc_upper_constraints(&landmarks, &coords);
+
         // Generate a random coordinate:
-        let rand_coord = randomize_coord(&landmarks, &coords, &mut rng);
+        let rand_coord = randomize_coord_rw_directional(&upper_constraints, &landmarks, &coords, &mut rng);
         assert!(rand_coord.len() == coords[0].len());
     }
 }

@@ -408,10 +408,13 @@ pub fn randomize_coord_rw_directional<R: Rng>(upper_constraints: &Vec<u64>,
                   landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
                     mut rng: &mut R) -> Vec<u64> {
 
-    let mut cur_coord = average_landmarks(&landmarks, &coords);
-    // let upper_constraints = calc_upper_constraints(landmarks, coords);
-    assert!(is_rw_coord(&cur_coord, &upper_constraints, landmarks, coords));
     let entry_range: Range<usize> = Range::new(0, landmarks.len());
+    // Start from the average of all landmarks:
+    let mut cur_coord = average_landmarks(&landmarks, &coords);
+    // Start from a random landmark:
+    // let mut cur_coord = coords[landmarks[entry_range.ind_sample(rng)]].clone();
+    assert!(is_rw_coord(&cur_coord, &upper_constraints, landmarks, coords));
+
 
     let mut good_iters = 0;
     while good_iters < landmarks.len().pow(2) * 4 {

@@ -239,7 +239,7 @@ fn is_legal_coord(cur_coord: &Vec<u64>, landmarks: &Vec<usize>,
 }
 
 /// Check if a coordinate satisfies all triangle inequalities and an additional constraint.
-fn is_rw_coord(cur_coord: &Vec<u64>, upper_constraints: &Vec<u64>, landmarks: &Vec<usize>, 
+pub fn is_rw_coord(cur_coord: &Vec<u64>, upper_constraints: &Vec<u64>, landmarks: &Vec<usize>, 
                   coords: &Vec<Vec<u64>>) -> bool {
 
     for i in 0 .. landmarks.len() {

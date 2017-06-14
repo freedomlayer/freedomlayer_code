@@ -187,13 +187,13 @@ fn get_entry_legal_range(cur_coord: &Vec<u64>, i: usize, landmarks: &Vec<usize>,
 
 /// Returns upper artificial contraints for all coordinates.
 /// We put this constraint so that random walk will not escape to infinity.
-fn calc_upper_constraints(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>) -> Vec<u64> {
+pub fn calc_upper_constraints(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>) -> Vec<u64> {
     // A function to calculate distance between landmark i and landmark j:
     let dl = |i: usize, j: usize| coords[landmarks[i]][j];
 
     (0 .. landmarks.len())
         .map(|i| (0 .. landmarks.len())
-            .map(|j| 2*dl(i,j))
+            .map(|j| dl(i,j))
             .max()
             .unwrap())
         .collect::<Vec<u64>>()
@@ -404,11 +404,12 @@ pub fn randomize_coord_rw_sparse<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Ve
 }
 
 /// Generate a random coordinate using a random walk
-pub fn randomize_coord_rw_directional<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+pub fn randomize_coord_rw_directional<R: Rng>(upper_constraints: &Vec<u64>, 
+                  landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
                     mut rng: &mut R) -> Vec<u64> {
 
     let mut cur_coord = average_landmarks(&landmarks, &coords);
-    let upper_constraints = calc_upper_constraints(landmarks, coords);
+    // let upper_constraints = calc_upper_constraints(landmarks, coords);
     assert!(is_rw_coord(&cur_coord, &upper_constraints, landmarks, coords));
     let entry_range: Range<usize> = Range::new(0, landmarks.len());
 
@@ -422,7 +423,7 @@ pub fn randomize_coord_rw_directional<R: Rng>(landmarks: &Vec<usize>, coords: &V
 
         if low < high {
             good_iters += 1;
-            println!("low = {}, high = {}",low,high);
+            // println!("low = {}, high = {}",low,high);
         }
 
         // Set the new random value to the entry:
@@ -434,6 +435,7 @@ pub fn randomize_coord_rw_directional<R: Rng>(landmarks: &Vec<usize>, coords: &V
     println!();
     println!("ratio = {}", good_iters as f64 / num_attempts as f64);
     */
+    assert!(is_rw_coord(&cur_coord, &upper_constraints, landmarks, coords));
 
     cur_coord
 }

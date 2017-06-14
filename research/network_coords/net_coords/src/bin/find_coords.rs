@@ -7,7 +7,8 @@ use rand::{StdRng};
 // use std::hash::Hash;
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 use net_coords::landmarks::randomize_coord::{
-    /* randomize_coord_landmarks_coords ,*/ randomize_coord_rw_sparse};
+    /* randomize_coord_landmarks_coords ,*/ randomize_coord_rw_directional,
+    calc_upper_constraints};
 use net_coords::landmarks::{find_path_landmarks_approx, find_path_landmarks_by_coord};
 use net_coords::network_gen::{gen_network};
 use net_coords::random_util::choose_k_nums;
@@ -48,7 +49,7 @@ fn main() {
                 /* Generate network */
                 let seed: &[_] = &[1,g,net_type,net_iter];
                 let mut network_rng: StdRng = rand::SeedableRng::from_seed(seed);
-                let net = gen_network(net_type, g, l, 10000, 20000 , &mut network_rng);
+                let net = gen_network(net_type, g, l, 0x10000, 0x20000 , &mut network_rng);
                 print!("ni={:1} |",net_iter);
 
                 // Generate helper structures for landmarks routing:
@@ -64,6 +65,7 @@ fn main() {
                     Some(coords) => coords,
                     None => unreachable!(),
                 };
+                let upper_constraints = calc_upper_constraints(&landmarks, &coords);
                 let avg_degree = ((((2*net.igraph.edge_count()) as f64) / 
                     (net.igraph.node_count() as f64)) + 1.0) as usize;
                 let amount_close = avg_degree.pow(2);
@@ -88,7 +90,8 @@ fn main() {
 
                     // Randomize a coordinate (randomize_coord)
                     // let rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
-                    let rcoord = randomize_coord_rw_sparse(&landmarks, &coords, &mut coord_rng);
+                    let rcoord = randomize_coord_rw_directional(&upper_constraints, 
+                                                                &landmarks, &coords, &mut coord_rng);
 
                     let (found_node_i, _) =  
                         find_path_landmarks_by_coord(node_pair[0], &rcoord,
@@ -99,9 +102,11 @@ fn main() {
                     let mut num_attempts = 0;
                     while !found {
                         num_attempts += 1;
+                        /*
                         // First go to a random place in the network:
                         // let my_rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
-                        let my_rcoord = randomize_coord_rw_sparse(&landmarks, &coords, &mut coord_rng);
+                        let my_rcoord = randomize_coord_rw_directional(&upper_constraints, 
+                                                                       &landmarks, &coords, &mut coord_rng);
                         let (my_node_i, first_part_len) = 
                             find_path_landmarks_by_coord(node_pair[1], &my_rcoord,
                                        amount_close, max_visits, &net, 
@@ -112,9 +117,14 @@ fn main() {
                             find_path_landmarks_approx(my_node_i, found_node_i, &rcoord,
                                        (g as u64).pow(3), amount_close, &net, 
                                        &coords, &landmarks, &mut route_rng);
+                        */
+                        let opt_path_len = 
+                            find_path_landmarks_approx(node_pair[0], found_node_i, &rcoord,
+                                       net.igraph.node_count() as u64, amount_close, &net, 
+                                       &coords, &landmarks, &mut route_rng);
 
                         if let Some(path_len) = opt_path_len {
-                            sum_path_len += path_len + first_part_len;
+                            sum_path_len += path_len; /*+ first_part_len;*/
                             num_paths_found += 1;
                             found = true;
                         } else {

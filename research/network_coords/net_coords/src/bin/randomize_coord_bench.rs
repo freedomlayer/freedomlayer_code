@@ -7,8 +7,9 @@ use rand::{StdRng};
 // use std::hash::Hash;
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 // use net_coords::landmarks::randomize_coord::randomize_coord_rw;
-use net_coords::landmarks::randomize_coord::randomize_coord_rw_sparse;
-// use net_coords::landmarks::randomize_coord::randomize_coord_rw_directional;
+// use net_coords::landmarks::randomize_coord::randomize_coord_rw_sparse;
+use net_coords::landmarks::randomize_coord::randomize_coord_rw_directional;
+use net_coords::landmarks::randomize_coord::calc_upper_constraints;
 use net_coords::network_gen::{gen_network};
 
 
@@ -49,10 +50,12 @@ fn main() {
         Some(coords) => coords,
         None => unreachable!(),
     };
+    let upper_constraints = calc_upper_constraints(&landmarks, &coords);
 
     // Randomize a coordinate:
     for i in 0 .. 1 {
-        let _ = randomize_coord_rw_sparse(&landmarks, &coords, &mut network_rng);
+        let _ = randomize_coord_rw_directional(&upper_constraints, 
+                                               &landmarks, &coords, &mut network_rng);
         println!("i = {}",i);
     }
 

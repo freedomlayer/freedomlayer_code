@@ -60,7 +60,7 @@ fn main() {
         println!("rcoord = {:?}", rcoord);
         // println!("i = {}",i);
     }
-    assert!(is_rw_coord(&coords[0], &upper_constraints, &landmarks, &coords));
+    // assert!(is_rw_coord(&coords[0], &upper_constraints, &landmarks, &coords));
     println!("coords[0]");
     println!("{:?}",coords[0]);
 

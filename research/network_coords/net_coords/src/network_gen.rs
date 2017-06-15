@@ -301,8 +301,8 @@ pub fn gen_network<R:Rng>(net_type: usize, g: usize,l: usize,
             // planar like network
             let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
             let l: usize = (2 * g + 1)  as usize;
-            // let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
-            let num_neighbors = 3;
+            let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+            // let num_neighbors = 9;
             random_weighted_net_planar(num_nodes, num_neighbors, min_weighted_len, max_weighted_len, l, rng)
         }
         _ => unreachable!()

@@ -3,6 +3,7 @@ use self::rand::{Rng};
 
 use network::{Network};
 use chord::{RingKey};
+use smallest_k::{SmallestK};
 use std::collections::{HashSet, HashMap};
 use self::rand::distributions::{IndependentSample, Range};
 
@@ -201,6 +202,69 @@ pub fn random_weighted_net_and_grid2_chord<R: Rng>(k: usize, num_neighbors: usiz
     net
 }
 
+/// Generate a random planar like network.
+/// Put nodes randomly in the plane and connect every node to the num_cons closest nodes.
+pub fn random_weighted_net_planar<R: Rng>(num_nodes: usize, num_cons: usize,
+      min_edge_len: u64, max_edge_len: u64, l: usize, rng: &mut R) -> Network<RingKey> {
+
+    let mut net = Network::<RingKey>::new();
+    // let mut coord_to_index: HashMap<(usize, usize),usize>  = HashMap::new();
+    let mut index_to_coord: HashMap<usize, (u64, u64)> = HashMap::new();
+    // let mut key_to_coord: HashMap<RingKey, (usize, usize)>  = HashMap::new();
+    let edge_length_range: Range<u64> = Range::new(min_edge_len,max_edge_len);
+
+    // Maximum key in the ring:
+    let max_key = 2_u64.pow(l as u32);
+
+    let coord_range: Range<u64> = Range::new(0,2_u64.pow(40_u32));
+
+    // Randomize all nodes:
+
+    // A hash set to make sure we don't have duplicate keys.
+    let mut chosen_keys: HashSet<RingKey> = HashSet::new();
+
+    for _ in 0 .. num_nodes {
+        let rand_key: Range<RingKey> = Range::new(0,max_key);
+        let mut node_key = rand_key.ind_sample(rng);
+        while chosen_keys.contains(&node_key) {
+            node_key = rand_key.ind_sample(rng);
+        }
+        chosen_keys.insert(node_key.clone());
+        let node_index = net.add_node(node_key);
+
+        // Generate a random coordinate in the plane for the new node:
+        let x = coord_range.ind_sample(rng);
+        let y = coord_range.ind_sample(rng);
+
+        // Add coordinate entry to map:
+        index_to_coord.insert(node_index, (x,y));
+    }
+
+    let planar_dist = |i: usize, j:usize| {
+        let (a,b) = index_to_coord.get(&i).unwrap().clone();
+        let (c,d) = index_to_coord.get(&j).unwrap().clone();
+        (((c - a).pow(2) + (d - b).pow(2)) as f64).sqrt() as u64
+    };
+
+    for u in 0 .. num_nodes {
+        let lt = |&a: &usize, &b: &usize| planar_dist(a,u) < planar_dist(b,u);
+        let mut sk = SmallestK::new(num_cons, &lt);
+        for j in 0 .. num_nodes {
+            sk.update(&j);
+        }
+        // Add edges to all planar closest nodes:
+        for v in sk.smallest_k {
+            if net.igraph.contains_edge(u,v) {
+                // Already has this edge.
+                continue
+            }
+            net.igraph.add_edge(u,v,edge_length_range.ind_sample(rng));
+        }
+    }
+
+    net
+}
+
 /// Generate a network according to given type.
 /// g -- amount of nodes (logarithmic).
 /// l -- maximum key space for chord based networks (logarithmic)
@@ -228,6 +292,14 @@ pub fn gen_network<R:Rng>(net_type: usize, g: usize,l: usize,
             let k = (num_nodes as f64).sqrt() as usize;
             let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
             random_weighted_net_and_grid2_chord(k, num_neighbors, min_weighted_len, max_weighted_len, l, &mut rng)
+        }
+        3 => {
+            // planar like network
+            let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
+            let l: usize = (2 * g + 1)  as usize;
+            // let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
+            let num_neighbors = 3;
+            random_weighted_net_planar(num_nodes, num_neighbors, min_weighted_len, max_weighted_len, l, rng)
         }
         _ => unreachable!()
 

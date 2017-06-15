@@ -254,6 +254,10 @@ pub fn random_weighted_net_planar<R: Rng>(num_nodes: usize, num_cons: usize,
         }
         // Add edges to all planar closest nodes:
         for v in sk.smallest_k {
+            if u == v {
+                // Self edges are not allowed
+                continue;
+            }
             if net.igraph.contains_edge(u,v) {
                 // Already has this edge.
                 continue

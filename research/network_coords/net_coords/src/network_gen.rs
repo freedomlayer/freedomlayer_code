@@ -216,7 +216,7 @@ pub fn random_weighted_net_planar<R: Rng>(num_nodes: usize, num_cons: usize,
     // Maximum key in the ring:
     let max_key = 2_u64.pow(l as u32);
 
-    let coord_range: Range<u64> = Range::new(0,2_u64.pow(40_u32));
+    let coord_range: Range<u64> = Range::new(0,2_u64.pow(30_u32));
 
     // Randomize all nodes:
 
@@ -243,7 +243,7 @@ pub fn random_weighted_net_planar<R: Rng>(num_nodes: usize, num_cons: usize,
     let planar_dist = |i: usize, j:usize| {
         let (a,b) = index_to_coord.get(&i).unwrap().clone();
         let (c,d) = index_to_coord.get(&j).unwrap().clone();
-        (((c - a).pow(2) + (d - b).pow(2)) as f64).sqrt() as u64
+        (c - a).pow(2) + (d - b).pow(2)
     };
 
     for u in 0 .. num_nodes {

@@ -44,6 +44,7 @@ fn main() {
                     0 => print!("rand    ; "),
                     1 => print!("2d      ; "),
                     2 => print!("rand+2d ; "),
+                    3 => print!("planar  ; "),
                     _ => unreachable!(),
                 }
                 // print!("nt={:1}; ",net_type);

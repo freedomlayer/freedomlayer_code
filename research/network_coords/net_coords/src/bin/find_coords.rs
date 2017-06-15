@@ -35,7 +35,7 @@ fn main() {
     println!("num_pairs = {}", num_pairs);
     println!();
 
-    for g in 9 .. 20 { // Iterate over size of network.
+    for g in 8 .. 20 { // Iterate over size of network.
         let l = 2 * g + 1;
         for net_type in 0 .. net_types { // Iterate over type of network
             for net_iter in 0 .. net_iters { // Three iterations for each type of network

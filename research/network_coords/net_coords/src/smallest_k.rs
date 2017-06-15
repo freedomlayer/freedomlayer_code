@@ -1,7 +1,7 @@
 
 use std::mem;
 
-struct SmallestK<'a,T: 'a> {
+pub struct SmallestK<'a,T: 'a> {
     pub smallest_k: Vec<T>,
     k: usize,
     lt: &'a Fn(&T, &T) -> bool,
@@ -66,25 +66,25 @@ mod tests {
     #[test]
     fn test_smallest_k_basic() {
         let lt = |a: &u64,b: &u64| *a < *b;
-        let mut bk = SmallestK::<u64>::new(3, &lt);
-        assert!(bk.smallest_k == vec![]);
-        bk.update(&6);
-        assert!(bk.smallest_k == vec![6]);
-        bk.update(&5);
-        assert!(bk.smallest_k == vec![5,6]);
-        bk.update(&5);
-        assert!(bk.smallest_k == vec![5,5,6]);
-        bk.update(&7);
-        assert!(bk.smallest_k == vec![5,5,6]);
-        bk.update(&3);
-        assert!(bk.smallest_k == vec![3,5,5]);
-        bk.update(&4);
-        assert!(bk.smallest_k == vec![3,4,5]);
-        bk.update(&4);
-        assert!(bk.smallest_k == vec![3,4,4]);
-        bk.update(&2);
-        assert!(bk.smallest_k == vec![2,3,4]);
-        bk.update(&1);
-        assert!(bk.smallest_k == vec![1,2,3]);
+        let mut sk = SmallestK::<u64>::new(3, &lt);
+        assert!(sk.smallest_k == vec![]);
+        sk.update(&6);
+        assert!(sk.smallest_k == vec![6]);
+        sk.update(&5);
+        assert!(sk.smallest_k == vec![5,6]);
+        sk.update(&5);
+        assert!(sk.smallest_k == vec![5,5,6]);
+        sk.update(&7);
+        assert!(sk.smallest_k == vec![5,5,6]);
+        sk.update(&3);
+        assert!(sk.smallest_k == vec![3,5,5]);
+        sk.update(&4);
+        assert!(sk.smallest_k == vec![3,4,5]);
+        sk.update(&4);
+        assert!(sk.smallest_k == vec![3,4,4]);
+        sk.update(&2);
+        assert!(sk.smallest_k == vec![2,3,4]);
+        sk.update(&1);
+        assert!(sk.smallest_k == vec![1,2,3]);
     }
 }

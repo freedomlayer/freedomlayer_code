@@ -22,8 +22,8 @@ use net_coords::random_util::choose_k_nums;
 
 #[cfg(not(test))]
 fn main() {
-    let net_types = 3;
-    let net_iters = 3;
+    let net_types = 4;
+    let net_iters = 2;
     // We generate num_nodes * iter_mult random coordinates:
     let num_pairs = 10;
     let max_visits = 2;

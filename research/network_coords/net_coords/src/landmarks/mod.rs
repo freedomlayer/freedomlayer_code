@@ -213,22 +213,26 @@ pub fn gen_areas_with_rw<R: Rng, Node: Hash + Eq + Clone>(amount_close: usize,
           net: &Network<Node>, mut rng: &mut R) -> Vec<Vec<KnownNode>> {
 
     // Amount of nodes we obtain by random walking:
-    let num_rw_nodes: usize = (net.igraph.node_count() as f64).log(2.0) as usize;
+    // let num_rw_nodes: usize = (net.igraph.node_count() as f64).log(2.0) as usize;
+    let num_rw_nodes = amount_close;
     // Amount of iterations for each random walk:
-    let rw_iters: usize = ((net.igraph.node_count() as f64).log(2.0) as usize).pow(2);
+    // let rw_iters: usize = ((net.igraph.node_count() as f64).log(2.0) as usize).pow(2);
+    let rw_iters: usize = 3;
     let mut areas: Vec<Vec<KnownNode>> = Vec::new();
 
     for node_index in 0 .. net.igraph.node_count() {
         let mut area_nodes: Vec<KnownNode> = Vec::new();
         for (i, dist, _) in net.closest_nodes_structure(node_index)
             .take(amount_close) {
+                // area_nodes.push(KnownNode {index: i, dist});
                 area_nodes.push(KnownNode {index: i, dist});
         }
         // Obtain area nodes by random walking:
         for _ in 0 .. num_rw_nodes {
             let mut cur_node: usize = node_index;
             let mut total_dist: u64 = 0;
-            for _ in 0 .. rw_iters {
+            let should_stop_range : Range<usize> = Range::new(0, rw_iters);
+            while should_stop_range.ind_sample(rng) != 0 {
                 let neighbor_edges = net.igraph.edges(cur_node)
                     .into_iter()
                     .collect::<Vec<(usize, usize, &u64)>>();

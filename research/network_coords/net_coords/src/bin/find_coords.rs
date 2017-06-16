@@ -10,7 +10,7 @@ use net_coords::landmarks::randomize_coord::{
     /*randomize_coord_landmarks_coords ,*/randomize_coord_rw_directional,
     calc_upper_constraints};
 use net_coords::landmarks::{find_path_landmarks_areas_approx, 
-    find_path_landmarks_areas_by_coord, find_path_landmarks_areas, gen_areas};
+    find_path_landmarks_areas_by_coord, find_path_landmarks_areas, gen_areas_with_rw};
 use net_coords::network_gen::{gen_network};
 use net_coords::random_util::choose_k_nums;
 
@@ -52,6 +52,7 @@ fn main() {
                 let seed: &[_] = &[1,g,net_type,net_iter];
                 let mut network_rng: StdRng = rand::SeedableRng::from_seed(seed);
                 // let net = gen_network(net_type, g, l, 0x10000, 0x20000 , &mut network_rng);
+                // let net = gen_network(net_type, g, l, 0x10000, 0x20000 , &mut network_rng);
                 let net = gen_network(net_type, g, l, 0x10000, 0x20000 , &mut network_rng);
                 print!("ni={:1} |",net_iter);
 
@@ -67,7 +68,7 @@ fn main() {
                 if num_landmarks as f64 > (net.igraph.node_count() as f64) / 2.0 {
                     num_landmarks = net.igraph.node_count() / 2;
                 }
-                let areas = gen_areas(amount_close, &net);
+                let areas = gen_areas_with_rw(amount_close, &net, &mut network_rng);
                 let landmarks = choose_landmarks(&net, num_landmarks, &mut network_rng);
                 let coords = match build_coords(&net, &landmarks) {
                     Some(coords) => coords,

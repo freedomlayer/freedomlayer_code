@@ -59,7 +59,7 @@ fn main() {
                 // let avg_degree = ((((2*net.igraph.edge_count()) as f64) / 
                 //     (net.igraph.node_count() as f64)) + 1.0) as usize;
                 // let amount_close = avg_degree.pow(2);
-                let amount_close = ((net.igraph.node_count() as f64).log(2.0) as usize).pow(3);
+                let amount_close = ((net.igraph.node_count() as f64).log(2.0) as usize).pow(2);
 
                 // Generate helper structures for landmarks routing:
                 // Calculate landmarks and coordinates for landmarks routing:

@@ -7,8 +7,8 @@ use rand::{StdRng};
 // use std::hash::Hash;
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 use net_coords::landmarks::randomize_coord::{
-    randomize_coord_landmarks_coords ,randomize_coord_rw_directional,
-    calc_upper_constraints, randomize_coord_cheat};
+    /* randomize_coord_landmarks_coords ,*/ randomize_coord_rw_directional,
+    calc_upper_constraints /*, randomize_coord_cheat */};
 use net_coords::landmarks::{find_path_landmarks_areas_approx, 
     find_path_landmarks_areas_by_coord, find_path_landmarks_areas, gen_areas};
 use net_coords::network_gen::{gen_network};

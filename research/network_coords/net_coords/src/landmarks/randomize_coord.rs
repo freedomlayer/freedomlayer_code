@@ -442,3 +442,17 @@ pub fn randomize_coord_rw_directional<R: Rng>(upper_constraints: &Vec<u64>,
 
     cur_coord
 }
+
+//////////////////////////////////////////
+
+/// Slightly change a coordinate (randomly), leaving all entries >= 0
+pub fn drift_coordinate<R: Rng>(noise_size: u64, coord: &mut Vec<u64>, rng: &mut R) {
+    let drift_range : Range<i64> = Range::new(-(noise_size as i64), noise_size as i64);
+    for i in 0 .. coord.len() {
+        let mut temp_res: i64 = (coord[i] as i64) + drift_range.ind_sample(rng);
+        if temp_res < 0 {
+            temp_res = 0;
+        }
+        coord[i] = temp_res as u64;
+    }
+}

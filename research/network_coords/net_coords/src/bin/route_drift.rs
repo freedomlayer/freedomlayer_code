@@ -3,31 +3,21 @@ extern crate net_coords;
 extern crate rand;
 extern crate ordered_float;
 
-use rand::{StdRng, Rng};
-use self::rand::distributions::{IndependentSample, Range};
 // use std::hash::Hash;
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 use net_coords::landmarks::{find_path_landmarks_areas_approx, 
-    /*find_path_landmarks_areas_by_coord,*/ find_path_landmarks_areas, gen_areas};
+    find_path_landmarks_areas, gen_areas};
 use net_coords::network_gen::{gen_network};
 use net_coords::random_util::choose_k_nums;
+use net_coords::landmarks::randomize_coord::{drift_coordinate};
 
+use std::collections::HashSet;
 
 /*
  * An experiment to see if one node can find another node
  * even after his coordinates drifted a bit.
  */
 
-fn drift_coordinate<R: Rng>(noise_size: u64, coord: &mut Vec<u64>, rng: &mut R) {
-    let drift_range : Range<i64> = Range::new(-(noise_size as i64), noise_size as i64);
-    for i in 0 .. coord.len() {
-        let mut temp_res: i64 = (coord[i] as i64) + drift_range.ind_sample(rng);
-        if temp_res < 0 {
-            temp_res = 0;
-        }
-        coord[i] = temp_res as u64;
-    }
-}
 
 #[cfg(not(test))]
 fn main() {
@@ -112,8 +102,11 @@ fn main() {
                     let mut drifted_coord = coords[node_pair[1]].clone();
                     drift_coordinate(drift_size, &mut drifted_coord, &mut coord_rng);
 
+                    let mut hs = HashSet::new();
+                    hs.insert(node_pair[1]);
+
                     let opt_path_len = 
-                        find_path_landmarks_areas_approx(node_pair[0], node_pair[1], &drifted_coord,
+                        find_path_landmarks_areas_approx(node_pair[0], &hs, &drifted_coord,
                                    net.igraph.node_count() as u64, &net, 
                                    &coords, &landmarks, &areas, &mut route_rng);
 

@@ -124,20 +124,14 @@ pub fn randomize_coord_fair_cuts<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Ve
 }
 
 /// Generate a random coordinate
-pub fn randomize_coord_cheat<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+pub fn randomize_coord_cheat<R: Rng>(noise_size: u64, landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
                     mut rng: &mut R) -> Vec<u64> {
 
     let _ = landmarks;
-    // let landmarks_range: Range<usize> = Range::new(0, landmarks.len());
-    // let coords_range: Range<usize> = Range::new(0, coords.len());
-    let some_range: Range<usize> = Range::new(0, 15);
-
-    // coords[coords_range.ind_sample(&mut rng)].clone()
-
-    (0 .. landmarks.len())
-        .map(|i| coords[some_range.ind_sample(&mut rng)][i])
-        .collect::<Vec<u64>>()
-
+    let coords_range: Range<usize> = Range::new(0, coords.len());
+    let mut chosen_coord = coords[coords_range.ind_sample(rng)].clone();
+    drift_coordinate(noise_size, &mut chosen_coord, rng);
+    chosen_coord
 }
 
 ////////////////////////////////////////////////////////////

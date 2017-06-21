@@ -9,6 +9,7 @@ use self::rand::distributions::{Weighted, WeightedChoice,
     IndependentSample, Range};
 
 use std::hash::Hash;
+use std::collections::HashSet;
 
 use network::{Network};
 use landmarks::coord_mappers::{approx_max_dist, max_dist};
@@ -209,15 +210,16 @@ pub fn gen_areas<Node: Hash + Eq + Clone>(amount_close: usize,
     areas
 }
 
-pub fn gen_areas_with_rw<R: Rng, Node: Hash + Eq + Clone>(amount_close: usize, 
-          net: &Network<Node>, mut rng: &mut R) -> Vec<Vec<KnownNode>> {
+pub fn gen_areas_rw<R: Rng, Node: Hash + Eq + Clone>(amount_close: usize, 
+          rw_iters: usize, net: &Network<Node>, 
+          mut rng: &mut R) -> Vec<Vec<KnownNode>> {
 
     // Amount of nodes we obtain by random walking:
     // let num_rw_nodes: usize = (net.igraph.node_count() as f64).log(2.0) as usize;
     let num_rw_nodes = amount_close;
     // Amount of iterations for each random walk:
     // let rw_iters: usize = ((net.igraph.node_count() as f64).log(2.0) as usize).pow(2);
-    let rw_iters: usize = 3;
+    // let rw_iters: usize = 3;
     let mut areas: Vec<Vec<KnownNode>> = Vec::new();
 
     for node_index in 0 .. net.igraph.node_count() {
@@ -286,17 +288,20 @@ pub fn find_path_landmarks_areas<R: Rng, Node: Hash + Eq + Clone>(src_node: usiz
 }
 
 /// Try to find a path in the network between src_node and dst_node.
-/// Returns (node_index, path_len)
+/// Returns (node_index, path_len, valleys)
 pub fn find_path_landmarks_areas_by_coord<R: Rng, Node: Hash + Eq + Clone>(src_node: usize, 
     dst_coord: &Vec<u64>, max_visits: usize, net: &Network<Node>, coords: &Vec<Vec<u64>>, 
-    landmarks: &Vec<usize>, areas: &Vec<Vec<KnownNode>>, mut rng: &mut R) -> (usize, u64) {
+    landmarks: &Vec<usize>, areas: &Vec<Vec<KnownNode>>, mut rng: &mut R) 
+        -> (usize, u64, HashSet<usize>) {
 
     let _ = landmarks;
+    // Found valleys:
+    let mut valleys: HashSet<usize> = HashSet::new();
     // Remember amount of visits to every node.
     // If a node is visited too many times, we return it (Even if it is not an exact match).
     let mut visits: Vec<usize> = vec![0; net.igraph.node_count()];
 
-// Node distance function:
+    // Node distance function:
     // let node_dist = |x,y| approx_max_dist(x,y,&coords, &landmarks);
     let node_dist = |x| max_dist(&coords[x], dst_coord);
 
@@ -309,6 +314,7 @@ pub fn find_path_landmarks_areas_by_coord<R: Rng, Node: Hash + Eq + Clone>(src_n
                 .min_by_key(|&&KnownNode {index: i, .. }| node_dist(i)).unwrap();
 
         if node_dist(new_known.index) >= node_dist(cur_node) {
+            valleys.insert(cur_node.clone());
             visits[cur_node] += 1;
 
             // Randomize from all known nodes:
@@ -323,14 +329,15 @@ pub fn find_path_landmarks_areas_by_coord<R: Rng, Node: Hash + Eq + Clone>(src_n
         // cur_node = gateway_index;
 
     }
-    (cur_node, total_distance)
+    (cur_node, total_distance, valleys)
 }
 
 /// Try to find a path in the network between src_node and dst_node.
 /// Returns (node_index, path_len)
 pub fn find_path_landmarks_areas_approx<R: Rng, Node: Hash + Eq + Clone>(src_node: usize, 
-    dst_node: usize, approx_dst_coord: &Vec<u64>,  max_path_len: u64, net: &Network<Node>, 
-    coords: &Vec<Vec<u64>>, landmarks: &Vec<usize>, areas: &Vec<Vec<KnownNode>>, 
+    dst_nodes: &HashSet<usize>, approx_dst_coord: &Vec<u64>,  max_path_len: u64, 
+    net: &Network<Node>, coords: &Vec<Vec<u64>>, 
+    landmarks: &Vec<usize>, areas: &Vec<Vec<KnownNode>>, 
     mut rng: &mut R) -> Option<u64> {
 
     let _ = landmarks;
@@ -345,7 +352,7 @@ pub fn find_path_landmarks_areas_approx<R: Rng, Node: Hash + Eq + Clone>(src_nod
     let mut total_distance: u64 = 0;
     let mut cur_node = src_node;
     
-    while (cur_node != dst_node) && (total_distance < max_path_len) {
+    while (!dst_nodes.contains(&cur_node)) && (total_distance < max_path_len) {
         let mut new_known: &KnownNode = &areas[cur_node]
                 .iter()
                 .min_by_key(|&&KnownNode {index: i, .. }| node_dist(i)).unwrap();
@@ -365,7 +372,7 @@ pub fn find_path_landmarks_areas_approx<R: Rng, Node: Hash + Eq + Clone>(src_nod
         // cur_node = gateway_index;
 
     }
-    if cur_node == dst_node {
+    if dst_nodes.contains(&cur_node) {
         // Wanted node was found!. We return the path length.
         Some(total_distance)
     } else {

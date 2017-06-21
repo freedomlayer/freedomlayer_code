@@ -7,8 +7,8 @@ use rand::{StdRng};
 // use std::hash::Hash;
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 use net_coords::landmarks::randomize_coord::{
-    /*randomize_coord_landmarks_coords ,*/randomize_coord_rw_directional,
-    calc_upper_constraints};
+    randomize_coord_landmarks_coords ,randomize_coord_rw_directional,
+    calc_upper_constraints, randomize_coord_cheat};
 use net_coords::landmarks::{find_path_landmarks_areas_approx, 
     find_path_landmarks_areas_by_coord, find_path_landmarks_areas, gen_areas};
 use net_coords::network_gen::{gen_network};
@@ -98,10 +98,11 @@ fn main() {
                     // Randomize a coordinate (randomize_coord)
                     // let rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
                     let rcoord = randomize_coord_rw_directional(&upper_constraints, 
-                                                                &landmarks, &coords, &mut coord_rng);
+                                                               &landmarks, &coords, &mut coord_rng);
                     // let rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
+                    // let rcoord = randomize_coord_cheat(0x10000, &landmarks, &coords, &mut coord_rng);
 
-                    let (found_node_i, _) =  
+                    let (found_node_i, _, valleys) =  
                         find_path_landmarks_areas_by_coord(node_pair[0], &rcoord,
                                    max_visits, &net, 
                                    &coords, &landmarks, &areas, &mut route_rng);
@@ -114,9 +115,10 @@ fn main() {
                         // let my_rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
                         let my_rcoord = randomize_coord_rw_directional(&upper_constraints, 
                                                                        &landmarks, &coords, &mut coord_rng);
+                        // let my_rcoord = randomize_coord_cheat(0x10000, &landmarks, &coords, &mut coord_rng);
                         assert!(find_path_landmarks_areas(node_pair[1], found_node_i, &net, &coords, &landmarks, 
                                                   &areas, &mut route_rng).is_some());
-                        let (my_node_i, first_part_len) = 
+                        let (my_node_i, first_part_len, _) = 
                             find_path_landmarks_areas_by_coord(node_pair[1], &my_rcoord,
                                        max_visits, &net, 
                                        &coords, &landmarks, &areas, &mut route_rng);
@@ -124,7 +126,7 @@ fn main() {
                         // the wanted coordinate:
 
                         let opt_path_len = 
-                            find_path_landmarks_areas_approx(my_node_i, found_node_i, &rcoord,
+                            find_path_landmarks_areas_approx(my_node_i, &valleys, &rcoord,
                                        net.igraph.node_count() as u64, &net, 
                                        &coords, &landmarks, &areas, &mut route_rng);
 
@@ -143,9 +145,9 @@ fn main() {
 
 
                 let avg_path_len = (sum_path_len as f64) / (num_paths_found as f64);
-                print!("avg_path_len = {:6.3} |",avg_path_len);
+                print!("avg_path_len = {:8.3} |",avg_path_len);
                 let avg_num_attempts = (sum_num_attempts as f64) / (num_pairs as f64);
-                print!("avg_num_attempts = {:4.3} |",avg_num_attempts);
+                print!("avg_num_attempts = {:6.3} |",avg_num_attempts);
 
 
                 println!();

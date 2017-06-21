@@ -3,6 +3,8 @@ extern crate net_coords;
 extern crate rand;
 extern crate ordered_float;
 
+use self::rand::{StdRng};
+
 // use std::hash::Hash;
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 use net_coords::landmarks::{find_path_landmarks_areas_approx, 
@@ -12,6 +14,7 @@ use net_coords::random_util::choose_k_nums;
 use net_coords::landmarks::randomize_coord::{drift_coordinate};
 
 use std::collections::HashSet;
+
 
 /*
  * An experiment to see if one node can find another node

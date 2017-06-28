@@ -159,7 +159,7 @@ fn main() {
                             }
 
                             if num_attempts > max_attempts {
-                                print!("X");
+                                print!("X ");
                                 break;
                             }
                         }

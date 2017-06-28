@@ -11,7 +11,7 @@ extern crate ordered_float;
 use rand::{Rng, StdRng};
 // use std::hash::Hash;
 
-use net_coords::landmarks::find_path_landmarks;
+use net_coords::landmarks::{gen_areas, find_path_landmarks_areas};
 use net_coords::network::{Network};
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 use net_coords::random_util::choose_k_nums;
@@ -78,8 +78,8 @@ fn run_routing_by_type<R: Rng>(routing_type: usize,
     let _ = l;
 
     let landmarks_num_iters = 100;
-    let avg_degree = ((((2*net.igraph.edge_count()) as f64) / 
-        (net.igraph.node_count() as f64)) + 1.0) as usize;
+    // let avg_degree = ((((2*net.igraph.edge_count()) as f64) / 
+    //     (net.igraph.node_count() as f64)) + 1.0) as usize;
 
     // A function to pick a random node pair from the network,
     // based on a given rng:
@@ -100,16 +100,17 @@ fn run_routing_by_type<R: Rng>(routing_type: usize,
             if num_landmarks as f64 > (net.igraph.node_count() as f64) / 2.0 {
                 num_landmarks = net.igraph.node_count() / 2;
             }
-            let landmarks = choose_landmarks(&net, num_landmarks, &mut routing_rng);
+            let landmarks = choose_landmarks(&net, num_landmarks, routing_rng);
             let coords = match build_coords(&net, &landmarks) {
                 Some(coords) => coords,
                 None => unreachable!(),
             };
+            let amount_close = g.pow(2);
+            let areas = gen_areas(amount_close, &net);
 
             let mut find_path = |src_i: usize, dst_i: usize| {
-                let amount_close = avg_degree.pow(2);
-                find_path_landmarks(src_i, dst_i,
-                        amount_close, &net, &coords, &landmarks, &mut routing_rng)
+                find_path_landmarks_areas(src_i, dst_i, net, &coords, &landmarks, &areas, routing_rng)
+
             };
 
             get_routing_stats(&mut rand_node_pair, &mut find_path,
@@ -129,11 +130,12 @@ fn run_routing_by_type<R: Rng>(routing_type: usize,
                 Some(coords) => coords,
                 None => unreachable!(),
             };
+            let amount_close = g.pow(3);
+            let areas = gen_areas(amount_close, &net);
 
             let mut find_path = |src_i: usize, dst_i: usize| {
-                let amount_close = avg_degree.pow(3);
-                find_path_landmarks(src_i, dst_i,
-                        amount_close, &net, &coords, &landmarks, &mut routing_rng)
+                find_path_landmarks_areas(src_i, dst_i, net, &coords, &landmarks, &areas, routing_rng)
+
             };
 
             get_routing_stats(&mut rand_node_pair, &mut find_path,

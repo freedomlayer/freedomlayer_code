@@ -4,15 +4,17 @@ extern crate rand;
 extern crate ordered_float;
 
 use rand::{StdRng};
+use std::collections::HashSet;
+
 // use std::hash::Hash;
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
-use net_coords::landmarks::randomize_coord::randomize_coord_rw_directional;
+// use net_coords::landmarks::randomize_coord::randomize_coord_rw_directional;
 use net_coords::landmarks::randomize_coord::randomize_coord_rw_mix;
 use net_coords::landmarks::randomize_coord::{
     /* randomize_coord_landmarks_coords ,*/
     calc_upper_constraints /*, randomize_coord_cheat */};
 use net_coords::landmarks::{find_path_landmarks_areas_approx, 
-    find_path_landmarks_areas_by_coord, find_path_landmarks_areas, gen_areas};
+    find_path_landmarks_areas_by_coord, /*find_path_landmarks_areas, */ gen_areas};
 use net_coords::network_gen::{gen_network};
 use net_coords::random_util::choose_k_nums;
 
@@ -104,10 +106,14 @@ fn main() {
                     // let rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
                     // let rcoord = randomize_coord_cheat(0x10000, &landmarks, &coords, &mut coord_rng);
 
-                    let (found_node_i, _, valleys) =  
+                    // let (found_node_i, _, valleys) =  
+                    // let (_, _, valleys) =  
+                    let (found_node_i, _, _) =  
                         find_path_landmarks_areas_by_coord(node_pair[0], &rcoord,
                                    max_visits, &net, 
                                    &coords, &landmarks, &areas, &mut route_rng);
+
+                    let my_valleys = vec![found_node_i].into_iter().collect::<HashSet<usize>>();
 
                     let mut found = false;
                     let mut num_attempts = 0;
@@ -115,6 +121,8 @@ fn main() {
                         num_attempts += 1;
                         // First go to a random place in the network:
                         // let my_rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
+                        //
+                        /*
                         let my_rcoord = randomize_coord_rw_mix(&upper_constraints, 
                                                                        &landmarks, &coords, &mut coord_rng);
                         // let my_rcoord = randomize_coord_cheat(0x10000, &landmarks, &coords, &mut coord_rng);
@@ -126,14 +134,16 @@ fn main() {
                                        &coords, &landmarks, &areas, &mut route_rng);
                         // Starting from the random place in the network, try to find
                         // the wanted coordinate:
+                        */
+
 
                         let opt_path_len = 
-                            find_path_landmarks_areas_approx(my_node_i, &valleys, &rcoord,
+                            find_path_landmarks_areas_approx(node_pair[1], &my_valleys, &rcoord,
                                        net.igraph.node_count() as u64, &net, 
                                        &coords, &landmarks, &areas, &mut route_rng);
 
                         if let Some(path_len) = opt_path_len {
-                            sum_path_len += path_len + first_part_len;
+                            sum_path_len += path_len; /*+ first_part_len;*/
                             num_paths_found += 1;
                             found = true;
                         } else {

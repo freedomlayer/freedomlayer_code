@@ -408,7 +408,7 @@ pub fn randomize_coord_rw_directional<R: Rng>(upper_constraints: &Vec<u64>,
 
 
     let mut good_iters = 0;
-    while good_iters < landmarks.len().pow(2) * 4 {
+    while good_iters < landmarks.len().pow(2) {
         let i = entry_range.ind_sample(rng);
 
         // Get range of valid values for entry number i:

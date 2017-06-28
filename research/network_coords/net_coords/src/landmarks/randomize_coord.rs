@@ -485,7 +485,7 @@ pub fn randomize_coord_rw_mix<R: Rng>(upper_constraints: &Vec<u64>,
     let diag_val1 = diag_range.ind_sample(rng);
     let diag_val2 = diag_range.ind_sample(rng);
     let diag_val3 = diag_range.ind_sample(rng);
-    let const_add = diag_range.ind_sample(rng);
+    // let const_add = diag_range.ind_sample(rng);
 
     let c1 = k * quant + diag_val1;
     let c2 = 2 * quant + diag_val2;
@@ -496,7 +496,7 @@ pub fn randomize_coord_rw_mix<R: Rng>(upper_constraints: &Vec<u64>,
         rw_coord[i] = ((c1 * rlandmark_coord1[i]) + 
                        (c2 * rlandmark_coord2[i]) + 
                        (c3 * rlandmark_coord3[i])) / (c1 + c2 + c3);
-        rw_coord[i] += const_add;
+        // rw_coord[i] += const_add;
         // rw_coord[i] += diag_val
         // rw_coord[i] = (3*rw_coord[i] + rlcoord[i]) / 4
     }

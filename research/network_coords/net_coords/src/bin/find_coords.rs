@@ -14,7 +14,7 @@ use net_coords::landmarks::randomize_coord::{
     /* randomize_coord_landmarks_coords ,*/
     calc_upper_constraints /*, randomize_coord_cheat */};
 use net_coords::landmarks::{find_path_landmarks_areas_approx, 
-    find_path_landmarks_areas_by_coord, find_path_landmarks_areas,  gen_areas};
+    find_path_landmarks_areas_by_coord, /* find_path_landmarks_areas, */  gen_areas};
 use net_coords::network_gen::{gen_network};
 use net_coords::random_util::choose_k_nums;
 
@@ -137,8 +137,8 @@ fn main() {
                             let my_rcoord = randomize_coord_rw_mix(&upper_constraints, 
                                                                            &landmarks, &coords, &mut coord_rng);
                             // let my_rcoord = randomize_coord_cheat(0x10000, &landmarks, &coords, &mut coord_rng);
-                            assert!(find_path_landmarks_areas(node_pair[1], found_node_i, &net, &coords, &landmarks, 
-                                                      &areas, &mut route_rng).is_some());
+                            // assert!(find_path_landmarks_areas(node_pair[1], found_node_i, &net, &coords, &landmarks, 
+                            //                           &areas, &mut route_rng).is_some());
                             let (my_node_i, first_part_len, _) = 
                                 find_path_landmarks_areas_by_coord(node_pair[1], &my_rcoord,
                                            max_visits, &net, 

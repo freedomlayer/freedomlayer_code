@@ -6,8 +6,10 @@ extern crate ordered_float;
 use rand::{StdRng};
 // use std::hash::Hash;
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
+use net_coords::landmarks::randomize_coord::randomize_coord_rw_directional;
+use net_coords::landmarks::randomize_coord::randomize_coord_rw_mix;
 use net_coords::landmarks::randomize_coord::{
-    /* randomize_coord_landmarks_coords ,*/ randomize_coord_rw_directional,
+    /* randomize_coord_landmarks_coords ,*/
     calc_upper_constraints /*, randomize_coord_cheat */};
 use net_coords::landmarks::{find_path_landmarks_areas_approx, 
     find_path_landmarks_areas_by_coord, find_path_landmarks_areas, gen_areas};
@@ -97,7 +99,7 @@ fn main() {
 
                     // Randomize a coordinate (randomize_coord)
                     // let rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
-                    let rcoord = randomize_coord_rw_directional(&upper_constraints, 
+                    let rcoord = randomize_coord_rw_mix(&upper_constraints, 
                                                                &landmarks, &coords, &mut coord_rng);
                     // let rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
                     // let rcoord = randomize_coord_cheat(0x10000, &landmarks, &coords, &mut coord_rng);
@@ -113,7 +115,7 @@ fn main() {
                         num_attempts += 1;
                         // First go to a random place in the network:
                         // let my_rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
-                        let my_rcoord = randomize_coord_rw_directional(&upper_constraints, 
+                        let my_rcoord = randomize_coord_rw_mix(&upper_constraints, 
                                                                        &landmarks, &coords, &mut coord_rng);
                         // let my_rcoord = randomize_coord_cheat(0x10000, &landmarks, &coords, &mut coord_rng);
                         assert!(find_path_landmarks_areas(node_pair[1], found_node_i, &net, &coords, &landmarks, 

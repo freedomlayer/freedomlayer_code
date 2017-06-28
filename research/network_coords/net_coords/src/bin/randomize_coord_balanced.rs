@@ -7,7 +7,8 @@ use rand::{StdRng};
 // use std::hash::Hash;
 use net_coords::landmarks::coords::{build_coords, choose_landmarks};
 // use net_coords::landmarks::randomize_coord::{/*randomize_coord_landmarks_coords,*/ randomize_coord_rw_sparse};
-use net_coords::landmarks::randomize_coord::randomize_coord_rw_directional;
+// use net_coords::landmarks::randomize_coord::randomize_coord_rw_directional;
+use net_coords::landmarks::randomize_coord::randomize_coord_rw_mix;
 use net_coords::landmarks::randomize_coord::calc_upper_constraints;
 use net_coords::landmarks::coord_mappers::{max_dist};
 use net_coords::network_gen::{gen_network};
@@ -76,7 +77,7 @@ fn main() {
                 let mut sum_min_indices = 0;
                 for _ in 0 .. net.igraph.node_count() * iter_mult {
                     // let rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut network_rng);
-                    let rcoord = randomize_coord_rw_directional(&upper_constraints, 
+                    let rcoord = randomize_coord_rw_mix(&upper_constraints, 
                                                                 &landmarks, &coords, &mut network_rng);
                     let min_value = coords.iter().enumerate()
                         .map(|(_,coord)| max_dist(&rcoord,&inflate_coord(&coord)))

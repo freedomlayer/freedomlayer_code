@@ -22,7 +22,7 @@ use self::rand::distributions::{IndependentSample, Range};
 
 #[cfg(not(test))]
 fn main() {
-    let net_types = 4;
+    let net_types = 5;
     let net_iters = 2;
     // We generate num_nodes * iter_mult random coordinates:
     let iter_mult = 1;
@@ -41,6 +41,7 @@ fn main() {
                     1 => print!("2d      ; "),
                     2 => print!("rand+2d ; "),
                     3 => print!("planar  ; "),
+                    4 => print!("tree    ; "),
                     _ => unreachable!(),
                 }
                 // print!("nt={:1}; ",net_type);

@@ -446,26 +446,58 @@ pub fn randomize_coord_rw_mix<R: Rng>(upper_constraints: &Vec<u64>,
     */
 
     // let rlcoord = randomize_coord_landmarks_coords(landmarks, coords, rng);
+    let _ = upper_constraints;
 
-    let mut rw_coord = vec![0; upper_constraints.len()];
+    let mut rw_coord = vec![0; landmarks.len()];
 
     let entry_range: Range<usize> = Range::new(0, landmarks.len());
-    let diag_range: Range<u64> = Range::new(0, 0x1000);
+    // let diag_range: Range<u64> = Range::new(0, 0x1000);
 
     // Get a random landmark:
     let rlandmark_coord1 = coords[landmarks[entry_range.ind_sample(rng)]].clone();
     let rlandmark_coord2 = coords[landmarks[entry_range.ind_sample(rng)]].clone();
     let rlandmark_coord3 = coords[landmarks[entry_range.ind_sample(rng)]].clone();
     
+
+    /*
+    let chosen_entry = entry_range.ind_sample(rng);
+
+    let mut a = rlandmark_coord1[chosen_entry];
+    let mut b = rlandmark_coord2[chosen_entry];
+    if a > b {
+        let temp = a;
+        a = b;
+        b = temp;
+    }
+    if a == b {
+        b += 1;
+    }
+
+    let diag_range: Range<u64> = Range::new(a,b);
+    let diag_val = diag_range.ind_sample(rng);
+    */
+
+    let k = (landmarks.len() as f64).sqrt() as u64;
+
+    let quant = 0x10000;
+
+    let diag_range: Range<u64> = Range::new(0x0, quant);
     let diag_val1 = diag_range.ind_sample(rng);
     let diag_val2 = diag_range.ind_sample(rng);
     let diag_val3 = diag_range.ind_sample(rng);
+    let const_add = diag_range.ind_sample(rng);
+
+    let c1 = k * quant + diag_val1;
+    let c2 = 2 * quant + diag_val2;
+    let c3 = 1 * quant + diag_val3;
 
     // Go to the middle between rw coordinate and landmark coordinate.
     for i in 0 .. rw_coord.len() {
-        rw_coord[i] = (5*(rlandmark_coord1[i] + diag_val1) + 
-                       (rlandmark_coord2[i] + diag_val2) + 
-                       (rlandmark_coord3[i] + diag_val3)) / 7;
+        rw_coord[i] = ((c1 * rlandmark_coord1[i]) + 
+                       (c2 * rlandmark_coord2[i]) + 
+                       (c3 * rlandmark_coord3[i])) / (c1 + c2 + c3);
+        rw_coord[i] += const_add;
+        // rw_coord[i] += diag_val
         // rw_coord[i] = (3*rw_coord[i] + rlcoord[i]) / 4
     }
 

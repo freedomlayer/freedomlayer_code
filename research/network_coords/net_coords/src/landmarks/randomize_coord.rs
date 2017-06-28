@@ -434,6 +434,45 @@ pub fn randomize_coord_rw_directional<R: Rng>(upper_constraints: &Vec<u64>,
     cur_coord
 }
 
+/// Generate a random coordinate using a mix between a random walk
+/// coordinate and a random landmark coordinate
+pub fn randomize_coord_rw_mix<R: Rng>(upper_constraints: &Vec<u64>, 
+                  landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+                    mut rng: &mut R) -> Vec<u64> {
+
+    /*
+    let mut rw_coord = randomize_coord_rw_directional(upper_constraints, 
+                      landmarks, coords, rng);
+    */
+
+    let rlcoord = randomize_coord_landmarks_coords(landmarks, coords, rng);
+
+    let mut rw_coord = vec![0; upper_constraints.len()];
+
+    let entry_range: Range<usize> = Range::new(0, landmarks.len());
+    let diag_range: Range<u64> = Range::new(0, 0x1000);
+
+    // Get a random landmark:
+    let rlandmark_coord1 = coords[landmarks[entry_range.ind_sample(rng)]].clone();
+    let rlandmark_coord2 = coords[landmarks[entry_range.ind_sample(rng)]].clone();
+    let rlandmark_coord3 = coords[landmarks[entry_range.ind_sample(rng)]].clone();
+    
+    let diag_val1 = diag_range.ind_sample(rng);
+    let diag_val2 = diag_range.ind_sample(rng);
+    let diag_val3 = diag_range.ind_sample(rng);
+
+    // Go to the middle between rw coordinate and landmark coordinate.
+    for i in 0 .. rw_coord.len() {
+        rw_coord[i] = (5*(rlandmark_coord1[i] + diag_val1) + 
+                       (rlandmark_coord2[i] + diag_val2) + 
+                       (rlandmark_coord3[i] + diag_val3)) / 7;
+        // rw_coord[i] = (3*rw_coord[i] + rlcoord[i]) / 4
+    }
+
+    rw_coord
+
+}
+
 //////////////////////////////////////////
 
 /// Slightly change a coordinate (randomly), leaving all entries >= 0

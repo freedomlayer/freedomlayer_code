@@ -269,6 +269,59 @@ pub fn random_weighted_net_planar<R: Rng>(num_nodes: usize, num_cons: usize,
     net
 }
 
+/// Generate a random tree over num_nodes
+pub fn random_tree<R: Rng>(num_nodes: usize, 
+      min_edge_len: u64, max_edge_len: u64, l: usize, rng: &mut R) -> Network<RingKey> {
+
+    let mut net = Network::<RingKey>::new();
+    let edge_length_range: Range<u64> = Range::new(min_edge_len,max_edge_len);
+
+    // Maximum key in the ring:
+    let max_key = 2_u64.pow(l as u32);
+
+    // Randomize all nodes:
+
+    // Insert nodes (With Chord keys)
+    // A hash set to make sure we don't have duplicate keys.
+    let mut chosen_keys: HashSet<RingKey> = HashSet::new();
+
+    for _ in 0 .. num_nodes {
+        let rand_key: Range<RingKey> = Range::new(0,max_key);
+        let mut node_key = rand_key.ind_sample(rng);
+        while chosen_keys.contains(&node_key) {
+            node_key = rand_key.ind_sample(rng);
+        }
+        chosen_keys.insert(node_key.clone());
+        net.add_node(node_key);
+    }
+
+    // Add edges of random tree according to:
+    // https://stackoverflow.com/questions/2041517/
+    //      random-simple-connected-graph-generation-with-given-sparseness
+
+    let mut free_nodes: HashSet<usize> = (0 .. num_nodes).collect::<HashSet<usize>>();
+    let mut used_nodes: HashSet<usize> = HashSet::new();
+    let node_range: Range<usize> = Range::new(0, num_nodes);
+
+    let mut current_node = node_range.ind_sample(rng);
+    free_nodes.remove(&current_node);
+    used_nodes.insert(current_node.clone());
+    
+    while free_nodes.len() > 0 {
+        let neighbor_node = node_range.ind_sample(rng);
+        if !used_nodes.contains(&neighbor_node) {
+            let edge_length = edge_length_range.ind_sample(rng);
+            net.igraph.add_edge(current_node,neighbor_node,
+                                edge_length);
+            free_nodes.remove(&neighbor_node);
+            used_nodes.insert(neighbor_node.clone());
+        }
+        current_node = neighbor_node;
+    }
+
+    net
+}
+
 /// Generate a network according to given type.
 /// g -- amount of nodes (logarithmic).
 /// l -- maximum key space for chord based networks (logarithmic)
@@ -304,6 +357,12 @@ pub fn gen_network<R:Rng>(net_type: usize, g: usize,l: usize,
             let num_neighbors: usize = (1.5 * (num_nodes as f64).ln()) as usize;
             // let num_neighbors = 9;
             random_weighted_net_planar(num_nodes, num_neighbors, min_weighted_len, max_weighted_len, l, rng)
+        }
+        4 => {
+            // Tree like network
+            let num_nodes: usize = ((2 as u64).pow(g as u32)) as usize;
+            let l: usize = (2 * g + 1)  as usize;
+            random_tree(num_nodes, min_weighted_len, max_weighted_len, l, rng)
         }
         _ => unreachable!()
 
@@ -353,5 +412,14 @@ mod tests {
         let k = 5; // 5 X 5 grid
         let l: usize = 6; // Size of keyspace
         random_weighted_net_and_grid2_chord(k,num_neighbors, 1, 2, l, &mut rng);
+    }
+
+    #[test]
+    fn test_random_tree() {
+        let seed: &[_] = &[1,2,3,4,9];
+        let mut rng: StdRng = rand::SeedableRng::from_seed(seed);
+        let num_nodes = 25;
+        let l: usize = 6; // Size of keyspace
+        random_tree(num_nodes, 1, 2, l, &mut rng);
     }
 }

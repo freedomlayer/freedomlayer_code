@@ -48,7 +48,6 @@ pub fn randomize_coord_rand_coeffs<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<
 
 }
 
-
 /// Generate a random coordinate
 /// This one was very good with the 2d network, but not very good with the
 /// random network.
@@ -277,14 +276,13 @@ fn is_rw_coord_by_changed(cur_coord: &Vec<u64>, changed_indices: &Vec<usize>,
 
 
 /// Generate a random coordinate using a random walk
-pub fn randomize_coord_rw<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
-                    mut rng: &mut R) -> Vec<u64> {
+pub fn randomize_coord_rw<R: Rng>(upper_constraints: &Vec<u64>, 
+          landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>, mut rng: &mut R) -> Vec<u64> {
 
     let mut cur_coord = average_landmarks(&landmarks, &coords);
     assert!(is_legal_coord(&cur_coord, &landmarks, &coords));
     // let entry_range: Range<usize> = Range::new(0, landmarks.len());
     
-    let upper_constraints = calc_upper_constraints(landmarks, coords);
 
     let mut diff_size: u64 = 1;
 
@@ -335,11 +333,10 @@ pub fn randomize_coord_rw<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>
 }
 
 /// Generate a random coordinate using a random walk
-pub fn randomize_coord_rw_sparse<R: Rng>(landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
+pub fn randomize_coord_rw_sparse<R: Rng>(upper_constraints: &Vec<u64>,landmarks: &Vec<usize>, coords: &Vec<Vec<u64>>,
                     mut rng: &mut R) -> Vec<u64> {
 
     let mut cur_coord = average_landmarks(&landmarks, &coords);
-    let upper_constraints = calc_upper_constraints(landmarks, coords);
 
     assert!(is_rw_coord(&cur_coord, &upper_constraints, landmarks, coords));
     // let entry_range: Range<usize> = Range::new(0, landmarks.len());

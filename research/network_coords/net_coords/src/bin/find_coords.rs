@@ -14,7 +14,7 @@ use net_coords::landmarks::randomize_coord::{
     /* randomize_coord_landmarks_coords ,*/
     calc_upper_constraints /*, randomize_coord_cheat */};
 use net_coords::landmarks::{find_path_landmarks_areas_approx, 
-    find_path_landmarks_areas_by_coord, /*find_path_landmarks_areas, */ gen_areas};
+    find_path_landmarks_areas_by_coord, find_path_landmarks_areas,  gen_areas};
 use net_coords::network_gen::{gen_network};
 use net_coords::random_util::choose_k_nums;
 
@@ -116,41 +116,46 @@ fn main() {
 
                     let my_valleys = vec![found_node_i].into_iter().collect::<HashSet<usize>>();
 
-                    let mut found = false;
-                    let mut num_attempts = 0;
-                    while !found {
-                        num_attempts += 1;
-                        // First go to a random place in the network:
-                        // let my_rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
-                        //
-                        /*
-                        let my_rcoord = randomize_coord_rw_mix(&upper_constraints, 
-                                                                       &landmarks, &coords, &mut coord_rng);
-                        // let my_rcoord = randomize_coord_cheat(0x10000, &landmarks, &coords, &mut coord_rng);
-                        assert!(find_path_landmarks_areas(node_pair[1], found_node_i, &net, &coords, &landmarks, 
-                                                  &areas, &mut route_rng).is_some());
-                        let (my_node_i, first_part_len, _) = 
-                            find_path_landmarks_areas_by_coord(node_pair[1], &my_rcoord,
-                                       max_visits, &net, 
-                                       &coords, &landmarks, &areas, &mut route_rng);
-                        // Starting from the random place in the network, try to find
-                        // the wanted coordinate:
-                        */
+                    let mut num_attempts = 1;
+
+                    let opt_path_len = 
+                        find_path_landmarks_areas_approx(node_pair[1], &my_valleys, &rcoord,
+                                   net.igraph.node_count() as u64, &net, 
+                                   &coords, &landmarks, &areas, &mut route_rng);
+
+                    if let Some(path_len) = opt_path_len {
+                        sum_path_len += path_len;
+                        num_paths_found += 1;
+                    } else {
+                        let mut found = false;
+                        while !found {
+                            num_attempts += 1;
+                            // First go to a random place in the network:
+                            // let my_rcoord = randomize_coord_landmarks_coords(&landmarks, &coords, &mut coord_rng);
+                            //
+                            let my_rcoord = randomize_coord_rw_mix(&upper_constraints, 
+                                                                           &landmarks, &coords, &mut coord_rng);
+                            // let my_rcoord = randomize_coord_cheat(0x10000, &landmarks, &coords, &mut coord_rng);
+                            assert!(find_path_landmarks_areas(node_pair[1], found_node_i, &net, &coords, &landmarks, 
+                                                      &areas, &mut route_rng).is_some());
+                            let (my_node_i, first_part_len, _) = 
+                                find_path_landmarks_areas_by_coord(node_pair[1], &my_rcoord,
+                                           max_visits, &net, 
+                                           &coords, &landmarks, &areas, &mut route_rng);
+                            // Starting from the random place in the network, try to find
+                            // the wanted coordinate:
 
 
-                        let opt_path_len = 
-                            find_path_landmarks_areas_approx(node_pair[1], &my_valleys, &rcoord,
-                                       net.igraph.node_count() as u64, &net, 
-                                       &coords, &landmarks, &areas, &mut route_rng);
+                            let opt_path_len = 
+                                find_path_landmarks_areas_approx(my_node_i, &my_valleys, &rcoord,
+                                           net.igraph.node_count() as u64, &net, 
+                                           &coords, &landmarks, &areas, &mut route_rng);
 
-                        if let Some(path_len) = opt_path_len {
-                            sum_path_len += path_len; /*+ first_part_len;*/
-                            num_paths_found += 1;
-                            found = true;
-                        } else {
-                            // println!();
-                            // println!("rcoord = {:?}", rcoord);
-                            // println!();
+                            if let Some(path_len) = opt_path_len {
+                                sum_path_len += path_len + first_part_len;
+                                num_paths_found += 1;
+                                found = true;
+                            }
                         }
                     }
                     sum_num_attempts += num_attempts;
@@ -161,7 +166,6 @@ fn main() {
                 print!("avg_path_len = {:8.3} |",avg_path_len);
                 let avg_num_attempts = (sum_num_attempts as f64) / (num_pairs as f64);
                 print!("avg_num_attempts = {:6.3} |",avg_num_attempts);
-
 
                 println!();
             }

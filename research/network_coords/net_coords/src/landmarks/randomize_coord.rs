@@ -445,7 +445,7 @@ pub fn randomize_coord_rw_mix<R: Rng>(upper_constraints: &Vec<u64>,
                       landmarks, coords, rng);
     */
 
-    let rlcoord = randomize_coord_landmarks_coords(landmarks, coords, rng);
+    // let rlcoord = randomize_coord_landmarks_coords(landmarks, coords, rng);
 
     let mut rw_coord = vec![0; upper_constraints.len()];
 

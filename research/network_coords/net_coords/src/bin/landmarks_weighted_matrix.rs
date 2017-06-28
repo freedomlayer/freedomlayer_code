@@ -146,8 +146,8 @@ fn run_routing_by_type<R: Rng>(routing_type: usize,
 
 #[cfg(not(test))]
 fn main() {
-    let net_types = 3;
-    let net_iters = 3;
+    let net_types = 5;
+    let net_iters = 2;
     let routing_types = 2;
     let experiment_seed = 0x1337;
     // Keep the last max route length for combinations of [net_type][routing_type]
@@ -173,6 +173,8 @@ fn main() {
                     0 => print!("rand    ; "),
                     1 => print!("2d      ; "),
                     2 => print!("rand+2d ; "),
+                    3 => print!("planar  ; "),
+                    4 => print!("tree    ; "),
                     _ => unreachable!(),
                 }
                 print!("ni={:1} |",net_iter);

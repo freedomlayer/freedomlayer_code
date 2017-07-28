@@ -1,0 +1,9 @@
+[package]
+name = "approximate_net"
+version = "0.1.0"
+authors = ["real"]
+
+[dependencies]
+rand = "0.3"
+ring = "0.11.0"
+bincode = "0.8.0"

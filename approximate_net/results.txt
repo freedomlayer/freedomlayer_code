@@ -1,0 +1,14 @@
+real@freedom:approximate_net$ cargo run --release
+   Compiling approximate_net v0.1.0 (file:///home/real/projects/d/freedomlayer/freedomlayer_research/approximate_net)
+    Finished release [optimized] target(s) in 1.44 secs
+     Running `target/release/approximate_net`
+Calculating error ratios for approximation functions...
+num_iters = 100
+num_mins  = 40
+num_elems = 1000000
+
+err_ratio for approximation functions:
+approx_size_harmonic_before    : 10.208276536189299
+approx_size_harmonic_after     : 0.14301947584857105
+approx_size_mean_before        : 0.14301974775883225
+approx_size_mean_after         : 10.208276278935292
